@@ -1,35 +1,43 @@
 # SEO Skills (Codex CLI)
 
-A collection of **Codex CLI skills** for day-to-day SEO work (audits, SERP research, internal linking, content ops, programmatic SEO, and GEO/LLM visibility).
+Holly&Stick helps B2B SaaS teams go from SEO 0 → 1. We set the strategy and run content end-to-end so you start getting consistent traffic and leads. Learn more at https://holly-and-stick.com and follow along on [LinkedIn](https://linkedin.com/in/younès-benallal) or [Twitter](x.com/youarenes).
+
+This repo was inspired by https://github.com/coreyhaines31/marketingskills/
+
+## What are Skills?
+
+Skills are modular, declarative packages that teach any coding agent how to execute repeatable SEO workflows with the right tools, prompts, and resources. Thanks to this repo, Claude, Codex, Cursor, and every other major coding agent can share the same procedural knowledge without re-inventing the wheel.
+
+## Skills ecosystem
+
+Skills are now a shared convention across most coding agents. The easiest way to install them is `add-skill` (https://github.com/vercel-labs/add-skill), which supports Codex, Claude Code, Cursor, OpenCode, Gemini CLI, and more.
+
+If you work across multiple agents, use `dotagents` (https://github.com/iannuttall/dotagents) to keep a single `.agents/` folder as your source of truth and automatically symlink skills into each platform’s expected directory.
 
 ## Install
 
-Codex looks for skills in `~/.agents/skills/` (global), or in a project’s `.agents/skills/` (repo-local).
-
-### Option A — install globally (recommended)
+### Option A — use `add-skill`
 
 ```bash
-git clone https://github.com/<you>/<this-repo>.git
-cd <this-repo>
+npx add-skill holly-and-stick/seo-skills
+```
 
+
+### Option B — manual symlink
+
+```bash
 mkdir -p ~/.agents/skills
 for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-state-report; do
-  ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
+  ln -s "$PWD/$d" "$HOME/.claude/skills/$d"
 done
 ```
 
-### Option B — install into a specific project
+If using the repo inside another project (e.g., copied under `seo-skills/`), `cd seo-skills` before running the commands. Use https://github.com/iannuttall/dotagents to keep this collection synced across Claude, Codex, Cursor, and any other agent.
 
-```bash
-mkdir -p .agents/skills
-for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-state-report; do
-  ln -s "$PWD/$d" ".agents/skills/$d"
-done
-```
-
-If you vendored this repo into another repo (e.g. as `seo-skills/`), run `cd seo-skills` first.
 
 ## Tooling model (MCPs, scripts, fallbacks)
+
+When a skill needs a webpage’s content, prefer the Jina-powered `getMarkdownFromUrlWith`/`urlToMarkdownTool` pipeline—the same technique inside StickHub. That keeps the instructions lean while still giving Claude access to the right copy.
 
 These skills try to be **tool-adaptive**. Each skill starts by checking which tools are available, then chooses the best route:
 
