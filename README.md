@@ -12,14 +12,12 @@ Skills are modular, declarative packages that teach any coding agent how to exec
 
 Skills are now a shared convention across most coding agents. The easiest way to install them is `add-skill` (https://github.com/vercel-labs/add-skill), which supports Codex, Claude Code, Cursor, OpenCode, Gemini CLI, and more.
 
-If you work across multiple agents, use `dotagents` (https://github.com/iannuttall/dotagents) to keep a single `.agents/` folder as your source of truth and automatically symlink skills into each platform’s expected directory.
-
 ## Install
 
 ### Option A — use `add-skill`
 
 ```bash
-npx add-skill holly-and-stick/seo-skills
+npx add-skill younesbenallal/seo-skills
 ```
 
 
@@ -28,11 +26,13 @@ npx add-skill holly-and-stick/seo-skills
 ```bash
 mkdir -p ~/.agents/skills
 for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-state-report; do
-  ln -s "$PWD/$d" "$HOME/.claude/skills/$d"
+  ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
 
-If using the repo inside another project (e.g., copied under `seo-skills/`), `cd seo-skills` before running the commands. Use https://github.com/iannuttall/dotagents to keep this collection synced across Claude, Codex, Cursor, and any other agent.
+If using the repo inside another project (e.g., copied under `seo-skills/`), `cd seo-skills` before running the commands.
+
+If using `add-skill`, skip manual syncing: it installs skills into the right place for your agent(s).
 
 
 ## Tooling model (MCPs, scripts, fallbacks)
