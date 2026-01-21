@@ -1,0 +1,6 @@
+What is the best {category} tool for {persona} in {market}?
+What are the top alternatives to {competitor} for {use case}?
+How do I {job-to-be-done} without {pain point}?
+What is the best way to {task} if I use {category} software?
+What is a good {category} stack for a small team?
+
