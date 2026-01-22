@@ -21,11 +21,13 @@ If the user doesn’t know the keywords yet, extract them from:
 
 ## Required tools
 
-You need **one** of:
-- A **SERP MCP** (preferred), OR
-- `serper.dev` API key (`SERPER_API_KEY`) + the helper script `scripts/serper-dev.mjs`
+Require:
+- A **SERP API MCP** (to fetch live Google results), and
+- A way to open candidate pages and confirm context:
+  - Prefer `curl -L <url>` for static pages (blog posts, docs).
+  - Use a **Browser MCP** (strongly recommended: `agent-browser`) for JS-heavy pages or anything blocked by `curl`.
 
-If neither is available, stop and tell the user exactly how to set up one of them.
+If the SERP MCP is missing, stop and ask the user to install a SERP provider MCP (this repo intentionally does not ship an env-var fallback).
 
 ## Workflow
 
@@ -71,12 +73,6 @@ Return:
 - A table of all opportunities with columns:
   - `prospect_url`, `query_used`, `type`, `why_link_fits`, `suggested_anchor`, `outreach_angle`
 
-## Optional: run the Serper fallback script
+## Notes
 
-If no SERP MCP is available but `SERPER_API_KEY` exists, you can generate raw SERPs with:
-
-```bash
-node scripts/serper-dev.mjs --q 'site:example.com "pricing"' --pages 2
-```
-
-Then use the `organic_all` URLs as the starting set.
+This repo intentionally does not ship an env-var SERP fallback. Use a SERP API MCP.

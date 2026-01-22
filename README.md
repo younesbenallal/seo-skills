@@ -17,7 +17,37 @@ Skills are now a shared convention across most coding agents. The easiest way to
 ### Option A — use `add-skill`
 
 ```bash
-npx add-skill younesbenallal/seo-skills
+npx add-skill holly-and-stick/seo-skills
+```
+
+## Tooling (MCPs)
+
+Depending on the skill you want to use, your agent will need different MCP servers. If a required MCP is missing, the skill should stop and tell you what to install.
+
+Heavily recommended: use **agent-browser** (https://github.com/vercel-labs/agent-browser). It’s the most reliable “one tool” for reading pages, interacting with websites, and capturing screenshots across agents.
+
+### Skills → required tools
+
+- `seo-roast`: Browser MCP (agent-browser recommended).
+- `illustration-ideas`: Browser MCP (agent-browser recommended).
+- `subkeyword-injector`: Google Search Console MCP (for queries) + Browser MCP (to read the page if needed).
+- `linking-opportunities`: SERP API MCP + Browser MCP.
+- `search-intent-coverage`: SERP API MCP + Browser MCP.
+- `programmatic-seo`: Browser MCP (recommended) + SERP API MCP (recommended) + optional Ahrefs/Semrush MCP.
+- `seo-audit-report`: No MCP required (scaffold only). Data can come from a GSC MCP export or a manual CSV/JSON file.
+- `geo-state-report`: Bright Data API (required) via `geo-state-report/scripts/brightdata-geo.py` (requires `BRIGHTDATA_API_KEY`).
+
+### MCP types to install (what they’re for)
+
+- **Browser MCP** (recommended: agent-browser): read content, navigate, copy text, capture screenshots.
+- **SERP API MCP**: fetch live Google SERPs. This repo intentionally does not ship an env-var SERP fallback.
+- **Google Search Console MCP**: pull query/page metrics to drive content updates.
+- **Ahrefs/Semrush MCP (optional)**: keyword research + competitor data for `programmatic-seo`.
+
+Install the agent-browser skill (optional, but recommended):
+
+```bash
+npx add-skill vercel-labs/agent-browser --skill agent-browser
 ```
 
 
@@ -34,42 +64,6 @@ If using the repo inside another project (e.g., copied under `seo-skills/`), `cd
 
 If using `add-skill`, skip manual syncing: it installs skills into the right place for your agent(s).
 
-
-## Tooling model (MCPs, scripts, fallbacks)
-
-When a skill needs a webpage’s content, prefer the Jina-powered `getMarkdownFromUrlWith`/`urlToMarkdownTool` pipeline—the same technique inside StickHub. That keeps the instructions lean while still giving Claude access to the right copy.
-
-These skills try to be **tool-adaptive**. Each skill starts by checking which tools are available, then chooses the best route:
-
-- **Page → Markdown**: prefer a URL-to-markdown MCP (ex: Jina). Fallback: browser automation + copy extraction.
-- **Screenshots**: prefer a browser MCP / `agent-browser` / Playwright. If unavailable, skip screenshots and roast based on DOM/text only.
-- **SERP**:
-  - Best: a SERP MCP you already have installed.
-  - Fallback: `serper.dev` via `SERPER_API_KEY` using `scripts/serper-dev.mjs`.
-- **Google Search Console (GSC)**:
-  - Best: a GSC MCP you already have installed.
-  - If a skill says GSC is required and you don’t have a GSC MCP, it should **stop** and tell you how to install one or use a manual export.
-- **Bright Data (mandatory for GEO state)**:
-  - Requires `BRIGHTDATA_API_KEY` and dataset IDs.
-
-To see what MCP servers you have:
-
-```bash
-codex mcp list
-```
-
-## API keys / env vars
-
-- `SERPER_API_KEY`: for `serper.dev` SERP fallback (`scripts/serper-dev.mjs`).
-- `BRIGHTDATA_API_KEY`: for GEO state report collection (`geo-state-report/scripts/brightdata-geo.py`).
-
-You can export them in your shell:
-
-```bash
-export SERPER_API_KEY="..."
-export BRIGHTDATA_API_KEY="..."
-```
-
 ## Skills
 
 - `linking-opportunities`: find link opportunities on a target site using SERPs.
@@ -83,8 +77,6 @@ export BRIGHTDATA_API_KEY="..."
 
 ## Included helper scripts
 
-- SERP (Serper.dev): `scripts/serper-dev.mjs`
-- Link opp mining (Serper.dev): `linking-opportunities/scripts/link-opps.mjs`
 - Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
 - GEO collection + report: `geo-state-report/scripts/brightdata-geo.py`
 

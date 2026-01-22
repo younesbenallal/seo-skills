@@ -15,6 +15,10 @@ You update an existing piece of content to better capture the long-tail queries 
   - “no local access” (you’ll provide a patch plan)
 - Constraints: “don’t change meaning”, “keep tone”, “keep sections”, etc.
 
+## Page content access (for planning edits)
+
+Prefer fetching HTML with `curl -L <url>` when the page is likely static (most blog posts). Switch to a Browser MCP (agent-browser recommended) when the page is JS-rendered/blocked or when extraction is messy. If neither works, ask the user to paste the current article content.
+
 ## Required tool
 
 This skill requires **Google Search Console data**.

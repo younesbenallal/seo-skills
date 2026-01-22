@@ -15,8 +15,13 @@ You help the user build an outline that matches what Google is ranking **and** a
 
 ## Tools (adaptive)
 
-Preferred: SERP access (SERP MCP or Serper fallback) + URL → Markdown.
-Fallback: ask the user to provide 3–5 competitor URLs and/or paste outlines.
+Required: SERP API MCP + a way to read competitor pages.
+
+Preferred:
+- Read competitor pages with `curl -L <url>` when they’re likely static (blog posts, docs pages).
+- Use a Browser MCP (agent-browser recommended) when pages are JS-rendered/blocked or when extraction is messy.
+
+Fallback: if SERP MCP is missing, stop and ask the user to install one; otherwise ask the user to provide 3–5 competitor URLs and/or paste outlines.
 
 ## Workflow
 
@@ -40,4 +45,3 @@ Fallback: ask the user to provide 3–5 competitor URLs and/or paste outlines.
 - “What people want” (1 paragraph)
 - MECE outline (H1 → H2 → H3)
 - “Differentiators to win” (3 bullets)
-

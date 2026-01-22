@@ -14,7 +14,7 @@ You browse a page, understand the content, then propose illustration ideas that 
 
 ## Tools
 
-Mandatory: URL → Markdown tool. It can be Jina MCP, or any browser MCP.
+Prefer fetching HTML with `curl -L <url>` when the page is likely static (most blog articles). Switch to a Browser MCP (strongly recommended: agent-browser) when the page is JS-rendered, blocked, or hard to extract. If neither is available, ask the user to paste the content or a detailed outline.
 
 ## Output requirements
 
@@ -47,4 +47,3 @@ Example structure of an illustration suggestion:
     B -.-> E[Error]
   ```
 ```
-

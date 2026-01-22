@@ -17,12 +17,13 @@ You produce a blunt, actionable SEO roast using a consistent rubric, then ask wh
 ## Tools (adaptive)
 
 **Preferred**
-- URL → Markdown tool (content extraction)
-- SERP tool (to compare to what ranks)
-- Screenshot tool (browser MCP / `agent-browser` / Playwright) to visualize the page  and for the HTML report
+- For simple, mostly-static pages (especially blog posts), fetch the HTML with `curl -L <url>` and extract the main copy/structure from it.
+- Use a Browser MCP (strongly recommended: `agent-browser`) when the page is JS-rendered, behind consent walls, or when screenshots are needed.
+- SERP API MCP (optional but recommended) to compare against what ranks.
 
 **Fallbacks**
-- If content extraction fails: ask the user to paste the page HTML/markdown or the main copy.
+- If `curl` output is blocked/empty or unusable: switch to Browser MCP.
+- If browsing is unavailable: ask for the main copy (and key sections like title/H1/meta).
 - If no screenshots: produce report without screenshots (but still generate HTML).
 
 ## Roast rubric (use this order)
@@ -75,4 +76,3 @@ Then ask:
 - Use CSS variables (no hardcoded colors)
 - Include sections matching the rubric + a prioritized backlog
 - Footer must include: `holly-and-stick.com`
-
