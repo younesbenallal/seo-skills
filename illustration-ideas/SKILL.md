@@ -14,7 +14,16 @@ You browse a page, understand the content, then propose illustration ideas that 
 
 ## Tools
 
-Prefer fetching HTML with `curl -L <url>` when the page is likely static (most blog articles). Switch to a Browser MCP (strongly recommended: agent-browser) when the page is JS-rendered, blocked, or hard to extract. If neither is available, ask the user to paste the content or a detailed outline.
+Implement browser tool selection:
+- Prefer Browser/Chrome/Playwright MCP if available.
+- Else use `agent-browser` CLI; check install; if missing instruct `npm install -g agent-browser`.
+- Provide exact agent-browser commands to read article content and structure (remove curl guidance):
+  - `agent-browser open <url>`
+  - `agent-browser snapshot -c -s "main" -d 5`
+  - `agent-browser snapshot -i`
+  - `agent-browser get text @eX`
+  - `agent-browser get html @eX`
+If neither is available, ask the user to paste the content or a detailed outline.
 
 ## Output requirements
 

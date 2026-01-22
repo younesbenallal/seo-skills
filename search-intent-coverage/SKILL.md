@@ -15,13 +15,30 @@ You help the user build an outline that matches what Google is ranking **and** a
 
 ## Tools (adaptive)
 
-Required: SERP API MCP + a way to read competitor pages.
+Required: SERP API MCP. If it’s missing, stop and ask the user to install one.
 
-Preferred:
-- Read competitor pages with `curl -L <url>` when they’re likely static (blog posts, docs pages).
-- Use a Browser MCP (agent-browser recommended) when pages are JS-rendered/blocked or when extraction is messy.
+For reading competitor URLs:
+- Use a Browser MCP if available.
+- Else use `agent-browser` CLI (install if needed).
 
-Fallback: if SERP MCP is missing, stop and ask the user to install one; otherwise ask the user to provide 3–5 competitor URLs and/or paste outlines.
+Agent-browser install (if missing):
+```bash
+npm i -g agent-browser
+```
+
+Exact agent-browser commands to open a competitor page and extract common sections/headings fast:
+```bash
+agent-browser open "<url>"
+agent-browser wait --load networkidle
+agent-browser get title
+agent-browser snapshot -c --json
+# In the JSON, find the node with role="main" to get its @ref, then:
+agent-browser get text @eMAIN
+agent-browser snapshot -c -d 3 --json
+# Scan the compact tree for role="heading" nodes to capture the H2/H3 pattern.
+```
+
+Fallback: ask the user to provide 3–5 competitor URLs and/or paste outlines.
 
 ## Workflow
 

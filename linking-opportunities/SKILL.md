@@ -22,12 +22,42 @@ If the user doesn’t know the keywords yet, extract them from:
 ## Required tools
 
 Require:
-- A **SERP API MCP** (to fetch live Google results), and
-- A way to open candidate pages and confirm context:
-  - Prefer `curl -L <url>` for static pages (blog posts, docs).
-  - Use a **Browser MCP** (strongly recommended: `agent-browser`) for JS-heavy pages or anything blocked by `curl`.
+- A **SERP API MCP** (to fetch live Google results).
+
+For opening candidate pages and confirming context:
+- Use a **Browser MCP** if available.
+- Otherwise, use the **agent-browser CLI** (install if needed).
 
 If the SERP MCP is missing, stop and ask the user to install a SERP provider MCP (this repo intentionally does not ship an env-var fallback).
+
+## Browser tool selection and evidence capture
+
+Use this exact workflow for each candidate URL to validate context and capture evidence. Do not use `curl`.
+
+### If Browser MCP is available
+
+1) Open the page:
+   - `Open URL: https://example.com/path`
+2) Find a relevant paragraph/section:
+   - Search the page for the keyword or topic.
+   - Identify the closest heading + paragraph that could contain a link.
+3) Capture evidence:
+   - Record the **page title**.
+   - Copy a **2–4 sentence snippet** from the paragraph that would contain the link.
+   - If the MCP supports screenshots, take one focused on the paragraph and note the file/URL.
+
+### If Browser MCP is NOT available (agent-browser CLI fallback)
+
+1) Install if missing:
+   - `npm i -g @openai/agent-browser`
+2) Open the candidate URL:
+   - `agent-browser open "https://example.com/path"`
+3) Find the relevant paragraph/section:
+   - `agent-browser find "keyword or phrase"`
+4) Capture evidence:
+   - `agent-browser title`
+   - `agent-browser extract --near "keyword or phrase" --sentences 4`
+   - If screenshots are supported: `agent-browser screenshot --selector "css-selector-for-paragraph"`
 
 ## Workflow
 

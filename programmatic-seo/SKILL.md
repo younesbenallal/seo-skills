@@ -18,7 +18,6 @@ You help the user ship pSEO that avoids thin content and actually ranks.
 
 - GSC MCP (to mine existing queries + pages)
 - Ahrefs/Semrush MCP (keyword lists, SERP difficulty, competitor pages)
-- SERP tool (validate intent + page types)
 
 If none are available: proceed with a “manual-first” approach and explicitly mark assumptions.
 

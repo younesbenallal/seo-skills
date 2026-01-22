@@ -24,32 +24,50 @@ npx add-skill holly-and-stick/seo-skills
 
 Depending on the skill you want to use, your agent will need different MCP servers. If a required MCP is missing, the skill should stop and tell you what to install.
 
-Heavily recommended: use **agent-browser** (https://github.com/vercel-labs/agent-browser). It’s the most reliable “one tool” for reading pages, interacting with websites, and capturing screenshots across agents.
+
+### Browser access (how skills should decide)
+
+For any skill that needs to read a page or take screenshots:
+
+1. If a Browser/Chrome/Playwright MCP is already installed in your agent, AI will use it.
+2. Otherwise, it will use the `agent-browser` CLI. Test it first:
+
+```bash
+agent-browser --help
+```
+
+If it’s not installed:
+
+```bash
+npm install -g agent-browser
+```
+
+Core workflow (open → snapshot → interact/extract → screenshot):
+
+```bash
+agent-browser open https://example.com
+agent-browser snapshot -c -s "main" -d 5
+agent-browser snapshot -i
+agent-browser screenshot --full full.png
+```
 
 ### Skills → required tools
 
-- `seo-roast`: Browser MCP (agent-browser recommended).
-- `illustration-ideas`: Browser MCP (agent-browser recommended).
-- `subkeyword-injector`: Google Search Console MCP (for queries) + Browser MCP (to read the page if needed).
-- `linking-opportunities`: SERP API MCP + Browser MCP.
-- `search-intent-coverage`: SERP API MCP + Browser MCP.
-- `programmatic-seo`: Browser MCP (recommended) + SERP API MCP (recommended) + optional Ahrefs/Semrush MCP.
+- `seo-roast`: Browser.
+- `illustration-ideas`: Browser.
+- `subkeyword-injector`: Google Search Console MCP (for queries) + Browser (to read the page if needed).
+- `linking-opportunities`: SERP API MCP + Browser.
+- `search-intent-coverage`: SERP API MCP + Browser.
+- `programmatic-seo`: Browser (recommended) + SERP API MCP (recommended) + optional Ahrefs/Semrush MCP.
 - `seo-audit-report`: No MCP required (scaffold only). Data can come from a GSC MCP export or a manual CSV/JSON file.
 - `geo-state-report`: Bright Data API (required) via `geo-state-report/scripts/brightdata-geo.py` (requires `BRIGHTDATA_API_KEY`).
 
 ### MCP types to install (what they’re for)
 
-- **Browser MCP** (recommended: agent-browser): read content, navigate, copy text, capture screenshots.
-- **SERP API MCP**: fetch live Google SERPs. This repo intentionally does not ship an env-var SERP fallback.
+- **Browser MCP** or **agent-browser CLI** (recommended: agent-browser): read content, navigate, copy text, capture screenshots.
+- **SERP API MCP**: fetch live Google SERPs (don’t rely on Google via browser automation).
 - **Google Search Console MCP**: pull query/page metrics to drive content updates.
 - **Ahrefs/Semrush MCP (optional)**: keyword research + competitor data for `programmatic-seo`.
-
-Install the agent-browser skill (optional, but recommended):
-
-```bash
-npx add-skill vercel-labs/agent-browser --skill agent-browser
-```
-
 
 ### Option B — manual symlink
 

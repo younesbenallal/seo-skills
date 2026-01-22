@@ -17,13 +17,22 @@ You update an existing piece of content to better capture the long-tail queries 
 
 ## Page content access (for planning edits)
 
-Prefer fetching HTML with `curl -L <url>` when the page is likely static (most blog posts). Switch to a Browser MCP (agent-browser recommended) when the page is JS-rendered/blocked or when extraction is messy. If neither works, ask the user to paste the current article content.
+Use a Browser MCP if available. If not, use the `agent-browser` CLI (install if needed).
+
+Agent-browser commands to capture current headings/sections:
+```bash
+agent-browser open <url>
+agent-browser snapshot --json > /tmp/page.json
+jq -r '.. | objects | select(.role=="heading") | (.name // "")' /tmp/page.json
+```
+
+If extraction is blocked or incomplete, ask the user to paste the current article content.
 
 ## Required tool
 
 This skill requires **Google Search Console data**.
 
-Preferred: a **GSC MCP** (so you can query by page/URL and date range).
+Use a **GSC MCP** (required) so you can query by page/URL and date range.
 
 If no GSC MCP is available:
 - stop and ask the user to install one, OR

@@ -16,15 +16,26 @@ You produce a blunt, actionable SEO roast using a consistent rubric, then ask wh
 
 ## Tools (adaptive)
 
-**Preferred**
-- For simple, mostly-static pages (especially blog posts), fetch the HTML with `curl -L <url>` and extract the main copy/structure from it.
-- Use a Browser MCP (strongly recommended: `agent-browser`) when the page is JS-rendered, behind consent walls, or when screenshots are needed.
-- SERP API MCP (optional but recommended) to compare against what ranks.
+**Browser selection workflow**
+1) Detect whether a Browser/Chrome/Playwright MCP is available; if yes, use it for page access and screenshots.
+2) If no browser MCP, use `agent-browser` CLI as the primary fallback. First check if it is installed; if not, install it with `npm install -g agent-browser`.
+3) If browsing is unavailable: ask for the main copy (and key sections like title/H1/meta).
 
-**Fallbacks**
-- If `curl` output is blocked/empty or unusable: switch to Browser MCP.
-- If browsing is unavailable: ask for the main copy (and key sections like title/H1/meta).
-- If no screenshots: produce report without screenshots (but still generate HTML).
+**SERP**
+- Use the SERP API MCP (optional but recommended) to compare against what ranks. Do not use Google via a browser.
+
+**agent-browser commands (exact)**
+- Open URL: `agent-browser open <url>`
+- Snapshot (interactive): `agent-browser snapshot -i`
+- Snapshot (compact): `agent-browser snapshot -c`
+- Snapshot (scope): `agent-browser snapshot -s "main"`
+- Snapshot (depth): `agent-browser snapshot -d 4`
+- Get title: `agent-browser get title`
+- Get URL: `agent-browser get url`
+- Get text from element: `agent-browser get text @e1`
+- Get HTML from element: `agent-browser get html @e1`
+- Screenshot (viewport): `agent-browser screenshot path.png`
+- Screenshot (full page): `agent-browser screenshot --full full.png`
 
 ## Roast rubric (use this order)
 
@@ -68,8 +79,9 @@ Then ask:
 ## If user says “yes” (HTML report)
 
 ### Tool check
-- If screenshot capability exists: capture at least 1 above-the-fold + 1 mid-page screenshot per URL.
-- If not: generate the report with “screenshot unavailable” placeholders.
+- If a browser MCP is available: use it for screenshots.
+- Otherwise use `agent-browser` and capture at least 1 above-the-fold + 1 mid-page screenshot per URL.
+- If screenshots are impossible: generate the report with “screenshot unavailable” placeholders.
 
 ### Report requirements
 - Single `report.html` output
