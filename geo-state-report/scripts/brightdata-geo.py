@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Bright Data GEO / LLM visibility collector + HTML report generator.
+Bright Data GEO / LLM visibility collector.
 
 This script mirrors the Bright Data "datasets/v3" workflow:
 1) Trigger dataset run (returns snapshot_id)
 2) Poll progress until ready/failed
 3) Download snapshot results
+4) Save results to results.json
 
-It then generates a single HTML report with per-prompt metrics + actions.
+Note: HTML report generation is handled by AI after analyzing results.json.
 
 Requirements:
 - Python 3.10+
@@ -20,6 +21,7 @@ Example:
     --prompts-file prompts.txt \
     --chatgpt-dataset-id "gd_..." \
     --perplexity-dataset-id "gd_..." \
+    --gemini-dataset-id "gd_..." \
     --target-domains "example.com" \
     --brand-terms "Example,Example Product" \
     --out-dir ./geo-run
@@ -78,12 +80,24 @@ PERPLEXITY_OUTPUT_FIELDS = [
     "web_search_query",
 ]
 
+GEMINI_OUTPUT_FIELDS = [
+    "url",
+    "prompt",
+    "answer_text_markdown",
+    "sources",
+    "citations",
+    "index",
+    "web_search_query",
+]
+
 
 def get_custom_output_fields(chatbot: str) -> str:
     if chatbot == "chatgpt":
         return "|".join(CHATGPT_OUTPUT_FIELDS)
     if chatbot == "perplexity":
         return "|".join(PERPLEXITY_OUTPUT_FIELDS)
+    if chatbot == "gemini":
+        return "|".join(GEMINI_OUTPUT_FIELDS)
     return ""
 
 
@@ -344,6 +358,13 @@ def analyze_record(
     )
 
 
+def clean_record(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove unwanted properties from BrightData response."""
+    unwanted_fields = ["source_html", "response_raw", "answer_html", "answer_text"]
+    cleaned = {k: v for k, v in record.items() if k not in unwanted_fields}
+    return cleaned
+
+
 def build_inputs(prompts: List[str], check_url: str, country: str, chatbot: str) -> List[Dict[str, Any]]:
     rows = []
     for idx, p in enumerate(prompts):
@@ -361,168 +382,6 @@ def write_json(path: str, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def render_html_report(
-    *,
-    out_path: str,
-    check_url: str,
-    run_at: str,
-    target_domains: List[str],
-    brand_terms: List[str],
-    results: List[PromptResult],
-) -> None:
-    by_prompt: Dict[str, List[PromptResult]] = {}
-    for r in results:
-        by_prompt.setdefault(r.prompt, []).append(r)
-
-    total = len(results)
-    cited = sum(1 for r in results if r.cited)
-    mentioned = sum(1 for r in results if r.mentions > 0)
-    avg_first_rank = (
-        sum(r.first_citation_rank for r in results if r.first_citation_rank is not None) / max(1, sum(1 for r in results if r.first_citation_rank is not None))
-    )
-
-    def esc(value: str) -> str:
-        return (
-            value.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#039;")
-        )
-
-    rows_html = []
-    for prompt, entries in by_prompt.items():
-        for entry in sorted(entries, key=lambda x: x.chatbot):
-            rows_html.append(
-                f"""
-          <tr>
-            <td class="mono">{esc(entry.chatbot)}</td>
-            <td class="prompt">{esc(prompt)}</td>
-            <td>{'Yes' if entry.mentions > 0 else 'No'}</td>
-            <td>{'Yes' if entry.cited else 'No'}</td>
-            <td>{esc(str(entry.first_citation_rank)) if entry.first_citation_rank is not None else '—'}</td>
-            <td>{esc(str(entry.fan_out_count))}</td>
-            <td>{esc(str(entry.sources_count))}</td>
-            <td>{esc(str(entry.ugc_sources_count))}</td>
-            <td>{esc(str(entry.youtube_sources_count))}</td>
-          </tr>
-        """
-            )
-
-    actions = []
-    if cited == 0 and mentioned == 0:
-        actions.append("You are not being cited or mentioned. Prioritize: create the missing intent pages + earn citations (digital PR, partnerships, high-trust pages).")
-    if cited > 0 and mentioned == 0:
-        actions.append("You get cited but not mentioned. Add strong brand terms in pages that are likely to be cited (definitions, stats, unique frameworks).")
-    if mentioned > 0 and cited == 0:
-        actions.append("You get mentioned but not cited. Improve linkability: publish definitive pages, original data, and clear sources that LLMs can cite.")
-
-    actions.append("Track fan-out queries over time and create pages for the most frequent ones.")
-    actions.append("When UGC sources dominate (Reddit/Quora/YouTube), decide whether to compete with content, partner, or use parasite/UGC strategy.")
-
-    css = """
-    :root{
-      --bg:#0b0d12;--panel:#111625;--text:#e7e9ee;--muted:#a9b0c3;--border:rgba(255,255,255,.08);
-      --accent:#7c5cff;--accent2:#2dd4bf;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:14px;--max:1200px;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(1200px 800px at 20% 0%, rgba(124,92,255,.15), transparent 60%),
-      radial-gradient(900px 700px at 90% 30%, rgba(45,212,191,.12), transparent 60%), var(--bg);
-      color:var(--text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
-    header{position:sticky;top:0;z-index:10;background:rgba(11,13,18,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-    .container{max-width:var(--max);margin:0 auto;padding:20px}
-    .title{display:flex;align-items:baseline;gap:10px;margin:0}
-    .badge{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;color:var(--muted);background:rgba(255,255,255,.03);font-size:12px}
-    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:18px}
-    .card{grid-column:span 12;background:rgba(17,22,37,.85);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-    .card h2{margin:0 0 10px;font-size:16px}
-    .muted{color:var(--muted)}
-    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .kpi{padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02)}
-    .kpi .label{color:var(--muted);font-size:12px}
-    .kpi .value{font-size:18px;font-weight:700;margin-top:4px}
-    table{width:100%;border-collapse:collapse}
-    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--border);vertical-align:top}
-    th{color:var(--muted);font-weight:600;font-size:12px}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .prompt{max-width:560px;word-break:break-word}
-    footer{border-top:1px solid var(--border);color:var(--muted);padding:18px 0 40px;margin-top:24px}
-    @media (max-width: 900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    """
-
-    html = f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GEO State Report</title>
-  <style>{css}</style>
-</head>
-<body>
-  <header>
-    <div class="container">
-      <h1 class="title">GEO State Report <span class="badge">{esc(run_at)}</span></h1>
-      <div class="muted">Check URL: <a href="{esc(check_url)}">{esc(check_url)}</a></div>
-      <div class="muted">Target domains: {esc(", ".join(target_domains) or "—")} • Brand terms: {esc(", ".join(brand_terms) or "—")}</div>
-    </div>
-  </header>
-
-  <main class="container">
-    <div class="grid">
-      <section class="card">
-        <h2>Summary</h2>
-        <div class="kpis">
-          <div class="kpi"><div class="label">Prompt runs</div><div class="value">{total}</div></div>
-          <div class="kpi"><div class="label">Cited runs</div><div class="value">{cited}</div></div>
-          <div class="kpi"><div class="label">Mentioned runs</div><div class="value">{mentioned}</div></div>
-          <div class="kpi"><div class="label">Avg first citation rank</div><div class="value">{avg_first_rank:.2f}</div></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Actions</h2>
-        <ul>
-          {''.join(f"<li>{esc(a)}</li>" for a in actions)}
-        </ul>
-      </section>
-
-      <section class="card">
-        <h2>Per prompt</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Chatbot</th>
-              <th>Prompt</th>
-              <th>Mentioned</th>
-              <th>Cited</th>
-              <th>First citation rank</th>
-              <th>Fan-out</th>
-              <th>Sources</th>
-              <th>UGC</th>
-              <th>YouTube</th>
-            </tr>
-          </thead>
-          <tbody>
-            {''.join(rows_html)}
-          </tbody>
-        </table>
-      </section>
-    </div>
-
-    <footer class="container">
-      <div>Generated with a Codex skill • <a href="https://holly-and-stick.com">holly-and-stick.com</a></div>
-    </footer>
-  </main>
-</body>
-</html>
-"""
-
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-key", default=os.environ.get("BRIGHTDATA_API_KEY", ""), help="Bright Data API key (or BRIGHTDATA_API_KEY)")
@@ -532,7 +391,7 @@ def main() -> None:
 
     parser.add_argument("--chatgpt-dataset-id", default="", help="Bright Data dataset id for ChatGPT")
     parser.add_argument("--perplexity-dataset-id", default="", help="Bright Data dataset id for Perplexity")
-    parser.add_argument("--gemini-dataset-id", default="", help="Optional Bright Data dataset id for Gemini (if you have one)")
+    parser.add_argument("--gemini-dataset-id", default="", help="Bright Data dataset id for Gemini")
 
     parser.add_argument("--country", default="US")
     parser.add_argument("--poll-delay-sec", type=int, default=5)
@@ -544,7 +403,6 @@ def main() -> None:
 
     parser.add_argument("--out-dir", default="geo-state-run")
     parser.add_argument("--skip-download", action="store_true", help="Only trigger+poll (no snapshot download)")
-    parser.add_argument("--skip-report", action="store_true", help="Do not generate report.html")
 
     args = parser.parse_args()
 
@@ -561,7 +419,9 @@ def main() -> None:
     competitor_domains = [normalize_domain(x) for x in str(args.competitor_domains).split(",") if normalize_domain(x)]
 
     run_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    out_dir = str(args.out_dir).strip()
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    base_out_dir = str(args.out_dir).strip()
+    out_dir = os.path.join(base_out_dir, date_str)
     os.makedirs(out_dir, exist_ok=True)
 
     jobs: List[Tuple[str, str]] = []
@@ -577,8 +437,8 @@ def main() -> None:
 
     snapshots: List[Dict[str, str]] = []
     for chatbot, dataset_id in jobs:
-        inputs = build_inputs(prompts, args.check_url, args.country, chatbot="chatgpt" if chatbot == "chatgpt" else "perplexity")
-        custom_fields = get_custom_output_fields("chatgpt" if chatbot == "chatgpt" else "perplexity")
+        inputs = build_inputs(prompts, args.check_url, args.country, chatbot=chatbot)
+        custom_fields = get_custom_output_fields(chatbot)
         snapshot_id = trigger_dataset(
             base_url=args.base_url,
             api_key=api_key,
@@ -608,7 +468,16 @@ def main() -> None:
         if status != "ready":
             continue
         raw = download_snapshot(base_url=args.base_url, api_key=api_key, snapshot_id=snapshot_id, fmt="json")
-        write_json(os.path.join(out_dir, "raw", f"{chatbot}-{snapshot_id}.json"), raw)
+        
+        # Clean unwanted fields from raw data before saving
+        if isinstance(raw, list):
+            cleaned_raw = [clean_record(record) if isinstance(record, dict) else record for record in raw]
+        elif isinstance(raw, dict):
+            cleaned_raw = clean_record(raw)
+        else:
+            cleaned_raw = raw
+        
+        write_json(os.path.join(out_dir, "raw", f"{chatbot}-{snapshot_id}.json"), cleaned_raw)
 
         if not isinstance(raw, list):
             continue
@@ -637,19 +506,9 @@ def main() -> None:
         },
     )
 
-    if args.skip_report:
-        print(f"Wrote results to {os.path.join(out_dir, 'results.json')}")
-        return
-
-    render_html_report(
-        out_path=os.path.join(out_dir, "report.html"),
-        check_url=args.check_url,
-        run_at=run_at,
-        target_domains=target_domains,
-        brand_terms=brand_terms,
-        results=all_results,
-    )
-    print(f"Wrote {os.path.join(out_dir, 'report.html')}")
+    results_path = os.path.join(out_dir, "results.json")
+    print(f"Wrote results to {results_path}")
+    print("Note: AI will generate customized HTML report after analyzing results.json")
 
 
 if __name__ == "__main__":
