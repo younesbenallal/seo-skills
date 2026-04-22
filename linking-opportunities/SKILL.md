@@ -7,6 +7,15 @@ description: Find contextual backlink opportunities on a specific prospect site 
 
 You help the user find **contextual internal-link opportunities on another website** (a prospect) that could link to the user’s page(s).
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved site, target pages, competitors, and market context
+- ask only for prospect-specific gaps that are still missing
+
 ## Inputs to collect (ask fast, 1–2 lines each)
 
 1. **Prospect site**: domain (example: `example.com`)

@@ -53,6 +53,7 @@ agent-browser screenshot --full full.png
 
 ### Skills → required tools
 
+- `seo-context`: No MCP required. Pulls shared business and SEO context from the repo and writes `.agents/seo-context.md`.
 - `seo-roast`: Browser.
 - `illustration-ideas`: Browser.
 - `subkeyword-injector`: Google Search Console MCP (for queries) + Browser (to read the page if needed).
@@ -73,7 +74,7 @@ agent-browser screenshot --full full.png
 
 ```bash
 mkdir -p ~/.agents/skills
-for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-audit-report; do
+for d in seo-context linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-audit-report; do
   ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
@@ -84,6 +85,7 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 
 ## Skills
 
+- `seo-context`: create a reusable `.agents/seo-context.md` file so SEO skills stop re-asking for the same basics.
 - `linking-opportunities`: find link opportunities on a target site using SERPs.
 - `seo-roast`: SEO-focused roast of a landing page/article; optionally generates a screenshot-heavy HTML report.
 - `subkeyword-injector`: pull page-level queries from GSC and propose/perform content updates to capture more long-tail.
@@ -97,6 +99,18 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 
 - Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
 - GEO collection + report: `geo-audit-report/scripts/brightdata-geo.py`
+
+## Suggested usage flow
+
+For most projects, start with `seo-context` once, then use the task-specific skills.
+
+Example flow:
+
+1. `seo-context` to capture the site, goals, market, competitors, and tooling
+2. `search-intent-coverage` for content briefs
+3. `subkeyword-injector` for refreshes
+4. `linking-opportunities` for authority work
+5. `seo-roast` or `geo-audit-report` for audits and diagnostics
 
 ## Skill creation process (reference)
 

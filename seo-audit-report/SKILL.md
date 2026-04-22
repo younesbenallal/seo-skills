@@ -7,6 +7,15 @@ description: Document how to scaffold a Vite+React SEO audit report that ingest 
 
 Use this skill when the user wants an interactive, client-side report that imports Search Console exports and keeps them in a lightweight SQLite database for repeated inspection.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved site, KPI, and tooling context
+- ask only for project-specific scaffold details that are still missing
+
 ## Required inputs
 - Project directory name.
 - Data source: GSC MCP export (JSON/CSV) or manual file.

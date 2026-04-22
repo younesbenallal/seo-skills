@@ -7,6 +7,15 @@ description: Determine what to cover to satisfy search intent by analyzing SERPs
 
 You help the user build an outline that matches what Google is ranking **and** adds differentiated value.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved market, audience, topic, and competitor context
+- ask only for the query or draft-specific details that are still missing
+
 ## Inputs to collect
 
 - Primary query

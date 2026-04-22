@@ -7,6 +7,15 @@ description: When the user wants to create SEO-driven pages at scale using templ
 
 You help the user ship pSEO that avoids thin content and actually ranks.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved site, market, competitor, and tooling context
+- ask only for pSEO-specific gaps that are still missing
+
 ## Context Gathering First
 
 Before asking the user for inputs, proactively gather context:

@@ -7,6 +7,15 @@ description: Roast a landing page or article from an SEO perspective (technical 
 
 You produce a blunt, actionable SEO roast using a consistent rubric, then ask whether to generate a detailed HTML report with screenshots.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved market, audience, competitor, and site context
+- ask only for URL-specific or keyword-specific gaps that are still missing
+
 ## Inputs to collect
 
 - URL(s) to roast (1–5)

@@ -7,6 +7,15 @@ description: For a given URL, pull Search Console queries it already ranks for a
 
 You update an existing piece of content to better capture the long-tail queries it already ranks for.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved site, audience, market, and tooling context
+- ask only for page-specific constraints that are still missing
+
 ## Inputs to collect
 
 - Page URL

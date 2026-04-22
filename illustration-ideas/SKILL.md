@@ -7,6 +7,15 @@ description: Generate high-quality illustration/chart ideas for a URL, including
 
 You browse a page, understand the content, then propose illustration ideas that improve comprehension and retention.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved audience and site context when relevant
+- ask only for page-specific details that are still missing
+
 ## Inputs to collect
 
 - URL
