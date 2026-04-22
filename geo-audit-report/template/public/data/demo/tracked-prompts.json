@@ -1,0 +1,40 @@
+{
+  "tracked_prompts": [
+    {
+      "prompt": "rank email automation tools for personal knowledge bases",
+      "first_tracked_at": "2026-03-20",
+      "last_tracked_at": "2026-04-20",
+      "status": "active",
+      "notes": "Commercial comparison prompt with strong buying intent.",
+      "history": [
+        { "date": "2026-03-20", "visibility": 18 },
+        { "date": "2026-04-01", "visibility": 27 },
+        { "date": "2026-04-20", "visibility": 67 }
+      ]
+    },
+    {
+      "prompt": "how can i get daily emails with random notes from obsidian",
+      "first_tracked_at": "2026-03-20",
+      "last_tracked_at": "2026-04-20",
+      "status": "active",
+      "notes": "Problem-aware prompt with strong product fit.",
+      "history": [
+        { "date": "2026-03-20", "visibility": 12 },
+        { "date": "2026-04-01", "visibility": 31 },
+        { "date": "2026-04-20", "visibility": 56 }
+      ]
+    },
+    {
+      "prompt": "best tools to resurface old notes by email",
+      "first_tracked_at": "2026-03-20",
+      "last_tracked_at": "2026-04-20",
+      "status": "watching",
+      "notes": "Still early. Worth keeping in the set because fan-out suggestions point here often.",
+      "history": [
+        { "date": "2026-03-20", "visibility": 0 },
+        { "date": "2026-04-01", "visibility": 14 },
+        { "date": "2026-04-20", "visibility": 23 }
+      ]
+    }
+  ]
+}

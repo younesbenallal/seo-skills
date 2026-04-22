@@ -60,7 +60,7 @@ agent-browser screenshot --full full.png
 - `search-intent-coverage`: SERP API MCP + Browser.
 - `programmatic-seo`: Browser (recommended) + SERP API MCP (recommended) + optional Ahrefs/Semrush MCP.
 - `seo-audit-report`: No MCP required (scaffold only). Data can come from a GSC MCP export or a manual CSV/JSON file.
-- `geo-state-report`: Bright Data API (required) via `geo-state-report/scripts/brightdata-geo.py` (requires `BRIGHTDATA_API_KEY`).
+- `geo-audit-report`: Bright Data API (required) via `geo-audit-report/scripts/brightdata-geo.py` (requires `BRIGHTDATA_API_KEY`).
 
 ### MCP types to install (what they’re for)
 
@@ -73,7 +73,7 @@ agent-browser screenshot --full full.png
 
 ```bash
 mkdir -p ~/.agents/skills
-for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-state-report; do
+for d in linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-audit-report; do
   ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
@@ -91,12 +91,12 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
 - `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
 - `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
-- `geo-state-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data; outputs an HTML report with actions.
+- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data; outputs a dashboard-ready audit JSON and React template.
 
 ## Included helper scripts
 
 - Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
-- GEO collection + report: `geo-state-report/scripts/brightdata-geo.py`
+- GEO collection + report: `geo-audit-report/scripts/brightdata-geo.py`
 
 ## Skill creation process (reference)
 

@@ -16,7 +16,7 @@ Requirements:
 
 Example:
   export BRIGHTDATA_API_KEY="..."
-  python geo-state-report/scripts/brightdata-geo.py \
+  python geo-audit-report/scripts/brightdata-geo.py \
     --check-url "https://example.com" \
     --prompts-file prompts.txt \
     --chatgpt-dataset-id "gd_..." \
@@ -37,8 +37,8 @@ import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 
 DEFAULT_BASE_URL = "https://api.brightdata.com"
@@ -165,12 +165,14 @@ def poll_progress(
     poll_delay_sec: int,
     poll_attempts: int,
 ) -> str:
-    for _ in range(poll_attempts):
+    for attempt in range(poll_attempts):
         url = build_url(base_url, f"/datasets/v3/progress/{snapshot_id}")
         resp = http_json(url, "GET", api_key, timeout_sec=60)
         status = (resp or {}).get("status") or ""
         if status in ("ready", "failed"):
             return str(status)
+        if attempt % 6 == 0:  # Print every 30 seconds (6 * 5 sec)
+            print(f"  Polling... attempt {attempt + 1}/{poll_attempts}, status: {status or 'processing'}")
         time.sleep(poll_delay_sec)
     return "timeout"
 
@@ -300,16 +302,22 @@ def compute_used_web_search(record: Dict[str, Any]) -> bool:
 @dataclass
 class PromptResult:
     chatbot: str
+    model: Optional[str]
     prompt: str
+    captured_at: str
+    answer_text_markdown: str
     mentions: int
     cited: bool
     first_citation_rank: Optional[int]
+    citations_count: int
+    fan_out_queries: List[str]
     fan_out_count: int
     used_web_search: bool
     sources_count: int
     ugc_sources_count: int
     youtube_sources_count: int
     competitor_domains: List[str]
+    brands_mentioned: List[str]
     sources: List[Dict[str, Any]]
 
 
@@ -317,6 +325,7 @@ def analyze_record(
     chatbot: str,
     record: Dict[str, Any],
     *,
+    run_at: str,
     target_domains: List[str],
     brand_terms: List[str],
     competitor_domains: List[str],
@@ -330,6 +339,8 @@ def analyze_record(
     used_web_search = compute_used_web_search(record)
     fan_out = record.get("web_search_query") or []
     fan_out_count = len(fan_out) if isinstance(fan_out, list) else 0
+    citations = record.get("citations") or []
+    brands_mentioned = record.get("recommendations") or []
 
     ugc = sum(1 for s in sources if s.get("type") == "ugc")
     yt = sum(1 for s in sources if s.get("type") == "youtube")
@@ -344,16 +355,26 @@ def analyze_record(
 
     return PromptResult(
         chatbot=chatbot,
+        model=str(record.get("model") or "").strip() or None,
         prompt=prompt,
+        captured_at=run_at,
+        answer_text_markdown=markdown,
         mentions=mentions,
         cited=cited,
         first_citation_rank=first_rank,
+        citations_count=len(citations) if isinstance(citations, list) else 0,
+        fan_out_queries=[str(item).strip() for item in fan_out if str(item).strip()]
+        if isinstance(fan_out, list)
+        else [],
         fan_out_count=fan_out_count,
         used_web_search=used_web_search,
         sources_count=len(sources),
         ugc_sources_count=ugc,
         youtube_sources_count=yt,
         competitor_domains=competitors_found,
+        brands_mentioned=[str(item).strip() for item in brands_mentioned if str(item).strip()]
+        if isinstance(brands_mentioned, list)
+        else [],
         sources=sources,
     )
 
@@ -395,13 +416,13 @@ def main() -> None:
 
     parser.add_argument("--country", default="US")
     parser.add_argument("--poll-delay-sec", type=int, default=5)
-    parser.add_argument("--poll-attempts", type=int, default=90)
+    parser.add_argument("--poll-attempts", type=int, default=180)  # Increased to 15 minutes (180 * 5 sec)
 
     parser.add_argument("--target-domains", default="", help="Comma-separated target domains (your site)")
     parser.add_argument("--brand-terms", default="", help="Comma-separated brand terms")
     parser.add_argument("--competitor-domains", default="", help="Comma-separated competitor domains (optional)")
 
-    parser.add_argument("--out-dir", default="geo-state-run")
+    parser.add_argument("--out-dir", default="geo-audit-run")
     parser.add_argument("--skip-download", action="store_true", help="Only trigger+poll (no snapshot download)")
 
     args = parser.parse_args()
@@ -418,8 +439,8 @@ def main() -> None:
     brand_terms = [x.strip() for x in str(args.brand_terms).split(",") if x.strip()]
     competitor_domains = [normalize_domain(x) for x in str(args.competitor_domains).split(",") if normalize_domain(x)]
 
-    run_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    run_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     base_out_dir = str(args.out_dir).strip()
     out_dir = os.path.join(base_out_dir, date_str)
     os.makedirs(out_dir, exist_ok=True)
@@ -437,6 +458,7 @@ def main() -> None:
 
     snapshots: List[Dict[str, str]] = []
     for chatbot, dataset_id in jobs:
+        print(f"Triggering {chatbot} dataset...")
         inputs = build_inputs(prompts, args.check_url, args.country, chatbot=chatbot)
         custom_fields = get_custom_output_fields(chatbot)
         snapshot_id = trigger_dataset(
@@ -446,6 +468,7 @@ def main() -> None:
             input_rows=inputs,
             custom_output_fields=custom_fields,
         )
+        print(f"Snapshot ID: {snapshot_id}. Polling for completion (this may take 1-5 minutes)...")
         status = poll_progress(
             base_url=args.base_url,
             api_key=api_key,
@@ -453,6 +476,7 @@ def main() -> None:
             poll_delay_sec=args.poll_delay_sec,
             poll_attempts=args.poll_attempts,
         )
+        print(f"{chatbot} status: {status}")
         snapshots.append({"chatbot": chatbot, "dataset_id": dataset_id, "snapshot_id": snapshot_id, "status": status})
         write_json(os.path.join(out_dir, "snapshots", f"{chatbot}.json"), snapshots[-1])
 
@@ -487,6 +511,7 @@ def main() -> None:
             analyzed = analyze_record(
                 chatbot=chatbot,
                 record=record,
+                run_at=run_at,
                 target_domains=target_domains,
                 brand_terms=brand_terms,
                 competitor_domains=competitor_domains,
@@ -497,12 +522,15 @@ def main() -> None:
     write_json(
         os.path.join(out_dir, "results.json"),
         {
+            "schema_version": "geo-audit-v1",
             "run_at": run_at,
             "check_url": args.check_url,
             "target_domains": target_domains,
             "brand_terms": brand_terms,
             "snapshots": snapshots,
+            "manual_recommendations": [],
             "results": [r.__dict__ for r in all_results],
+            "responses": [r.__dict__ for r in all_results],
         },
     )
 

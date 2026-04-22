@@ -2,6 +2,8 @@ node_modules
 .DS_Store
 .env
 .env.*
+!.env.example
+!.env.testdata
 dist
 build
 coverage
@@ -11,4 +13,5 @@ coverage
 *.db
 *.db-wal
 *.db-shm
-
+__pycache__/
+geo-test-run/

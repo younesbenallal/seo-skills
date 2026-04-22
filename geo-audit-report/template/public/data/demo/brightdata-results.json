@@ -1,0 +1,341 @@
+{
+  "schema_version": "geo-audit-v1",
+  "run_at": "2026-04-20T22:23:00Z",
+  "check_url": "https://notionist.app",
+  "target_domains": ["notionist.app"],
+  "brand_terms": ["Notionist"],
+  "snapshots": [
+    { "chatbot": "chatgpt", "status": "ready" },
+    { "chatbot": "perplexity", "status": "ready" },
+    { "chatbot": "gemini", "status": "ready" }
+  ],
+  "manual_recommendations": [
+    {
+      "title": "Build a comparison landing page around PKM email workflows",
+      "summary": "The strongest prompts are commercial comparison prompts, but Notionist still shows up as mentioned more often than cited. Publish a dedicated comparison page that targets 'email automation for personal knowledge bases' and link it from the homepage.",
+      "priority": "High priority",
+      "owner": "AI follow-up"
+    },
+    {
+      "title": "Seed more sourceable pages around digest workflows",
+      "summary": "Most citations come from third-party workflow roundups. Add short, source-worthy pages about daily digests, random note emails, and spaced repetition reminders so chatbots have cleaner pages to cite directly.",
+      "priority": "High priority",
+      "owner": "Content"
+    },
+    {
+      "title": "Target Reddit and Zapier-adjacent discussions",
+      "summary": "Reddit and Zapier dominate the cited source set. It is worth publishing examples and integrations that can be referenced in those ecosystems, then monitoring whether those pages start replacing forum-heavy citations.",
+      "priority": "Medium priority",
+      "owner": "Distribution"
+    }
+  ],
+  "responses": [
+    {
+      "chatbot": "chatgpt",
+      "model": "GPT",
+      "prompt": "rank email automation tools for personal knowledge bases",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "Here’s a ranked overview of email automation tools for personal knowledge base workflows, focusing on how well they help capture, organize, and retrieve knowledge from your inbox.\n\n1. Zapier\n2. Activepieces\n3. TLDRBox\n4. Notionist\n5. Mailbird\n\nNotionist is promising for lightweight daily note digests, but it is still less widely referenced than the automation incumbents.",
+      "mentions": 2,
+      "cited": true,
+      "first_citation_rank": 4,
+      "citations_count": 6,
+      "fan_out_queries": [
+        "best PKM email digest apps",
+        "daily email notes automation",
+        "notion random note email workflow"
+      ],
+      "fan_out_count": 3,
+      "used_web_search": true,
+      "sources_count": 6,
+      "ugc_sources_count": 1,
+      "youtube_sources_count": 0,
+      "competitor_domains": ["zapier.com", "activepieces.com", "mailbird.com"],
+      "brands_mentioned": [
+        "Zapier",
+        "Activepieces",
+        "TLDRBox",
+        "Notionist",
+        "Mailbird"
+      ],
+      "sources": [
+        {
+          "title": "Zapier Email Parser and automation workflows",
+          "url": "https://zapier.com/apps/email-parser/integrations",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "Activepieces workflow examples",
+          "url": "https://www.activepieces.com/pieces/gmail",
+          "domain": "activepieces.com",
+          "type": "web"
+        },
+        {
+          "title": "Notionist daily random notes",
+          "url": "https://notionist.app/features/daily-random-notes",
+          "domain": "notionist.app",
+          "type": "web"
+        },
+        {
+          "title": "Mailbird knowledge management email guide",
+          "url": "https://www.getmailbird.com/email-knowledge-management/",
+          "domain": "getmailbird.com",
+          "type": "web"
+        },
+        {
+          "title": "Personal knowledge management email tools on Reddit",
+          "url": "https://www.reddit.com/r/productivity/comments/example1",
+          "domain": "reddit.com",
+          "type": "ugc"
+        },
+        {
+          "title": "TLDRBox overview",
+          "url": "https://tldrbox.com/blog/pkm-email-automation",
+          "domain": "tldrbox.com",
+          "type": "web"
+        }
+      ]
+    },
+    {
+      "chatbot": "perplexity",
+      "model": "Perplexity",
+      "prompt": "rank email automation tools for personal knowledge bases",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "For personal knowledge base email automation, Zapier and Activepieces remain the most flexible. Notionist appears as a more opinionated tool focused on recurring note resurfacing and simple digest workflows.\n\nIf your goal is a daily random note email rather than full workflow automation, Notionist is one of the more focused options.",
+      "mentions": 2,
+      "cited": true,
+      "first_citation_rank": 3,
+      "citations_count": 5,
+      "fan_out_queries": [
+        "daily random notes email app",
+        "email automation for second brain"
+      ],
+      "fan_out_count": 2,
+      "used_web_search": true,
+      "sources_count": 5,
+      "ugc_sources_count": 1,
+      "youtube_sources_count": 0,
+      "competitor_domains": ["zapier.com", "activepieces.com"],
+      "brands_mentioned": ["Zapier", "Activepieces", "Notionist"],
+      "sources": [
+        {
+          "title": "Notionist homepage",
+          "url": "https://notionist.app/",
+          "domain": "notionist.app",
+          "type": "web"
+        },
+        {
+          "title": "Zapier automation directory",
+          "url": "https://zapier.com/apps/notion/integrations/gmail",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "Activepieces Gmail actions",
+          "url": "https://www.activepieces.com/pieces/gmail",
+          "domain": "activepieces.com",
+          "type": "web"
+        },
+        {
+          "title": "Reddit thread about spaced repetition email tools",
+          "url": "https://www.reddit.com/r/PKMS/comments/example2",
+          "domain": "reddit.com",
+          "type": "ugc"
+        },
+        {
+          "title": "Medium post on PKM email loops",
+          "url": "https://medium.com/@pkmops/email-automation-for-pkm-123",
+          "domain": "medium.com",
+          "type": "web"
+        }
+      ]
+    },
+    {
+      "chatbot": "gemini",
+      "model": "Gemini",
+      "prompt": "rank email automation tools for personal knowledge bases",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "Zapier and Make are still the broadest automation choices. For a narrower use case like resurfacing notes by email, Notionist is relevant but less established, so it appears as a niche recommendation rather than a default pick.",
+      "mentions": 1,
+      "cited": false,
+      "first_citation_rank": null,
+      "citations_count": 3,
+      "fan_out_queries": ["best note resurfacing tools"],
+      "fan_out_count": 1,
+      "used_web_search": true,
+      "sources_count": 3,
+      "ugc_sources_count": 0,
+      "youtube_sources_count": 1,
+      "competitor_domains": ["zapier.com", "make.com"],
+      "brands_mentioned": ["Zapier", "Make", "Notionist"],
+      "sources": [
+        {
+          "title": "Zapier homepage",
+          "url": "https://zapier.com/",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "Make automations for email",
+          "url": "https://www.make.com/en/templates/category/email",
+          "domain": "make.com",
+          "type": "web"
+        },
+        {
+          "title": "YouTube walkthrough of email digests",
+          "url": "https://www.youtube.com/watch?v=demo123",
+          "domain": "youtube.com",
+          "type": "youtube"
+        }
+      ]
+    },
+    {
+      "chatbot": "chatgpt",
+      "model": "GPT",
+      "prompt": "how can i get daily emails with random notes from obsidian",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "If you want daily emails with random notes from Obsidian, the simplest options are Notionist-style resurfacing tools, a custom Zapier workflow, or a plugin stack inside Obsidian plus an email relay.\n\nThe fastest setup is usually a dedicated app rather than building the full automation yourself.",
+      "mentions": 1,
+      "cited": true,
+      "first_citation_rank": 2,
+      "citations_count": 4,
+      "fan_out_queries": [
+        "obsidian random note email",
+        "obsidian spaced repetition email reminders"
+      ],
+      "fan_out_count": 2,
+      "used_web_search": true,
+      "sources_count": 4,
+      "ugc_sources_count": 1,
+      "youtube_sources_count": 0,
+      "competitor_domains": ["obsidian.md", "zapier.com"],
+      "brands_mentioned": ["Notionist", "Zapier", "Obsidian"],
+      "sources": [
+        {
+          "title": "Notionist random notes feature",
+          "url": "https://notionist.app/features/daily-random-notes",
+          "domain": "notionist.app",
+          "type": "web"
+        },
+        {
+          "title": "Obsidian community plugin guide",
+          "url": "https://help.obsidian.md/plugins",
+          "domain": "obsidian.md",
+          "type": "web"
+        },
+        {
+          "title": "Zapier Gmail scheduler",
+          "url": "https://zapier.com/blog/gmail-scheduler/",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "Obsidian random notes on Reddit",
+          "url": "https://www.reddit.com/r/ObsidianMD/comments/example3",
+          "domain": "reddit.com",
+          "type": "ugc"
+        }
+      ]
+    },
+    {
+      "chatbot": "perplexity",
+      "model": "Perplexity",
+      "prompt": "how can i get daily emails with random notes from obsidian",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "A custom workflow can do this, but purpose-built resurfacing apps are easier to maintain. Notionist is one of the few products that treats random note resurfacing as the main workflow instead of a side effect of generic automation tooling.",
+      "mentions": 2,
+      "cited": true,
+      "first_citation_rank": 1,
+      "citations_count": 5,
+      "fan_out_queries": [
+        "best random note email app",
+        "obsidian note resurfacing tools"
+      ],
+      "fan_out_count": 2,
+      "used_web_search": true,
+      "sources_count": 5,
+      "ugc_sources_count": 1,
+      "youtube_sources_count": 0,
+      "competitor_domains": ["obsidian.md", "zapier.com"],
+      "brands_mentioned": ["Notionist", "Obsidian", "Zapier"],
+      "sources": [
+        {
+          "title": "Notionist random note emails",
+          "url": "https://notionist.app/features/daily-random-notes",
+          "domain": "notionist.app",
+          "type": "web"
+        },
+        {
+          "title": "Obsidian plugin docs",
+          "url": "https://help.obsidian.md/plugins",
+          "domain": "obsidian.md",
+          "type": "web"
+        },
+        {
+          "title": "Obsidian.md forum",
+          "url": "https://forum.obsidian.md/t/random-note-email-workflow/12345",
+          "domain": "forum.obsidian.md",
+          "type": "ugc"
+        },
+        {
+          "title": "Zapier email digest workflow",
+          "url": "https://zapier.com/apps/gmail/integrations/digest",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "GitHub sample automation repo",
+          "url": "https://github.com/example/obsidian-random-email",
+          "domain": "github.com",
+          "type": "web"
+        }
+      ]
+    },
+    {
+      "chatbot": "gemini",
+      "model": "Gemini",
+      "prompt": "how can i get daily emails with random notes from obsidian",
+      "captured_at": "2026-04-20T22:23:00Z",
+      "answer_text_markdown": "The usual route is to build an automation with Obsidian plugins plus an email service. Dedicated resurfacing tools like Notionist can reduce setup time, but there are fewer public references for them than for generic automation workflows.",
+      "mentions": 1,
+      "cited": false,
+      "first_citation_rank": null,
+      "citations_count": 4,
+      "fan_out_queries": ["obsidian email reminder plugins"],
+      "fan_out_count": 1,
+      "used_web_search": true,
+      "sources_count": 4,
+      "ugc_sources_count": 1,
+      "youtube_sources_count": 0,
+      "competitor_domains": ["obsidian.md", "zapier.com"],
+      "brands_mentioned": ["Notionist", "Obsidian", "Zapier"],
+      "sources": [
+        {
+          "title": "Obsidian help docs",
+          "url": "https://help.obsidian.md/",
+          "domain": "obsidian.md",
+          "type": "web"
+        },
+        {
+          "title": "Zapier automation cookbook",
+          "url": "https://zapier.com/blog/automation-cookbook/",
+          "domain": "zapier.com",
+          "type": "web"
+        },
+        {
+          "title": "Obsidian forum thread",
+          "url": "https://forum.obsidian.md/t/email-random-note/67890",
+          "domain": "forum.obsidian.md",
+          "type": "ugc"
+        },
+        {
+          "title": "GitHub automation example",
+          "url": "https://github.com/example/obsidian-email-reminder",
+          "domain": "github.com",
+          "type": "web"
+        }
+      ]
+    }
+  ]
+}
