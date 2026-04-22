@@ -24,6 +24,16 @@ If it does:
   - “no local access” (you’ll provide a patch plan)
 - Constraints: “don’t change meaning”, “keep tone”, “keep sections”, etc.
 
+## Tooling & credentials
+
+- Auth mode: `mcp`
+- Requires: Google Search Console MCP
+- Fallback: manual CSV export from Search Console, if the user does not have MCP access
+- Optional tools: Browser MCP or `agent-browser` for reading the current page
+- If missing: stop, ask the user to install or configure a GSC MCP or provide an export, and continue only after they confirm the path forward
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Page content access (for planning edits)
 
 Use a Browser MCP if available. If not, use the `agent-browser` CLI (install if needed).

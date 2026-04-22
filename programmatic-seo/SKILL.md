@@ -25,6 +25,15 @@ Before asking the user for inputs, proactively gather context:
 - Review any existing SEO documentation or strategies
 - Only ask the user for information you cannot find through exploration
 
+## Tooling & credentials
+
+- Auth mode: `none`
+- Requires: no external credential
+- Optional tools: Browser MCP or `agent-browser`, SERP API MCP, Ahrefs/Semrush MCP
+- Fallback: continue with repo context, manual URLs, and user-provided data if external tools are unavailable
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Core Principles
 
 1. Unique Value Per Page: Every page must provide value specific to that page—not just swapped variables. Maximize unique content and avoid thin content penalties.

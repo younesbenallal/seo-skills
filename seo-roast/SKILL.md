@@ -23,6 +23,15 @@ If it does:
 - Target keyword (optional but strongly recommended)
 - Market: language + country
 
+## Tooling & credentials
+
+- Auth mode: `none`
+- Requires: no external credential
+- Fallback: if Browser access is unavailable, ask the user for the main copy and key page sections
+- Optional tools: Browser MCP, `agent-browser`, SERP API MCP
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Tools (adaptive)
 
 **Browser selection workflow**

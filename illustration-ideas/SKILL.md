@@ -21,6 +21,15 @@ If it does:
 - URL
 - Audience level (beginner / intermediate / expert) [optional]
 
+## Tooling & credentials
+
+- Auth mode: `none`
+- Requires: no external credential
+- Optional tools: Browser MCP or `agent-browser`
+- Fallback: if browsing is unavailable, ask the user to paste the content or a detailed outline
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Tools
 
 Implement browser tool selection:

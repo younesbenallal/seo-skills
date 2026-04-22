@@ -20,12 +20,29 @@ Skills are now a shared convention across most coding agents. The easiest way to
 npx add-skill holly-and-stick/seo-skills
 ```
 
-## Tooling (MCPs)
+## Before First Run
 
-Depending on the skill you want to use, your agent will need different MCP servers. If a required MCP is missing, the skill should stop and tell you what to install.
+Read [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md) before using any skill that depends on an MCP, API key, or local export.
 
+The repo follows one shared setup contract:
 
-### Browser access (how skills should decide)
+- skills first check whether required access is already available
+- if setup is missing, skills stop and give exact instructions
+- secrets should stay on the user's machine and never be pasted in chat
+- once the user confirms setup, the skill verifies presence only and continues
+
+### Typical user flow
+
+1. Install the skill repo with `add-skill`.
+2. Check the skill's `Tooling & credentials` section.
+3. Follow the matching setup instructions in `docs/credentials-and-tooling.md`.
+4. Return to the agent and confirm when the tool or credential is ready.
+
+## Tooling (MCPs and credentials)
+
+Depending on the skill you want to use, your agent may need an MCP server, a local environment variable, or a manual export file.
+
+### Browser access
 
 For any skill that needs to read a page or take screenshots:
 
@@ -51,17 +68,17 @@ agent-browser snapshot -i
 agent-browser screenshot --full full.png
 ```
 
-### Skills → required tools
+### Skills → access requirements
 
-- `seo-context`: No MCP required. Pulls shared business and SEO context from the repo and writes `.agents/seo-context.md`.
-- `seo-roast`: Browser.
-- `illustration-ideas`: Browser.
-- `subkeyword-injector`: Google Search Console MCP (for queries) + Browser (to read the page if needed).
-- `linking-opportunities`: SERP API MCP + Browser.
-- `search-intent-coverage`: SERP API MCP + Browser.
-- `programmatic-seo`: Browser (recommended) + SERP API MCP (recommended) + optional Ahrefs/Semrush MCP.
-- `seo-audit-report`: No MCP required (scaffold only). Data can come from a GSC MCP export or a manual CSV/JSON file.
-- `geo-audit-report`: Bright Data API (required) via `geo-audit-report/scripts/brightdata-geo.py` (requires `BRIGHTDATA_API_KEY`).
+- `seo-context`: auth mode `none`
+- `seo-roast`: auth mode `none`, optional Browser and optional SERP API MCP
+- `illustration-ideas`: auth mode `none`, Browser preferred
+- `subkeyword-injector`: auth mode `mcp`, requires GSC MCP, Browser optional
+- `linking-opportunities`: auth mode `mcp`, requires SERP API MCP, Browser optional
+- `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
+- `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
+- `seo-audit-report`: auth mode `manual-file`, optional GSC MCP export input
+- `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY`
 
 ### MCP types to install (what they’re for)
 
@@ -69,6 +86,7 @@ agent-browser screenshot --full full.png
 - **SERP API MCP**: fetch live Google SERPs (don’t rely on Google via browser automation).
 - **Google Search Console MCP**: pull query/page metrics to drive content updates.
 - **Ahrefs/Semrush MCP (optional)**: keyword research + competitor data for `programmatic-seo`.
+- **Bright Data API key**: local env var for `geo-audit-report`.
 
 ### Option B — manual symlink
 

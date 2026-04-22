@@ -22,6 +22,15 @@ If it does:
 - Market (language + country)
 - Optional: the user’s current URL/draft
 
+## Tooling & credentials
+
+- Auth mode: `mcp`
+- Requires: SERP API MCP
+- Fallback: Browser MCP or `agent-browser` for reading competitor pages, plus user-provided competitor URLs or outlines if browsing is unavailable
+- If missing: stop, ask the user to install or configure a SERP API MCP, and continue only after they confirm it is ready
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Tools (adaptive)
 
 Required: SERP API MCP. If it’s missing, stop and ask the user to install one.

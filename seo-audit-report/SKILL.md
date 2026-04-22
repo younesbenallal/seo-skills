@@ -21,6 +21,15 @@ If it does:
 - Data source: GSC MCP export (JSON/CSV) or manual file.
 - Persistence target: in-browser IndexedDB via `sql.js`.
 
+## Tooling & credentials
+
+- Auth mode: `manual-file`
+- Requires: no live credential
+- Input path: GSC MCP export or manual CSV/JSON file
+- Fallback: manual file remains the default fallback when live MCP access is unavailable
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Workflow
 
 1. **Scaffold the project**

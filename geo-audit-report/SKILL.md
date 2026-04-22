@@ -131,8 +131,17 @@ Prefer prompts that:
 
 ## Required tools
 
-- `BRIGHTDATA_API_KEY` env var (or provided by user)
+- `BRIGHTDATA_API_KEY` env var
 - Bright Data dataset IDs for each chatbot you plan to run
+
+## Tooling & credentials
+
+- Auth mode: `env`
+- Requires: `BRIGHTDATA_API_KEY`
+- Fallback: none for automated collection
+- If missing: stop, ask the user to set the env var locally, and continue only after they confirm it is ready
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ### Dataset IDs (always the same)
 
@@ -149,26 +158,21 @@ GEMINI_DATASET_ID = "gd_mbz66arm2mf9cu856y"
 
 They can select one, two, or all three. Only pass the dataset IDs for the selected chatbots to the script.
 
-### API Key Security Instructions
+### API key handling
 
-**Avoid exposing the BrightData API key in chat messages or code.**
+Before running the script, verify only whether `BRIGHTDATA_API_KEY` is set:
 
-1. **Check if key exists**: Before running the script, check if `BRIGHTDATA_API_KEY` is already set in the environment:
-   ```bash
-   # Check without exposing the value
-   if [ -z "$BRIGHTDATA_API_KEY" ]; then echo "Not set"; else echo "Set"; fi
-   ```
+```bash
+if [ -z "$BRIGHTDATA_API_KEY" ]; then echo "Not set"; else echo "Set"; fi
+```
 
-2. **If key is not set**: Ask the user to export it themselves with these instructions:
-   - Go to https://brightdata.com and log in
-   - Navigate to your account settings/API section
-   - Generate a new API key if needed
-   - Go to Terminal and run: `export BRIGHTDATA_API_KEY="your-key-here"`
-   - Do NOT paste the key in chat - the user should run the export command themselves but if they do, just use it (it's too late lol)
+If it is missing, ask the user to set it locally in their own terminal:
 
-3. **Never read or display the key**: If you need to verify it's set, only check if the variable exists (is non-empty), never echo or display its value.
+```bash
+export BRIGHTDATA_API_KEY="your-key-here"
+```
 
-If missing: stop and ask the user to set them using the export command above.
+Do not ask the user to paste the key in chat, and never print the key value.
 
 ## Collection script (Python)
 

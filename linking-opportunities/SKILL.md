@@ -28,6 +28,15 @@ If the user doesn’t know the keywords yet, extract them from:
 - the page title/H1 + section headings, or
 - Search Console queries (if available).
 
+## Tooling & credentials
+
+- Auth mode: `mcp`
+- Requires: SERP API MCP
+- Fallback: Browser MCP or `agent-browser` for validating candidate pages, but no fallback for live SERP collection
+- If missing: stop, ask the user to install or configure a SERP API MCP, and continue only after they confirm it is ready
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+
 ## Required tools
 
 Require:

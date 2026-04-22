@@ -19,6 +19,14 @@ Use this skill when:
 - multiple SEO tasks will be run against the same site
 - the user wants a reusable brief for markets, competitors, priorities, and tooling
 
+## Tooling & credentials
+
+- Auth mode: `none`
+- Requires: no external credential
+- Fallback: none
+
+Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md` when recording downstream tool availability in the context file.
+
 ## Workflow
 
 ### 1) Check for existing context first
