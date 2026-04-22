@@ -12,6 +12,15 @@ You help the user:
 
 The Bright Data API is mandatory for automated collection.
 
+## Shared context first
+
+Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+
+If it does:
+- read it first
+- reuse the saved site, market, competitor, and content-priority context
+- ask only for GEO-specific gaps that are still missing
+
 ## Inputs to collect
 
 - Brand/site:
@@ -20,6 +29,105 @@ The Bright Data API is mandatory for automated collection.
   - competitor domains (optional)
 - Prompt list (2-10 to start)
 - Country / language
+
+## How to gather prompts with the user
+
+Do not assume the user already has a finished prompt list. In most cases, help them find one.
+
+### Prompt preflight
+
+Before generating new prompts:
+
+1. Check whether a prompt file already exists in the workspace.
+2. Prefer likely files such as:
+   - a user-provided prompts file path
+   - `prompts.txt` in the current project
+   - `geo-audit-report/test-prompts.txt`
+   - prompt/tracking files from earlier GEO runs if the project has them
+3. If you find an existing prompts file, read it first and summarize it briefly:
+   - number of prompts
+   - a few representative examples
+   - whether it looks broad, branded, competitor-led, or JTBD-focused
+4. Ask the user whether they want to:
+   - run the audit on those prompts as-is
+   - refine that list
+   - replace it with a new list
+
+Do not jump straight into generating a fresh prompt set if a plausible existing file is already present.
+
+### Prompt discovery workflow
+
+If the user does not already have a strong prompt list, build one with them from business context.
+
+Collect or infer:
+- the main product or service
+- the core jobs-to-be-done
+- the target audience or persona
+- key alternatives / competitors
+- the site sections that matter most
+- any geographic context that changes recommendations
+
+Then gather direction from available materials. Prefer concrete inputs over guessing:
+- visit the main website
+- inspect the homepage and core product/service pages
+- inspect the blog, resources, docs, integrations, use-case pages, and comparison pages if they exist
+- look for sitemap files, article lists, navigation labels, collections, and category pages
+- use headings, CTAs, repeated claims, and topic clusters to identify high-intent themes
+
+Useful sources of prompt ideas:
+- homepage positioning and category language
+- product or feature pages
+- use-case and industry pages
+- competitor comparison pages
+- blog posts and article titles
+- FAQ sections
+- templates, tools, calculators, and lead magnets
+- integration pages
+
+### What good prompts should look like
+
+Prompts should sound like real user intent, not internal marketing copy.
+
+Aim for a mix of:
+- category discovery prompts
+- best-tool / ranking prompts
+- alternatives / comparison prompts
+- workflow or problem-solving prompts
+- no-code / privacy / compliance / localization prompts when relevant
+- prompts tied to the user's actual content themes
+
+The list should usually contain 2-10 prompts to start, but the important part is coverage, not round numbers.
+
+### How to turn site content into prompts
+
+Translate content themes into natural-language prompts a buyer or user might ask:
+
+- category page -> "best [category] tool for [persona]"
+- workflow page -> "how to [job to be done] with [constraints]"
+- comparison page -> "alternatives to [competitor] for [use case]"
+- blog cluster -> "how to solve [pain point]" / "tools for [problem]"
+- feature page -> "tool that lets me [specific outcome]"
+
+When useful, generate prompt clusters around:
+- best / top / rank / compare
+- alternatives / versus
+- how to / set up / automate
+- privacy-safe / no-code / local-first / global-friendly
+- timezone-aware / multilingual / regional requirements
+
+### Prompt quality bar
+
+Avoid:
+- branded prompts only
+- vague one-word prompts
+- prompts that merely restate the company tagline
+- prompts disconnected from pages the site already has or wants to win on
+
+Prefer prompts that:
+- map to an actual business outcome
+- map to existing or desired pages/content
+- reveal whether the brand gets cited, mentioned, or ignored
+- help uncover fan-out opportunities and missing content
 
 ## Required tools
 
