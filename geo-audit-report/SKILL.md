@@ -8,7 +8,8 @@ description: Create a GEO audit using Bright Data datasets (mandatory) and outpu
 You help the user:
 1) define prompts that matter for their business,  
 2) collect results from major LLM experiences (ChatGPT / Perplexity / optionally Gemini),  
-3) generate a dashboard-ready audit JSON and optional recommendations.
+3) generate a dashboard-ready audit package with explicit JSON artifacts,  
+4) review the results and turn them into actionable insights.
 
 The Bright Data API is mandatory for automated collection.
 
@@ -29,6 +30,36 @@ If it does:
   - competitor domains (optional)
 - Prompt list (2-10 to start)
 - Country / language
+
+## Execution phases
+
+Treat the workflow as four distinct phases. Do not blur them together.
+
+### Phase 1: prompt set
+
+- find or create the prompt list
+- validate prompt coverage before running anything
+- save or confirm the prompt file path
+
+### Phase 2: audit run
+
+- run the Bright Data collector
+- produce the dated audit folder
+- do not start editing the dashboard template yet
+
+### Phase 3: audit package
+
+- verify that the JSON artifacts are complete
+- prepare the dashboard inputs
+- only then connect the run to the React template
+
+### Phase 4: analysis
+
+- analyze the run
+- summarize visibility, citations, search-trigger behavior, and fan-out
+- add optional manual recommendations
+
+If a run failed or the JSON is incomplete, stop in Phase 2 or 3 and say so clearly instead of pretending the dashboard is ready.
 
 ## How to gather prompts with the user
 
@@ -129,6 +160,18 @@ Prefer prompts that:
 - reveal whether the brand gets cited, mentioned, or ignored
 - help uncover fan-out opportunities and missing content
 
+### Prompt coverage checklist
+
+Before running the audit, make sure the final set contains a reasonable mix across these buckets:
+
+- category prompts
+- competitor / alternative prompts
+- workflow / JTBD prompts
+- buyer-evaluation or ranking prompts
+- brand-adjacent prompts tied to actual product strengths
+
+If the set is too concentrated in one bucket, call that out before running the audit.
+
 ## Required tools
 
 - `BRIGHTDATA_API_KEY` env var
@@ -185,6 +228,11 @@ It:
 - downloads snapshots,
 - saves results to `results.json` with both response-level details and summary metrics.
 
+Important implementation notes:
+- Do not force ChatGPT web search on or off in the input payload. Let the model decide naturally so the audit stays as close as possible to a real user experience.
+- Query fan-out coverage depends on what each provider exposes through Bright Data. ChatGPT currently returns the richest query-level search data.
+- Always preserve and surface whether search was actually triggered per response. Missing citations on a no-search response should be interpreted differently from missing citations on a searched response.
+
 **Important timing note**: BrightData processing can take **1 minute to several minutes** depending on the number of prompts. With many prompts (e.g., 10+), expect 3-5+ minutes of wait time. Inform the user about this before running the script so they know what to expect.
 
 **Output structure**: All files are saved in a dated folder (`YYYY-MM-DD`) within the specified `--out-dir`:
@@ -212,6 +260,30 @@ python3 geo-audit-report/scripts/brightdata-geo.py \
 
 Note: Only include the dataset ID flags for chatbots the user selected (ChatGPT, Perplexity, and/or Gemini).
 
+## Required audit artifacts
+
+The audit is not complete unless the dated run folder contains the expected artifacts.
+
+### Required
+
+- `{out-dir}/{YYYY-MM-DD}/results.json`
+- `{out-dir}/{YYYY-MM-DD}/snapshots/{chatbot}.json`
+- `{out-dir}/{YYYY-MM-DD}/raw/{chatbot}-{snapshot_id}.json`
+
+### Optional but expected in normal usage
+
+- `{out-dir}/{YYYY-MM-DD}/tracked-prompts.json`
+- `{out-dir}/{YYYY-MM-DD}/report.html`
+
+### Artifact roles
+
+- `results.json`
+  Main run output for the dashboard and summary analysis.
+- `tracked-prompts.json`
+  Long-lived prompt tracking companion file used to compare prompt visibility over time.
+- `report.html`
+  Optional static export if the user wants a standalone deliverable.
+
 ## Post-execution analysis
 
 **After the script completes successfully**, you MUST:
@@ -221,13 +293,16 @@ Note: Only include the dataset ID flags for chatbots the user selected (ChatGPT,
    - Overall visibility summary (cited vs mentioned vs not visible)
    - Which chatbots perform best/worst for the brand
    - Key patterns across prompts (e.g., which prompts get cited, which don't)
+   - Which prompts triggered search and which did not
    - Fan-out query insights (what related queries are being suggested)
+   - Aggregated fan-out query summary (query, count, whether the brand appeared, whether it was cited, whether the domain appeared in captured search results)
    - Source breakdown insights (UGC vs YouTube vs web dominance)
    - Competitor mentions if any
    - Top priority actions based on the data
 
 3. **Prepare the dashboard files**:
    - Use `results.json` as the main audit input for the React template in `geo-audit-report/template`
+   - Prepare or update `tracked-prompts.json` if prompt history is available or should start from this run
    - Optionally add a couple of manual recommendations in `manual_recommendations`
    - If the user wants an HTML export too, generate `report.html` in the same dated output folder
 
@@ -239,6 +314,15 @@ Note: Only include the dataset ID flags for chatbots the user selected (ChatGPT,
 
 **IMPORTANT**: The Python script produces the audit JSON, and the React template in `geo-audit-report/template` reads that JSON directly.
 
+Treat the React template as the expected companion artifact for the skill, not an optional extra. If the user wants a usable deliverable, the default path is:
+
+1. run the collector
+2. verify the JSON artifacts
+3. connect the run to the template
+4. review the dashboard
+
+Do not describe the audit as “done” if the collector succeeded but the JSON does not match what the dashboard expects.
+
 The expected workflow is:
 
 1. Run the collector to produce `results.json`
@@ -249,6 +333,35 @@ The expected workflow is:
    - Prompts
    - Sources
 
+### Dashboard input contract
+
+At minimum, the dashboard run should expose:
+
+- `run_at`
+- `check_url`
+- `target_domains`
+- `brand_terms`
+- `snapshots`
+- `responses`
+
+Recommended fields:
+
+- `manual_recommendations`
+- `fan_out_summary`
+
+Each response should ideally expose:
+
+- `prompt`
+- `chatbot`
+- `model`
+- `mentions`
+- `cited`
+- `first_citation_rank`
+- `used_web_search`
+- `fan_out_queries`
+- `fan_out_details`
+- `sources`
+
 ### Dashboard requirements
 
 The dashboard should support:
@@ -256,9 +369,89 @@ The dashboard should support:
 - Overview metrics and prompt visibility
 - Prompt-level drilldown per chatbot
 - Source grouping by domain
+- Search-trigger status per response and per prompt rollup
+- Fan-out queries per response, including whether we appeared in the response and whether our domain appeared in captured search results
+- A global fan-out query summary with counts and appearance status
 - Manual recommendations added by AI in the JSON
 - A separate JSON file tracking prompts over time
 - Footer including `holly-and-stick.com`
+
+## Provider quality notes
+
+Do not treat every provider payload as equally complete.
+
+- ChatGPT
+  Best current source for query-level fan-out data and search result traces.
+- Perplexity
+  Usually good for cited sources, but query-level search traces may be sparse or absent.
+- Gemini
+  Can be useful for answer visibility, but search/fan-out metadata may be lighter depending on Bright Data output.
+
+When summarizing results:
+
+- distinguish “no search happened” from “search happened but we were absent”
+- distinguish “provider gave no fan-out payload” from “provider searched nothing”
+- avoid over-comparing providers on fields Bright Data does not expose consistently
+
+## Tracked prompts companion file
+
+`tracked-prompts.json` should be treated as a first-class companion artifact for repeated audits.
+
+Use this minimum structure:
+
+```json
+{
+  "tracked_prompts": [
+    {
+      "prompt": "best treasury software for multi-entity groups",
+      "first_tracked_at": "2026-04-24",
+      "last_tracked_at": "2026-04-24",
+      "status": "active",
+      "notes": "Enterprise category prompt",
+      "history": [
+        {
+          "date": "2026-04-24",
+          "visibility": 0
+        }
+      ]
+    }
+  ]
+}
+```
+
+When to create or update it:
+
+- create it on the first run if the user wants repeated GEO tracking
+- update it on later runs when the same prompt reappears
+- keep it separate from `results.json` so each run stays immutable
+
+If the user only wants a one-off audit, say explicitly that `tracked-prompts.json` is optional and may be skipped.
+
+## Fan-out analysis requirements
+
+Treat fan-out analysis as a required output, not a side observation.
+
+### Per response
+
+For each response with search fan-out data, capture:
+
+- the exact query or queries
+- whether search triggered
+- whether the brand appeared in the response
+- whether the brand was cited
+- whether the target domain appeared in captured search results
+
+### Aggregated
+
+Across the run, provide a grouped query summary with:
+
+- query
+- count
+- prompts it appeared on
+- chatbots it appeared on
+- how many times the brand appeared in the response
+- how many times the brand was cited
+- how many times the target domain appeared in captured search results
 
 Use guidance from `obsidian/GEO Playbook.md`:
 - list prompts → track → wait → analyze fan-outs

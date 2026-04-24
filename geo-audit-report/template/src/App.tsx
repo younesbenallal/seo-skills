@@ -36,6 +36,7 @@ import {
   pluralize,
   sortByCountDesc,
   type DomainGroup,
+  type FanOutSummaryRecord,
   type PromptGroup,
 } from "@/lib/audit-data"
 
@@ -206,6 +207,15 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                   ? "n/a"
                   : `#${promptGroup.averageRank}`}
               </Badge>
+              <Badge variant="secondary" className="rounded-md">
+                search triggered{" "}
+                {
+                  promptGroup.responses.filter(
+                    (response) => response.used_web_search
+                  ).length
+                }
+                /{promptGroup.responses.length}
+              </Badge>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -263,6 +273,10 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                   <Badge variant="secondary" className="rounded-md">
                     fan-out {response.fan_out_queries.length}
                   </Badge>
+                  <Badge variant="secondary" className="rounded-md">
+                    search{" "}
+                    {response.used_web_search ? "triggered" : "not triggered"}
+                  </Badge>
                 </div>
               </div>
             </CardHeader>
@@ -301,14 +315,73 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                   <p className="text-xs text-muted-foreground">
                     fan-out prompts
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {response.fan_out_queries.map((query) => (
-                      <span
-                        key={`${response.prompt}-${query}`}
-                        className="rounded-md border border-border/80 px-3 py-1 text-xs text-muted-foreground"
+                  <div className="space-y-2">
+                    {(response.fan_out_details.length > 0
+                      ? response.fan_out_details
+                      : response.fan_out_queries.map((query) => ({
+                          query,
+                          brand_appeared_in_response: response.mentions > 0,
+                          brand_cited_in_response: response.cited,
+                          brand_found_in_search_results: false,
+                          matched_target_domains: [],
+                          search_results_count: 0,
+                          search_results: [],
+                        }))
+                    ).map((detail) => (
+                      <div
+                        key={`${response.prompt}-${detail.query}`}
+                        className="rounded-lg border border-border/75 bg-muted/25 p-3"
                       >
-                        {query}
-                      </span>
+                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                          <p className="text-sm font-medium text-foreground">
+                            {detail.query}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary" className="rounded-md">
+                              response{" "}
+                              {detail.brand_appeared_in_response
+                                ? "mentions us"
+                                : "misses us"}
+                            </Badge>
+                            <Badge variant="secondary" className="rounded-md">
+                              citation{" "}
+                              {detail.brand_cited_in_response ? "yes" : "no"}
+                            </Badge>
+                            <Badge variant="secondary" className="rounded-md">
+                              serp{" "}
+                              {detail.brand_found_in_search_results
+                                ? "contains us"
+                                : "misses us"}
+                            </Badge>
+                            <Badge variant="secondary" className="rounded-md">
+                              {detail.search_results_count} search results
+                            </Badge>
+                          </div>
+                        </div>
+                        {detail.search_results.length > 0 ? (
+                          <div className="mt-3 space-y-2">
+                            {detail.search_results.slice(0, 5).map((result) => (
+                              <a
+                                key={`${detail.query}-${result.url}`}
+                                href={result.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-xs transition-colors hover:bg-background"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate font-medium text-foreground">
+                                    {result.title || result.url}
+                                  </p>
+                                  <p className="truncate text-muted-foreground">
+                                    {result.domain}
+                                  </p>
+                                </div>
+                                <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
+                              </a>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -345,6 +418,37 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
         ))}
       </AccordionContent>
     </AccordionItem>
+  )
+}
+
+function FanOutSummaryPanel({ summary }: { summary: FanOutSummaryRecord }) {
+  return (
+    <div className="rounded-xl border border-border/80 bg-background p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{summary.query}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {summary.count} {pluralize(summary.count, "time", "times")} across{" "}
+            {summary.prompts.length}{" "}
+            {pluralize(summary.prompts.length, "prompt", "prompts")}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary" className="rounded-md">
+            appeared {summary.appeared_in_responses}
+          </Badge>
+          <Badge variant="secondary" className="rounded-md">
+            missed {summary.not_appeared_in_responses}
+          </Badge>
+          <Badge variant="secondary" className="rounded-md">
+            cited {summary.cited_in_responses}
+          </Badge>
+          <Badge variant="secondary" className="rounded-md">
+            serp hits {summary.found_in_search_results}
+          </Badge>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -666,6 +770,28 @@ function Dashboard() {
                         {recommendation.owner}
                       </p>
                     </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/80 shadow-none">
+              <CardHeader>
+                <CardTitle>fan-out query summary</CardTitle>
+                <CardDescription>
+                  Every search query the AI models made, grouped and counted
+                  with whether we appeared in the resulting response.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {view.fanOutSummary.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No search-engine fan-out queries were captured in this
+                    audit.
+                  </p>
+                ) : (
+                  view.fanOutSummary.map((summary) => (
+                    <FanOutSummaryPanel key={summary.query} summary={summary} />
                   ))
                 )}
               </CardContent>

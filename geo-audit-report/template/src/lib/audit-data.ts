@@ -16,6 +16,7 @@ type AuditResponse = {
   first_citation_rank?: number | null
   citations_count?: number
   fan_out_queries?: string[]
+  fan_out_details?: AuditFanOutDetail[]
   fan_out_count?: number
   used_web_search?: boolean
   sources_count?: number
@@ -24,6 +25,28 @@ type AuditResponse = {
   competitor_domains?: string[]
   brands_mentioned?: string[]
   sources?: AuditSource[]
+}
+
+type AuditFanOutDetail = {
+  query?: string
+  brand_appeared_in_response?: boolean
+  brand_cited_in_response?: boolean
+  brand_found_in_search_results?: boolean
+  matched_target_domains?: string[]
+  search_results_count?: number
+  search_results?: AuditSource[]
+}
+
+type AuditFanOutSummary = {
+  query?: string
+  count?: number
+  appeared_in_responses?: number
+  not_appeared_in_responses?: number
+  cited_in_responses?: number
+  found_in_search_results?: number
+  prompts?: string[]
+  chatbots?: string[]
+  matched_target_domains?: string[]
 }
 
 export type SourceRecord = {
@@ -44,6 +67,7 @@ export type ResponseRecord = {
   first_citation_rank: number | null
   citations_count: number
   fan_out_queries: string[]
+  fan_out_details: FanOutDetailRecord[]
   fan_out_count: number
   used_web_search: boolean
   sources_count: number
@@ -52,6 +76,28 @@ export type ResponseRecord = {
   competitor_domains: string[]
   brands_mentioned: string[]
   sources: SourceRecord[]
+}
+
+export type FanOutDetailRecord = {
+  query: string
+  brand_appeared_in_response: boolean
+  brand_cited_in_response: boolean
+  brand_found_in_search_results: boolean
+  matched_target_domains: string[]
+  search_results_count: number
+  search_results: SourceRecord[]
+}
+
+export type FanOutSummaryRecord = {
+  query: string
+  count: number
+  appeared_in_responses: number
+  not_appeared_in_responses: number
+  cited_in_responses: number
+  found_in_search_results: number
+  prompts: string[]
+  chatbots: string[]
+  matched_target_domains: string[]
 }
 
 type ManualRecommendation = {
@@ -69,6 +115,7 @@ type AuditFile = {
   brand_terms: string[]
   snapshots: Array<{ chatbot: string; status: string }>
   manual_recommendations?: ManualRecommendation[]
+  fan_out_summary?: AuditFanOutSummary[]
   responses?: AuditResponse[]
   results?: AuditResponse[]
 }
@@ -124,6 +171,41 @@ export type DomainGroup = {
   }>
 }
 
+function normalizeFanOutDetail(detail: AuditFanOutDetail): FanOutDetailRecord {
+  return {
+    query: detail.query ?? "",
+    brand_appeared_in_response: Boolean(detail.brand_appeared_in_response),
+    brand_cited_in_response: Boolean(detail.brand_cited_in_response),
+    brand_found_in_search_results: Boolean(
+      detail.brand_found_in_search_results
+    ),
+    matched_target_domains: safeArray(detail.matched_target_domains).filter(
+      Boolean
+    ),
+    search_results_count:
+      detail.search_results_count ?? safeArray(detail.search_results).length,
+    search_results: safeArray(detail.search_results).map(normalizeSource),
+  }
+}
+
+function normalizeFanOutSummary(
+  summary: AuditFanOutSummary
+): FanOutSummaryRecord {
+  return {
+    query: summary.query ?? "",
+    count: summary.count ?? 0,
+    appeared_in_responses: summary.appeared_in_responses ?? 0,
+    not_appeared_in_responses: summary.not_appeared_in_responses ?? 0,
+    cited_in_responses: summary.cited_in_responses ?? 0,
+    found_in_search_results: summary.found_in_search_results ?? 0,
+    prompts: safeArray(summary.prompts).filter(Boolean),
+    chatbots: safeArray(summary.chatbots).filter(Boolean),
+    matched_target_domains: safeArray(summary.matched_target_domains).filter(
+      Boolean
+    ),
+  }
+}
+
 function safeArray<T>(value: T[] | undefined | null) {
   return Array.isArray(value) ? value : []
 }
@@ -150,6 +232,9 @@ function normalizeResponse(response: AuditResponse): ResponseRecord {
     first_citation_rank: response.first_citation_rank ?? null,
     citations_count: response.citations_count ?? normalizedSources.length,
     fan_out_queries: safeArray(response.fan_out_queries).filter(Boolean),
+    fan_out_details: safeArray(response.fan_out_details)
+      .map(normalizeFanOutDetail)
+      .filter((detail) => detail.query),
     fan_out_count:
       response.fan_out_count ?? safeArray(response.fan_out_queries).length,
     used_web_search: Boolean(response.used_web_search),
@@ -175,6 +260,9 @@ function normalizeAudit(audit: AuditFile): AuditFile {
     brand_terms: safeArray(audit.brand_terms),
     snapshots: safeArray(audit.snapshots),
     manual_recommendations: safeArray(audit.manual_recommendations),
+    fan_out_summary: safeArray(audit.fan_out_summary).map(
+      normalizeFanOutSummary
+    ),
     responses: rawResponses.map(normalizeResponse),
     results: rawResponses.map(normalizeResponse),
   }
@@ -354,6 +442,67 @@ function buildTimeline(trackedPrompts: TrackedPromptsFile) {
     .sort((left, right) => left.date.localeCompare(right.date))
 }
 
+function buildFanOutSummaryFromResponses(responses: ResponseRecord[]) {
+  const fanOutMap = new Map<string, FanOutSummaryRecord>()
+
+  for (const response of responses) {
+    const details =
+      response.fan_out_details.length > 0
+        ? response.fan_out_details
+        : response.fan_out_queries.map((query) => ({
+            query,
+            brand_appeared_in_response: response.mentions > 0,
+            brand_cited_in_response: response.cited,
+            brand_found_in_search_results: false,
+            matched_target_domains: [],
+            search_results_count: 0,
+            search_results: [],
+          }))
+
+    for (const detail of details) {
+      const key = detail.query.toLowerCase()
+      const current = fanOutMap.get(key) || {
+        query: detail.query,
+        count: 0,
+        appeared_in_responses: 0,
+        not_appeared_in_responses: 0,
+        cited_in_responses: 0,
+        found_in_search_results: 0,
+        prompts: [],
+        chatbots: [],
+        matched_target_domains: [],
+      }
+
+      current.count += 1
+      current.appeared_in_responses += detail.brand_appeared_in_response ? 1 : 0
+      current.not_appeared_in_responses += detail.brand_appeared_in_response
+        ? 0
+        : 1
+      current.cited_in_responses += detail.brand_cited_in_response ? 1 : 0
+      current.found_in_search_results += detail.brand_found_in_search_results
+        ? 1
+        : 0
+      current.prompts = [...new Set([...current.prompts, response.prompt])]
+      current.chatbots = [...new Set([...current.chatbots, response.chatbot])]
+      current.matched_target_domains = [
+        ...new Set([
+          ...current.matched_target_domains,
+          ...detail.matched_target_domains,
+        ]),
+      ]
+
+      fanOutMap.set(key, current)
+    }
+  }
+
+  return [...fanOutMap.values()].sort(
+    (left, right) =>
+      right.count - left.count ||
+      right.appeared_in_responses - left.appeared_in_responses ||
+      left.query.localeCompare(right.query)
+  )
+}
+
 export function buildAuditViewModel(
   audit: AuditFile,
   trackedPrompts: TrackedPromptsFile
@@ -364,6 +513,10 @@ export function buildAuditViewModel(
     (response) => response.mentions > 0
   )
   const domainGroups = buildDomainGroups(responses)
+  const fanOutSummary =
+    safeArray(audit.fan_out_summary).length > 0
+      ? safeArray(audit.fan_out_summary).map(normalizeFanOutSummary)
+      : buildFanOutSummaryFromResponses(responses)
   const topDomains = domainGroups.map((group) => ({
     label: group.domain,
     count: group.uniquePages,
@@ -447,6 +600,7 @@ export function buildAuditViewModel(
     responsesWithSources: responses.filter(
       (response) => response.sources.length > 0
     ).length,
+    fanOutSummary,
     promptGroups: groupByPrompt(responses).sort(
       (left, right) =>
         right.responses.length - left.responses.length ||

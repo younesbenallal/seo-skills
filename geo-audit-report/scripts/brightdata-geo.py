@@ -299,6 +299,154 @@ def compute_used_web_search(record: Dict[str, Any]) -> bool:
     return False
 
 
+def domain_matches_target(domain_or_url: str, target_domains: List[str]) -> Optional[str]:
+    current = normalize_domain(domain_or_url)
+    if not current:
+        return None
+    for target in target_domains:
+        normalized_target = normalize_domain(target)
+        if not normalized_target:
+            continue
+        if current == normalized_target or current.endswith(f".{normalized_target}"):
+            return normalized_target
+    return None
+
+
+def to_search_results(record: Dict[str, Any]) -> List[Dict[str, Any]]:
+    search_sources = record.get("search_sources") or []
+    if not isinstance(search_sources, list):
+        return []
+
+    out: List[Dict[str, Any]] = []
+    for item in search_sources:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url") if isinstance(item.get("url"), str) else ""
+        title = item.get("title") if isinstance(item.get("title"), str) else ""
+        rank = item.get("rank")
+        domain = ""
+        if url:
+            try:
+                domain = urllib.parse.urlparse(url).netloc
+            except Exception:
+                domain = ""
+        out.append(
+            {
+                "title": title or None,
+                "url": url or None,
+                "domain": normalize_domain(domain) if domain else None,
+                "rank": rank if isinstance(rank, int) else None,
+            }
+        )
+
+    return [item for item in out if item.get("url") or item.get("title")]
+
+
+def build_fan_out_details(
+    *,
+    record: Dict[str, Any],
+    target_domains: List[str],
+    mentions: int,
+    cited: bool,
+) -> List[Dict[str, Any]]:
+    raw_queries = record.get("web_search_query") or []
+    if not isinstance(raw_queries, list):
+        return []
+
+    queries = [str(item).strip() for item in raw_queries if str(item).strip()]
+    if len(queries) == 0:
+        return []
+
+    search_results = to_search_results(record)
+    matched_domains = sorted(
+        {
+            match
+            for result in search_results
+            for match in [domain_matches_target(str(result.get("domain") or result.get("url") or ""), target_domains)]
+            if match
+        }
+    )
+
+    return [
+        {
+            "query": query,
+            "brand_appeared_in_response": mentions > 0,
+            "brand_cited_in_response": cited,
+            "brand_found_in_search_results": len(matched_domains) > 0,
+            "matched_target_domains": matched_domains,
+            "search_results_count": len(search_results),
+            "search_results": search_results,
+        }
+        for query in queries
+    ]
+
+
+def aggregate_fan_out_queries(results: List["PromptResult"]) -> List[Dict[str, Any]]:
+    aggregates: Dict[str, Dict[str, Any]] = {}
+
+    for result in results:
+        for detail in result.fan_out_details:
+            query = str(detail.get("query") or "").strip()
+            if not query:
+                continue
+
+            key = query.lower()
+            entry = aggregates.setdefault(
+                key,
+                {
+                    "query": query,
+                    "count": 0,
+                    "appeared_in_responses": 0,
+                    "not_appeared_in_responses": 0,
+                    "cited_in_responses": 0,
+                    "found_in_search_results": 0,
+                    "prompts": set(),
+                    "chatbots": set(),
+                    "matched_target_domains": set(),
+                },
+            )
+
+            entry["count"] += 1
+            if detail.get("brand_appeared_in_response"):
+                entry["appeared_in_responses"] += 1
+            else:
+                entry["not_appeared_in_responses"] += 1
+            if detail.get("brand_cited_in_response"):
+                entry["cited_in_responses"] += 1
+            if detail.get("brand_found_in_search_results"):
+                entry["found_in_search_results"] += 1
+
+            entry["prompts"].add(result.prompt)
+            entry["chatbots"].add(result.chatbot)
+            for domain in detail.get("matched_target_domains") or []:
+                entry["matched_target_domains"].add(domain)
+
+    summary = []
+    for item in aggregates.values():
+        summary.append(
+            {
+                "query": item["query"],
+                "count": item["count"],
+                "appeared_in_responses": item["appeared_in_responses"],
+                "not_appeared_in_responses": item["not_appeared_in_responses"],
+                "cited_in_responses": item["cited_in_responses"],
+                "found_in_search_results": item["found_in_search_results"],
+                "prompts": sorted(item["prompts"]),
+                "chatbots": sorted(item["chatbots"]),
+                "matched_target_domains": sorted(item["matched_target_domains"]),
+            }
+        )
+
+    summary.sort(
+        key=lambda item: (
+            -int(item["count"]),
+            -int(item["appeared_in_responses"]),
+            str(item["query"]).lower(),
+        )
+    )
+    return summary
+
+
 @dataclass
 class PromptResult:
     chatbot: str
@@ -311,6 +459,7 @@ class PromptResult:
     first_citation_rank: Optional[int]
     citations_count: int
     fan_out_queries: List[str]
+    fan_out_details: List[Dict[str, Any]]
     fan_out_count: int
     used_web_search: bool
     sources_count: int
@@ -341,6 +490,12 @@ def analyze_record(
     fan_out_count = len(fan_out) if isinstance(fan_out, list) else 0
     citations = record.get("citations") or []
     brands_mentioned = record.get("recommendations") or []
+    fan_out_details = build_fan_out_details(
+        record=record,
+        target_domains=target_domains,
+        mentions=mentions,
+        cited=cited,
+    )
 
     ugc = sum(1 for s in sources if s.get("type") == "ugc")
     yt = sum(1 for s in sources if s.get("type") == "youtube")
@@ -366,6 +521,7 @@ def analyze_record(
         fan_out_queries=[str(item).strip() for item in fan_out if str(item).strip()]
         if isinstance(fan_out, list)
         else [],
+        fan_out_details=fan_out_details,
         fan_out_count=fan_out_count,
         used_web_search=used_web_search,
         sources_count=len(sources),
@@ -391,7 +547,7 @@ def build_inputs(prompts: List[str], check_url: str, country: str, chatbot: str)
     for idx, p in enumerate(prompts):
         base = {"url": check_url, "prompt": p, "country": country, "index": idx + 1}
         if chatbot == "chatgpt":
-            rows.append({**base, "web_search": False, "additional_prompt": ""})
+            rows.append({**base, "additional_prompt": ""})
         else:
             rows.append(base)
     return rows
@@ -522,13 +678,14 @@ def main() -> None:
     write_json(
         os.path.join(out_dir, "results.json"),
         {
-            "schema_version": "geo-audit-v1",
+            "schema_version": "geo-audit-v2",
             "run_at": run_at,
             "check_url": args.check_url,
             "target_domains": target_domains,
             "brand_terms": brand_terms,
             "snapshots": snapshots,
             "manual_recommendations": [],
+            "fan_out_summary": aggregate_fan_out_queries(all_results),
             "results": [r.__dict__ for r in all_results],
             "responses": [r.__dict__ for r in all_results],
         },
