@@ -160,9 +160,9 @@ Prefer prompts that:
 - reveal whether the brand gets cited, mentioned, or ignored
 - help uncover fan-out opportunities and missing content
 
-### Prompt coverage checklist
+### Prompt coverage guide
 
-Before running the audit, make sure the final set contains a reasonable mix across these buckets:
+When helping the user shape the prompt set, try to guide it toward a healthy mix across:
 
 - category prompts
 - competitor / alternative prompts
@@ -170,7 +170,7 @@ Before running the audit, make sure the final set contains a reasonable mix acro
 - buyer-evaluation or ranking prompts
 - brand-adjacent prompts tied to actual product strengths
 
-If the set is too concentrated in one bucket, call that out before running the audit.
+This is not a rigid checklist. The goal is to help the user find a set that reflects how buyers actually search, while avoiding a list that is too concentrated in only one angle.
 
 ## Required tools
 
@@ -223,8 +223,8 @@ Use:
 - `geo-audit-report/scripts/brightdata-geo.py`
 
 It:
-- triggers datasets (part 1),
-- polls until ready (part 2),
+- triggers selected datasets up front (part 1),
+- polls pending snapshots together (part 2),
 - downloads snapshots,
 - saves results to `results.json` with both response-level details and summary metrics.
 
@@ -232,6 +232,7 @@ Important implementation notes:
 - Do not force ChatGPT web search on or off in the input payload. Let the model decide naturally so the audit stays as close as possible to a real user experience.
 - Query fan-out coverage depends on what each provider exposes through Bright Data. ChatGPT currently returns the richest query-level search data.
 - Always preserve and surface whether search was actually triggered per response. Missing citations on a no-search response should be interpreted differently from missing citations on a searched response.
+- The collector should be resumable in a lightweight way: reuse existing snapshot metadata when available, skip raw redownloads unless forced, and write `results.partial.json` during progress.
 
 **Important timing note**: BrightData processing can take **1 minute to several minutes** depending on the number of prompts. With many prompts (e.g., 10+), expect 3-5+ minutes of wait time. Inform the user about this before running the script so they know what to expect.
 
@@ -375,23 +376,6 @@ The dashboard should support:
 - Manual recommendations added by AI in the JSON
 - A separate JSON file tracking prompts over time
 - Footer including `holly-and-stick.com`
-
-## Provider quality notes
-
-Do not treat every provider payload as equally complete.
-
-- ChatGPT
-  Best current source for query-level fan-out data and search result traces.
-- Perplexity
-  Usually good for cited sources, but query-level search traces may be sparse or absent.
-- Gemini
-  Can be useful for answer visibility, but search/fan-out metadata may be lighter depending on Bright Data output.
-
-When summarizing results:
-
-- distinguish “no search happened” from “search happened but we were absent”
-- distinguish “provider gave no fan-out payload” from “provider searched nothing”
-- avoid over-comparing providers on fields Bright Data does not expose consistently
 
 ## Tracked prompts companion file
 

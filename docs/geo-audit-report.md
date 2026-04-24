@@ -27,17 +27,9 @@
 ## Companion artifacts
 
 - `results.json` is the immutable run output.
+- `results.partial.json` is the in-progress checkpoint written as chatbot snapshots finish processing.
 - `tracked-prompts.json` is the long-lived history file used across multiple runs.
 - The React template under `geo-audit-report/template` is the expected companion deliverable when the user wants a usable dashboard.
-
-## Provider caveats
-
-- ChatGPT currently provides the richest query-level fan-out traces.
-- Perplexity and Gemini may provide weaker or missing query-level search metadata.
-- The skill should therefore distinguish:
-  - no search triggered
-  - search triggered but no brand presence
-  - provider did not expose the relevant search metadata
 
 ## Compatibility
 

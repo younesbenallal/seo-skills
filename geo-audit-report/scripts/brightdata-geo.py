@@ -559,6 +559,42 @@ def write_json(path: str, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def read_json(path: str) -> Any:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def snapshot_meta_path(out_dir: str, chatbot: str) -> str:
+    return os.path.join(out_dir, "snapshots", f"{chatbot}.json")
+
+
+def raw_snapshot_path(out_dir: str, chatbot: str, snapshot_id: str) -> str:
+    return os.path.join(out_dir, "raw", f"{chatbot}-{snapshot_id}.json")
+
+
+def build_results_payload(
+    *,
+    run_at: str,
+    check_url: str,
+    target_domains: List[str],
+    brand_terms: List[str],
+    snapshots: List[Dict[str, str]],
+    all_results: List["PromptResult"],
+) -> Dict[str, Any]:
+    return {
+        "schema_version": "geo-audit-v2",
+        "run_at": run_at,
+        "check_url": check_url,
+        "target_domains": target_domains,
+        "brand_terms": brand_terms,
+        "snapshots": snapshots,
+        "manual_recommendations": [],
+        "fan_out_summary": aggregate_fan_out_queries(all_results),
+        "results": [r.__dict__ for r in all_results],
+        "responses": [r.__dict__ for r in all_results],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-key", default=os.environ.get("BRIGHTDATA_API_KEY", ""), help="Bright Data API key (or BRIGHTDATA_API_KEY)")
@@ -579,6 +615,8 @@ def main() -> None:
     parser.add_argument("--competitor-domains", default="", help="Comma-separated competitor domains (optional)")
 
     parser.add_argument("--out-dir", default="geo-audit-run")
+    parser.add_argument("--resume-from", default="", help="Resume from an existing dated run directory")
+    parser.add_argument("--force", action="store_true", help="Force re-download of raw snapshots when resuming")
     parser.add_argument("--skip-download", action="store_true", help="Only trigger+poll (no snapshot download)")
 
     args = parser.parse_args()
@@ -597,8 +635,9 @@ def main() -> None:
 
     run_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    resume_from = str(args.resume_from).strip()
     base_out_dir = str(args.out_dir).strip()
-    out_dir = os.path.join(base_out_dir, date_str)
+    out_dir = resume_from if resume_from else os.path.join(base_out_dir, date_str)
     os.makedirs(out_dir, exist_ok=True)
 
     jobs: List[Tuple[str, str]] = []
@@ -613,28 +652,88 @@ def main() -> None:
         raise SystemExit("No dataset ids provided. Set at least --chatgpt-dataset-id or --perplexity-dataset-id.")
 
     snapshots: List[Dict[str, str]] = []
+    pending_indices: List[int] = []
     for chatbot, dataset_id in jobs:
-        print(f"Triggering {chatbot} dataset...")
-        inputs = build_inputs(prompts, args.check_url, args.country, chatbot=chatbot)
-        custom_fields = get_custom_output_fields(chatbot)
-        snapshot_id = trigger_dataset(
-            base_url=args.base_url,
-            api_key=api_key,
-            dataset_id=dataset_id,
-            input_rows=inputs,
-            custom_output_fields=custom_fields,
-        )
-        print(f"Snapshot ID: {snapshot_id}. Polling for completion (this may take 1-5 minutes)...")
-        status = poll_progress(
-            base_url=args.base_url,
-            api_key=api_key,
-            snapshot_id=snapshot_id,
-            poll_delay_sec=args.poll_delay_sec,
-            poll_attempts=args.poll_attempts,
-        )
-        print(f"{chatbot} status: {status}")
-        snapshots.append({"chatbot": chatbot, "dataset_id": dataset_id, "snapshot_id": snapshot_id, "status": status})
-        write_json(os.path.join(out_dir, "snapshots", f"{chatbot}.json"), snapshots[-1])
+        meta_path = snapshot_meta_path(out_dir, chatbot)
+        existing_snapshot = None
+        if resume_from and os.path.exists(meta_path):
+            try:
+                loaded = read_json(meta_path)
+                if isinstance(loaded, dict) and loaded.get("snapshot_id"):
+                    existing_snapshot = {
+                        "chatbot": chatbot,
+                        "dataset_id": str(loaded.get("dataset_id") or dataset_id),
+                        "snapshot_id": str(loaded.get("snapshot_id") or ""),
+                        "status": str(loaded.get("status") or ""),
+                    }
+            except Exception:
+                existing_snapshot = None
+
+        if existing_snapshot:
+            print(
+                f"Resuming existing {chatbot} snapshot {existing_snapshot['snapshot_id']} "
+                f"({existing_snapshot.get('status') or 'unknown'})"
+            )
+            snapshots.append(existing_snapshot)
+        else:
+            print(f"Triggering {chatbot} dataset...")
+            inputs = build_inputs(prompts, args.check_url, args.country, chatbot=chatbot)
+            custom_fields = get_custom_output_fields(chatbot)
+            snapshot_id = trigger_dataset(
+                base_url=args.base_url,
+                api_key=api_key,
+                dataset_id=dataset_id,
+                input_rows=inputs,
+                custom_output_fields=custom_fields,
+            )
+            snapshots.append(
+                {
+                    "chatbot": chatbot,
+                    "dataset_id": dataset_id,
+                    "snapshot_id": snapshot_id,
+                    "status": "triggered",
+                }
+            )
+            write_json(meta_path, snapshots[-1])
+
+        if snapshots[-1]["status"] != "ready":
+            pending_indices.append(len(snapshots) - 1)
+
+    if pending_indices:
+        print(f"Polling {len(pending_indices)} snapshot(s) together (this may take 1-5 minutes)...")
+        for attempt in range(args.poll_attempts):
+            next_pending: List[int] = []
+            for index in pending_indices:
+                snapshot = snapshots[index]
+                url = build_url(args.base_url, f"/datasets/v3/progress/{snapshot['snapshot_id']}")
+                resp = http_json(url, "GET", api_key, timeout_sec=60)
+                status = str((resp or {}).get("status") or "")
+
+                if status in ("ready", "failed"):
+                    snapshot["status"] = status
+                    print(f"{snapshot['chatbot']} status: {status}")
+                    write_json(snapshot_meta_path(out_dir, snapshot["chatbot"]), snapshot)
+                else:
+                    snapshot["status"] = status or snapshot["status"]
+                    next_pending.append(index)
+
+            if not next_pending:
+                break
+
+            if attempt % 6 == 0:
+                joined = ", ".join(
+                    f"{snapshots[index]['chatbot']}={snapshots[index].get('status') or 'processing'}"
+                    for index in next_pending
+                )
+                print(f"  Polling... attempt {attempt + 1}/{args.poll_attempts}, {joined}")
+
+            pending_indices = next_pending
+            time.sleep(args.poll_delay_sec)
+
+        for index in pending_indices:
+            snapshots[index]["status"] = "timeout"
+            print(f"{snapshots[index]['chatbot']} status: timeout")
+            write_json(snapshot_meta_path(out_dir, snapshots[index]["chatbot"]), snapshots[index])
 
     if args.skip_download:
         print(json.dumps({"run_at": run_at, "snapshots": snapshots}, indent=2))
@@ -647,17 +746,22 @@ def main() -> None:
         status = snap["status"]
         if status != "ready":
             continue
-        raw = download_snapshot(base_url=args.base_url, api_key=api_key, snapshot_id=snapshot_id, fmt="json")
-        
-        # Clean unwanted fields from raw data before saving
-        if isinstance(raw, list):
-            cleaned_raw = [clean_record(record) if isinstance(record, dict) else record for record in raw]
-        elif isinstance(raw, dict):
-            cleaned_raw = clean_record(raw)
+        raw_path = raw_snapshot_path(out_dir, chatbot, snapshot_id)
+
+        if os.path.exists(raw_path) and not args.force:
+            print(f"Using existing raw snapshot for {chatbot}: {raw_path}")
+            raw = read_json(raw_path)
         else:
-            cleaned_raw = raw
-        
-        write_json(os.path.join(out_dir, "raw", f"{chatbot}-{snapshot_id}.json"), cleaned_raw)
+            raw = download_snapshot(base_url=args.base_url, api_key=api_key, snapshot_id=snapshot_id, fmt="json")
+
+            if isinstance(raw, list):
+                cleaned_raw = [clean_record(record) if isinstance(record, dict) else record for record in raw]
+            elif isinstance(raw, dict):
+                cleaned_raw = clean_record(raw)
+            else:
+                cleaned_raw = raw
+
+            write_json(raw_path, cleaned_raw)
 
         if not isinstance(raw, list):
             continue
@@ -675,20 +779,28 @@ def main() -> None:
             if analyzed.prompt:
                 all_results.append(analyzed)
 
+        write_json(
+            os.path.join(out_dir, "results.partial.json"),
+            build_results_payload(
+                run_at=run_at,
+                check_url=args.check_url,
+                target_domains=target_domains,
+                brand_terms=brand_terms,
+                snapshots=snapshots,
+                all_results=all_results,
+            ),
+        )
+
     write_json(
         os.path.join(out_dir, "results.json"),
-        {
-            "schema_version": "geo-audit-v2",
-            "run_at": run_at,
-            "check_url": args.check_url,
-            "target_domains": target_domains,
-            "brand_terms": brand_terms,
-            "snapshots": snapshots,
-            "manual_recommendations": [],
-            "fan_out_summary": aggregate_fan_out_queries(all_results),
-            "results": [r.__dict__ for r in all_results],
-            "responses": [r.__dict__ for r in all_results],
-        },
+        build_results_payload(
+            run_at=run_at,
+            check_url=args.check_url,
+            target_domains=target_domains,
+            brand_terms=brand_terms,
+            snapshots=snapshots,
+            all_results=all_results,
+        ),
     )
 
     results_path = os.path.join(out_dir, "results.json")
