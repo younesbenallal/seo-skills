@@ -151,6 +151,12 @@ type FailedLoad = {
   error: string
 }
 
+export type DashboardLoadSuccess = SuccessfulLoad
+export type DashboardLoadFailure = FailedLoad
+export type DashboardLoadResult = SuccessfulLoad | FailedLoad
+export type AuditFileRecord = AuditFile
+export type TrackedPromptsRecord = TrackedPromptsFile
+
 export type PromptGroup = {
   prompt: string
   responses: ResponseRecord[]
@@ -268,23 +274,34 @@ function normalizeAudit(audit: AuditFile): AuditFile {
   }
 }
 
-async function fetchJson<T>(path: string) {
-  const response = await fetch(path)
+async function fetchJson<T>(targetPath: string) {
+  const response = await fetch(targetPath)
 
   if (!response.ok) {
-    throw new Error(`Unable to load ${path} (${response.status})`)
+    throw new Error(`Unable to load ${targetPath} (${response.status})`)
   }
 
   return (await response.json()) as T
 }
 
-export async function loadAuditDashboardData(): Promise<
-  SuccessfulLoad | FailedLoad
-> {
+export function createDashboardLoadSuccess(
+  audit: AuditFile,
+  trackedPrompts: TrackedPromptsFile
+): SuccessfulLoad {
+  return {
+    ok: true,
+    audit: normalizeAudit(audit),
+    trackedPrompts: {
+      tracked_prompts: safeArray(trackedPrompts.tracked_prompts),
+    },
+  }
+}
+
+export async function loadAuditDashboardData(): Promise<DashboardLoadResult> {
   const auditPath =
-    import.meta.env.VITE_AUDIT_DATA_PATH || "/data/demo/brightdata-results.json"
+    process.env.NEXT_PUBLIC_AUDIT_DATA_PATH || "/data/demo/brightdata-results.json"
   const trackedPromptsPath =
-    import.meta.env.VITE_TRACKED_PROMPTS_PATH ||
+    process.env.NEXT_PUBLIC_TRACKED_PROMPTS_PATH ||
     "/data/demo/tracked-prompts.json"
 
   try {
@@ -293,13 +310,7 @@ export async function loadAuditDashboardData(): Promise<
       fetchJson<TrackedPromptsFile>(trackedPromptsPath),
     ])
 
-    return {
-      ok: true,
-      audit: normalizeAudit(audit),
-      trackedPrompts: {
-        tracked_prompts: safeArray(trackedPrompts.tracked_prompts),
-      },
-    }
+    return createDashboardLoadSuccess(audit, trackedPrompts)
   } catch (error) {
     return {
       ok: false,

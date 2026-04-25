@@ -8,7 +8,8 @@ This script mirrors the Bright Data "datasets/v3" workflow:
 3) Download snapshot results
 4) Save results to results.json
 
-Note: HTML report generation is handled by AI after analyzing results.json.
+Note: Render the static HTML report from results.json with
+`node geo-audit-report/scripts/render-report.mjs --in <results.json>`.
 
 Requirements:
 - Python 3.10+
@@ -805,7 +806,10 @@ def main() -> None:
 
     results_path = os.path.join(out_dir, "results.json")
     print(f"Wrote results to {results_path}")
-    print("Note: AI will generate customized HTML report after analyzing results.json")
+    print(
+        "Next: render the standalone HTML report with "
+        f"'node geo-audit-report/scripts/render-report.mjs --in {results_path}'"
+    )
 
 
 if __name__ == "__main__":

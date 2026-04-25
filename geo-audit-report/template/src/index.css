@@ -134,8 +134,4 @@
     @apply bg-transparent text-foreground antialiased;
     min-height: 100vh;
   }
-
-  #root {
-    min-height: 100vh;
-  }
 }

@@ -4,20 +4,20 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:test": "vite --mode testdata",
-    "build": "tsc -b && vite build",
+    "dev": "next dev",
+    "dev:test": "AUDIT_DATA_PATH=/data/demo/brightdata-results.json TRACKED_PROMPTS_PATH=/data/demo/tracked-prompts.json next dev",
+    "build": "next build",
     "lint": "eslint .",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,mts}\"",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "start": "next start"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
-    "@tailwindcss/vite": "^4.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.8.0",
+    "next": "^15.5.5",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -28,18 +28,18 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@next/eslint-plugin-next": "^16.2.4",
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^16.5.0",
+    "postcss": "^8.5.6",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.57.1",
-    "vite": "^7.3.1"
+    "typescript-eslint": "^8.57.1"
   }
 }

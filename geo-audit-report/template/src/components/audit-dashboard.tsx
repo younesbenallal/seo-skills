@@ -1,4 +1,6 @@
-import { use, useDeferredValue, useState } from "react"
+"use client"
+
+import { useDeferredValue, useState } from "react"
 import {
   ArrowUpRight,
   Bot,
@@ -8,39 +10,37 @@ import {
   Search,
 } from "lucide-react"
 
-import { Gemini } from "@/components/ui/svgs/gemini"
-import { Openai } from "@/components/ui/svgs/openai"
-import { Perplexity } from "@/components/ui/svgs/perplexity"
+import { Gemini } from "@/src/components/ui/svgs/gemini"
+import { Openai } from "@/src/components/ui/svgs/openai"
+import { Perplexity } from "@/src/components/ui/svgs/perplexity"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
+} from "@/src/components/ui/accordion"
+import { Badge } from "@/src/components/ui/badge"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/src/components/ui/card"
+import { Input } from "@/src/components/ui/input"
+import { Separator } from "@/src/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import {
   buildAuditViewModel,
   formatDate,
   formatPercent,
-  loadAuditDashboardData,
   pluralize,
   sortByCountDesc,
+  type DashboardLoadResult,
   type DomainGroup,
   type FanOutSummaryRecord,
   type PromptGroup,
-} from "@/lib/audit-data"
-
-const auditDataPromise = loadAuditDashboardData()
+} from "@/src/lib/audit-data"
 
 function ChatbotLogo({
   chatbot,
@@ -150,8 +150,7 @@ function ChatbotSummary({
           <div>
             <p className="text-sm font-medium text-foreground">{label}</p>
             <p className="text-xs text-muted-foreground">
-              {citationCount}{" "}
-              {pluralize(citationCount, "citation", "citations")}
+              {citationCount} {pluralize(citationCount, "citation", "citations")}
             </p>
           </div>
         </div>
@@ -187,11 +186,7 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {promptGroup.responses.length}{" "}
-                {pluralize(
-                  promptGroup.responses.length,
-                  "response",
-                  "responses"
-                )}
+                {pluralize(promptGroup.responses.length, "response", "responses")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -264,18 +259,13 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                   </Badge>
                   <Badge variant="secondary" className="rounded-md">
                     {response.citations_count}{" "}
-                    {pluralize(
-                      response.citations_count,
-                      "citation",
-                      "citations"
-                    )}
+                    {pluralize(response.citations_count, "citation", "citations")}
                   </Badge>
                   <Badge variant="secondary" className="rounded-md">
                     fan-out {response.fan_out_queries.length}
                   </Badge>
                   <Badge variant="secondary" className="rounded-md">
-                    search{" "}
-                    {response.used_web_search ? "triggered" : "not triggered"}
+                    search {response.used_web_search ? "triggered" : "not triggered"}
                   </Badge>
                 </div>
               </div>
@@ -283,9 +273,7 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
             <CardContent className="space-y-5 pt-5">
               {response.brands_mentioned.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    brands mentioned
-                  </p>
+                  <p className="text-xs text-muted-foreground">brands mentioned</p>
                   <div className="flex flex-wrap gap-2">
                     {response.brands_mentioned.map((brand) => (
                       <Badge
@@ -304,17 +292,14 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                 <p className="text-xs text-muted-foreground">response</p>
                 <div className="rounded-lg bg-muted/40 p-4 text-sm leading-7 text-foreground">
                   <p className="whitespace-pre-wrap">
-                    {response.answer_text_markdown ||
-                      "No response body available."}
+                    {response.answer_text_markdown || "No response body available."}
                   </p>
                 </div>
               </div>
 
               {response.fan_out_queries.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    fan-out prompts
-                  </p>
+                  <p className="text-xs text-muted-foreground">fan-out prompts</p>
                   <div className="space-y-2">
                     {(response.fan_out_details.length > 0
                       ? response.fan_out_details
@@ -344,8 +329,7 @@ function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
                                 : "misses us"}
                             </Badge>
                             <Badge variant="secondary" className="rounded-md">
-                              citation{" "}
-                              {detail.brand_cited_in_response ? "yes" : "no"}
+                              citation {detail.brand_cited_in_response ? "yes" : "no"}
                             </Badge>
                             <Badge variant="secondary" className="rounded-md">
                               serp{" "}
@@ -429,8 +413,7 @@ function FanOutSummaryPanel({ summary }: { summary: FanOutSummaryRecord }) {
           <p className="text-sm font-medium text-foreground">{summary.query}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {summary.count} {pluralize(summary.count, "time", "times")} across{" "}
-            {summary.prompts.length}{" "}
-            {pluralize(summary.prompts.length, "prompt", "prompts")}
+            {summary.prompts.length} {pluralize(summary.prompts.length, "prompt", "prompts")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -465,10 +448,8 @@ function SourcePanel({ domainGroup }: { domainGroup: DomainGroup }) {
               {domainGroup.domain}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {domainGroup.uniquePages}{" "}
-              {pluralize(domainGroup.uniquePages, "page", "pages")} across{" "}
-              {domainGroup.responsesCount}{" "}
-              {pluralize(domainGroup.responsesCount, "response", "responses")}
+              {domainGroup.uniquePages} {pluralize(domainGroup.uniquePages, "page", "pages")} across{" "}
+              {domainGroup.responsesCount} {pluralize(domainGroup.responsesCount, "response", "responses")}
             </p>
           </div>
           <div className="hidden shrink-0 gap-6 text-sm text-muted-foreground md:flex">
@@ -507,8 +488,7 @@ function SourcePanel({ domainGroup }: { domainGroup: DomainGroup }) {
   )
 }
 
-function Dashboard() {
-  const loaded = use(auditDataPromise)
+export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
   const [sourceQuery, setSourceQuery] = useState("")
   const deferredSourceQuery = useDeferredValue(sourceQuery)
 
@@ -526,9 +506,8 @@ function Dashboard() {
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>{loaded.error}</p>
               <p>
-                Check <code>VITE_AUDIT_DATA_PATH</code> and{" "}
-                <code>VITE_TRACKED_PROMPTS_PATH</code>, then restart the dev
-                server.
+                Check <code>AUDIT_DATA_PATH</code> and <code>TRACKED_PROMPTS_PATH</code>,
+                then restart the dev server.
               </p>
             </CardContent>
           </Card>
@@ -561,17 +540,14 @@ function Dashboard() {
         <header className="rounded-2xl border border-border/80 bg-background/95 p-6 shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-3">
-              <p className="text-xs text-muted-foreground">
-                geo audit dashboard
-              </p>
+              <p className="text-xs text-muted-foreground">geo audit dashboard</p>
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                   {view.brandName}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Clean React template for Bright Data GEO audits. Swap the
-                  JSON, add manual recommendations, and the dashboard updates
-                  without touching the UI.
+                  Static-first Next dashboard for Bright Data GEO audits. Point
+                  the build at a run JSON, export, and you get a shareable HTML bundle.
                 </p>
               </div>
             </div>
@@ -740,8 +716,8 @@ function Dashboard() {
               <CardHeader>
                 <CardTitle>Manual recommendations</CardTitle>
                 <CardDescription>
-                  Edit <code>manual_recommendations</code> in the audit JSON
-                  after reviewing the results.
+                  Edit <code>manual_recommendations</code> in the audit JSON after
+                  reviewing the results.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -786,8 +762,7 @@ function Dashboard() {
               <CardContent className="space-y-3">
                 {view.fanOutSummary.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No search-engine fan-out queries were captured in this
-                    audit.
+                    No search-engine fan-out queries were captured in this audit.
                   </p>
                 ) : (
                   view.fanOutSummary.map((summary) => (
@@ -821,8 +796,7 @@ function Dashboard() {
               <CardHeader>
                 <CardTitle>Prompt breakdown</CardTitle>
                 <CardDescription>
-                  Each prompt expands into the responses captured for every AI
-                  chatbot.
+                  Each prompt expands into the responses captured for every AI chatbot.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -863,8 +837,7 @@ function Dashboard() {
                   <div>
                     <CardTitle>Source inventory</CardTitle>
                     <CardDescription>
-                      Grouped by domain, then expanded into the exact pages
-                      cited by the chatbots.
+                      Grouped by domain, then expanded into the exact pages cited by the chatbots.
                     </CardDescription>
                   </div>
                   <div className="w-full max-w-sm">
@@ -873,7 +846,7 @@ function Dashboard() {
                       <Input
                         value={sourceQuery}
                         onChange={(event) => setSourceQuery(event.target.value)}
-                        placeholder="Search domains or URLs…"
+                        placeholder="Search domains or URLs..."
                         className="pl-10"
                       />
                     </label>
@@ -911,13 +884,9 @@ function Dashboard() {
               </a>
             </span>
           </div>
-          <p>Bright Data JSON in, editable recommendations out.</p>
+          <p>Bright Data JSON in, static export out.</p>
         </footer>
       </div>
     </main>
   )
-}
-
-export default function App() {
-  return <Dashboard />
 }

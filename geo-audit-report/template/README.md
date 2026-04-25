@@ -1,6 +1,6 @@
 # GEO Audit Dashboard Template
 
-Minimal React + Vite + shadcn/ui dashboard for Bright Data GEO audits.
+Static-first Next.js dashboard for Bright Data GEO audits.
 
 ## Quick start
 
@@ -9,7 +9,7 @@ npm install
 npm run dev:test
 ```
 
-That launches the app with the bundled demo files:
+That launches the app with the bundled demo files and reads them on the server:
 
 - `public/data/demo/brightdata-results.json`
 - `public/data/demo/tracked-prompts.json`
@@ -26,11 +26,21 @@ python3 ../scripts/brightdata-geo.py ...
 3. Update `.env.local`:
 
 ```bash
-VITE_AUDIT_DATA_PATH=/data/<your-run>/results.json
-VITE_TRACKED_PROMPTS_PATH=/data/demo/tracked-prompts.json
+AUDIT_DATA_PATH=/data/<your-run>/results.json
+TRACKED_PROMPTS_PATH=/data/demo/tracked-prompts.json
 ```
 
 4. Restart `npm run dev`
+
+## Static export
+
+Because the page loads JSON during the Next build, you can export a static site directly:
+
+```bash
+npm run build
+```
+
+That writes a static bundle to `out/`.
 
 ## Manual recommendations
 

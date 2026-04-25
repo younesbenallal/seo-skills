@@ -111,12 +111,13 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
 - `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
 - `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
-- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data; outputs a dashboard-ready audit JSON and React template.
+- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
 
 ## Included helper scripts
 
 - Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
-- GEO collection + report: `geo-audit-report/scripts/brightdata-geo.py`
+- GEO collection: `geo-audit-report/scripts/brightdata-geo.py`
+- GEO static HTML export: `geo-audit-report/scripts/render-report.mjs`
 
 ## Suggested usage flow
 
