@@ -546,7 +546,7 @@ export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
                   {view.brandName}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Static-first Next dashboard for Bright Data GEO audits. Point
+                  Static-first Next dashboard for GEO audits. Point
                   the build at a run JSON, export, and you get a shareable HTML bundle.
                 </p>
               </div>
@@ -778,7 +778,7 @@ export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
               <MetricCard
                 title="Tracked prompts"
                 value={`${view.promptGroups.length}`}
-                detail="Unique prompts represented in the current Bright Data run."
+                detail="Unique prompts represented in the current audit run."
               />
               <MetricCard
                 title="Responses"
@@ -884,7 +884,7 @@ export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
               </a>
             </span>
           </div>
-          <p>Bright Data JSON in, static export out.</p>
+          <p>Audit JSON in, static export out.</p>
         </footer>
       </div>
     </main>

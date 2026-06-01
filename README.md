@@ -78,7 +78,7 @@ agent-browser screenshot --full full.png
 - `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
 - `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
 - `seo-audit-report`: auth mode `manual-file`, optional GSC MCP export input
-- `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY`
+- `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
 
 ### MCP types to install (what they’re for)
 
@@ -86,7 +86,7 @@ agent-browser screenshot --full full.png
 - **SERP API MCP**: fetch live Google SERPs (don’t rely on Google via browser automation).
 - **Google Search Console MCP**: pull query/page metrics to drive content updates.
 - **Ahrefs/Semrush MCP (optional)**: keyword research + competitor data for `programmatic-seo`.
-- **Bright Data API key**: local env var for `geo-audit-report`.
+- **Bright Data API key** or **DataForSEO login/password**: local env vars for `geo-audit-report`.
 
 ### Option B — manual symlink
 
@@ -111,12 +111,13 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
 - `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
 - `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
-- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
+- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data or DataForSEO; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
 
 ## Included helper scripts
 
 - Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
 - GEO collection: `geo-audit-report/scripts/brightdata-geo.py`
+- GEO collection fallback: `geo-audit-report/scripts/dataforseo-geo.py`
 - GEO static HTML export: `geo-audit-report/scripts/render-report.mjs`
 
 ## Suggested usage flow

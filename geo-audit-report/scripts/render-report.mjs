@@ -342,6 +342,7 @@ const buildReport = (audit) => {
     .sort((left, right) => left.visibilityRate - right.visibilityRate || left.citationRate - right.citationRate)
     .slice(0, 4);
   const topDomains = collectDomainSummary(responses);
+  const providerLabel = escapeHtml(String(audit.provider || "provider"));
 
   const hero = `
     <section class="hero">
@@ -350,7 +351,7 @@ const buildReport = (audit) => {
       <div class="hero-grid">
         <div class="hero-copy">
           <p>
-            This export turns the Bright Data run into a standalone HTML page, so the audit can be opened directly from disk without a local server.
+            This export turns the ${providerLabel} run into a standalone HTML page, so the audit can be opened directly from disk without a local server.
           </p>
           <p>
             Target: ${toLink(audit.check_url, audit.check_url)}<br />

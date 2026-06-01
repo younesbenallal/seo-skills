@@ -1,9 +1,9 @@
 ---
 name: geo-audit-report
-description: Create a GEO audit using Bright Data datasets (mandatory) and output a reusable dashboard-ready JSON, a static HTML report, and a Next.js template app.
+description: Create a GEO audit using Bright Data or DataForSEO and output a reusable dashboard-ready JSON, a static HTML report, and a Next.js template app.
 ---
 
-# GEO audit report (Bright Data → dashboard)
+# GEO audit report (provider → dashboard)
 
 You help the user:
 1) define prompts that matter for their business,  
@@ -11,7 +11,7 @@ You help the user:
 3) generate a dashboard-ready audit package with explicit JSON artifacts and a standalone HTML export,  
 4) review the results and turn them into actionable insights.
 
-The Bright Data API is mandatory for automated collection.
+Automated collection can use either Bright Data or DataForSEO.
 
 ## Shared context first
 
@@ -43,7 +43,8 @@ Treat the workflow as four distinct phases. Do not blur them together.
 
 ### Phase 2: audit run
 
-- run the Bright Data collector
+- choose the collection provider
+- run the matching collector
 - produce the dated audit folder
 - do not start editing the dashboard template yet
 
@@ -174,21 +175,40 @@ When helping the user shape the prompt set, try to guide it toward a healthy mix
 
 This is not a rigid checklist. The goal is to help the user find a set that reflects how buyers actually search, while avoiding a list that is too concentrated in only one angle.
 
-## Required tools
+## Provider selection
 
-- `BRIGHTDATA_API_KEY` env var
-- Bright Data dataset IDs for each chatbot you plan to run
+Choose the provider before Phase 2.
+
+- Prefer Bright Data when the user has it.
+- Use DataForSEO when the user only has DataForSEO access or explicitly asks for it.
+- Do not silently switch providers. Say which one you are using.
+
+Provider tradeoffs:
+- Bright Data gives the richest search-trigger and search-result trace fidelity, especially for ChatGPT.
+- DataForSEO is a valid fallback, but its trace fidelity is weaker.
+- With DataForSEO:
+  - ChatGPT uses `llm_scraper/live/advanced`
+  - Gemini uses `llm_scraper/live/advanced`
+  - Perplexity uses `llm_responses/live`
+  - fan-out and source traces are less complete than Bright Data
+  - there is no Bright Data-style dataset snapshot workflow
 
 ## Tooling & credentials
 
 - Auth mode: `env`
-- Requires: `BRIGHTDATA_API_KEY`
-- Fallback: none for automated collection
+- Requires: either `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
+- Fallback: Bright Data or DataForSEO
 - If missing: stop, ask the user to set the env var locally, and continue only after they confirm it is ready
 
 Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
 
-### Dataset IDs (always the same)
+### Bright Data setup
+
+Requires:
+- `BRIGHTDATA_API_KEY`
+- Bright Data dataset IDs for each chatbot you plan to run
+
+Dataset IDs:
 
 ```
 CHATGPT_DATASET_ID = "gd_m7aof0k82r803d5bjm"
@@ -196,16 +216,14 @@ PERPLEXITY_DATASET_ID = "gd_m7dhdot1vw9a7gc1n"
 GEMINI_DATASET_ID = "gd_mbz66arm2mf9cu856y"
 ```
 
-**IMPORTANT**: Before running the script, ask the user which chatbots they want to run:
+Before running the Bright Data script, ask the user which chatbots they want to run:
 - ChatGPT
 - Perplexity  
 - Gemini
 
 They can select one, two, or all three. Only pass the dataset IDs for the selected chatbots to the script.
 
-### API key handling
-
-Before running the script, verify only whether `BRIGHTDATA_API_KEY` is set:
+Verify only whether `BRIGHTDATA_API_KEY` is set:
 
 ```bash
 if [ -z "$BRIGHTDATA_API_KEY" ]; then echo "Not set"; else echo "Set"; fi
@@ -219,36 +237,86 @@ export BRIGHTDATA_API_KEY="your-key-here"
 
 Do not ask the user to paste the key in chat, and never print the key value.
 
-## Collection script (Python)
+### DataForSEO setup
+
+Requires:
+- `DATA_FOR_SEO_LOGIN`
+- `DATA_FOR_SEO_PASSWORD`
+
+Verify only whether both env vars are set:
+
+```bash
+if [ -z "$DATA_FOR_SEO_LOGIN" ] || [ -z "$DATA_FOR_SEO_PASSWORD" ]; then echo "Not set"; else echo "Set"; fi
+```
+
+If missing, ask the user to set them locally:
+
+```bash
+export DATA_FOR_SEO_LOGIN="your-login"
+export DATA_FOR_SEO_PASSWORD="your-password"
+```
+
+Do not ask the user to paste either secret in chat, and never print the values.
+
+Before running the DataForSEO script, ask the user which chatbots they want to run:
+- ChatGPT
+- Perplexity
+- Gemini
+
+Important DataForSEO nuance:
+- ChatGPT and Gemini use scraper endpoints
+- Perplexity uses a responses endpoint, not a scraper endpoint
+- Do not claim DataForSEO has Bright Data-equivalent search-trigger telemetry for every chatbot
+
+## Collection scripts (Python)
 
 Use:
 - `geo-audit-report/scripts/brightdata-geo.py`
+- `geo-audit-report/scripts/dataforseo-geo.py`
 
-It:
-- triggers selected datasets up front (part 1),
-- polls pending snapshots together (part 2),
-- downloads snapshots,
-- saves results to `results.json` with both response-level details and summary metrics.
+Bright Data collector:
+- triggers selected datasets up front
+- polls pending snapshots together
+- downloads snapshots
+- saves results to `results.json` with both response-level details and summary metrics
+
+DataForSEO collector:
+- calls live AI Optimization endpoints directly
+- stores one raw response per chatbot/prompt pair
+- saves the same normalized `results.json` schema used by the Bright Data collector
+- does not use dataset IDs or snapshot polling
 
 Important implementation notes:
 - Do not force ChatGPT web search on or off in the input payload. Let the model decide naturally so the audit stays as close as possible to a real user experience.
-- Query fan-out coverage depends on what each provider exposes through Bright Data. ChatGPT currently returns the richest query-level search data.
+- Query fan-out coverage depends on what the provider exposes. Bright Data ChatGPT currently returns the richest query-level search data.
 - Always preserve and surface whether search was actually triggered per response. Missing citations on a no-search response should be interpreted differently from missing citations on a searched response.
-- The collector should be resumable in a lightweight way: reuse existing snapshot metadata when available, skip raw redownloads unless forced, and write `results.partial.json` during progress.
+- The collector should be resumable in a lightweight way: reuse existing raw data when available, skip unnecessary re-fetches unless forced, and write `results.partial.json` during progress.
 
-**Important timing note**: BrightData processing can take **1 minute to several minutes** depending on the number of prompts. With many prompts (e.g., 10+), expect 3-5+ minutes of wait time. Inform the user about this before running the script so they know what to expect.
+DataForSEO-specific notes:
+- ChatGPT scraper exposes `fan_out_queries`, `sources`, and `search_results`, which map well to the current schema.
+- Gemini scraper maps well for citations and answer text, but has weaker search-trace detail than Bright Data ChatGPT.
+- Perplexity responses can still be normalized into the same schema, but source/search diagnostics are weaker than scraper-based collection.
+- Do not overstate search-trigger certainty when using DataForSEO. Missing citations does not necessarily mean no search happened.
+
+Timing note:
+- Bright Data processing can take **1 minute to several minutes** depending on prompt count.
+- DataForSEO live calls can take **up to 120 seconds per request**, and each live call accepts only one task.
+- Inform the user which timing profile applies before you run the audit.
 
 **Output structure**: All files are saved in a dated folder (`YYYY-MM-DD`) within the specified `--out-dir`:
 - `{out-dir}/{YYYY-MM-DD}/results.json` - Complete results data
-- `{out-dir}/{YYYY-MM-DD}/snapshots/{chatbot}.json` - Snapshot metadata per chatbot
-- `{out-dir}/{YYYY-MM-DD}/raw/{chatbot}-{snapshot_id}.json` - Raw snapshot data
+- `{out-dir}/{YYYY-MM-DD}/raw/...json` - Raw provider payloads
 - `{out-dir}/{YYYY-MM-DD}/report.html` - standalone HTML report rendered from `results.json`
 - `{cwd}/geo-audit-report-{run-folder}.html` - duplicate of the same HTML report in the current working directory
+
+Provider-specific raw files:
+- Bright Data: `snapshots/{chatbot}.json` and `raw/{chatbot}-{snapshot_id}.json`
+- DataForSEO: `raw/{chatbot}-{prompt-index}-{prompt-slug}.json`
 
 ### Example run
 
 ```bash
-# Ensure BRIGHTDATA_API_KEY is set (user should export it themselves)
+# Bright Data
 python3 geo-audit-report/scripts/brightdata-geo.py \
   --check-url "https://example.com" \
   --prompts-file prompts.txt \
@@ -259,10 +327,22 @@ python3 geo-audit-report/scripts/brightdata-geo.py \
   --brand-terms "Example,Example Product" \
   --out-dir ./geo-run
 
-# Files will be saved in: ./geo-run/2025-01-15/ (or current date)
+# DataForSEO
+python3 geo-audit-report/scripts/dataforseo-geo.py \
+  --check-url "https://example.com" \
+  --prompts-file prompts.txt \
+  --chatbots "chatgpt,perplexity,gemini" \
+  --country "US" \
+  --language "en" \
+  --target-domains "example.com" \
+  --brand-terms "Example,Example Product" \
+  --out-dir ./geo-run
 ```
 
-Note: Only include the dataset ID flags for chatbots the user selected (ChatGPT, Perplexity, and/or Gemini).
+Notes:
+- For Bright Data, only include the dataset ID flags for chatbots the user selected.
+- For DataForSEO, only include the chatbots the user selected in `--chatbots`.
+- Files will be saved in `./geo-run/YYYY-MM-DD/`.
 
 ## Required audit artifacts
 
@@ -271,11 +351,11 @@ The audit is not complete unless the dated run folder contains the expected arti
 ### Required
 
 - `{out-dir}/{YYYY-MM-DD}/results.json`
-- `{out-dir}/{YYYY-MM-DD}/snapshots/{chatbot}.json`
-- `{out-dir}/{YYYY-MM-DD}/raw/{chatbot}-{snapshot_id}.json`
+- at least one raw provider payload under `{out-dir}/{YYYY-MM-DD}/raw/`
 
 ### Optional but expected in normal usage
 
+- `{out-dir}/{YYYY-MM-DD}/snapshots/` for Bright Data runs
 - `{out-dir}/{YYYY-MM-DD}/tracked-prompts.json`
 - `{out-dir}/{YYYY-MM-DD}/report.html`
 - `{cwd}/geo-audit-report-{run-folder}.html`

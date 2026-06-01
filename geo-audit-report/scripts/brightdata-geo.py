@@ -584,6 +584,8 @@ def build_results_payload(
 ) -> Dict[str, Any]:
     return {
         "schema_version": "geo-audit-v2",
+        "provider": "brightdata",
+        "provider_method": "datasets_v3",
         "run_at": run_at,
         "check_url": check_url,
         "target_domains": target_domains,

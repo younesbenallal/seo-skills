@@ -181,6 +181,25 @@ Agent behavior:
 - never print the value
 - if missing, stop and give the export command above
 
+### DataForSEO API
+
+Used by:
+
+- `geo-audit-report` fallback collection
+
+User setup:
+
+```bash
+export DATA_FOR_SEO_LOGIN="your-login"
+export DATA_FOR_SEO_PASSWORD="your-password"
+```
+
+Agent behavior:
+
+- verify only whether both env vars are set
+- never print either value
+- if missing, stop and give the export commands above
+
 ## Skill author checklist
 
 Every skill that depends on tooling or credentials should include a short `Tooling & credentials` section with:

@@ -4,11 +4,16 @@
 
 `geo-audit-report` now ships with a standalone HTML renderer so each run can end with a clickable `report.html`, not just JSON and a dashboard template. The renderer also converts captured Markdown answers into HTML and duplicates the final page into the current working directory for easier retrieval. The companion dashboard template is now a static-first Next.js app rather than Vite.
 
+The skill now supports two collection providers:
+- Bright Data as the primary, higher-fidelity option
+- DataForSEO as a fallback when Bright Data is not available
+
 ## Main files
 
 | File | Responsibility |
 | --- | --- |
-| `geo-audit-report/scripts/brightdata-geo.py` | Collects Bright Data snapshots and now stores both per-response and aggregated fan-out query data. |
+| `geo-audit-report/scripts/brightdata-geo.py` | Collects Bright Data snapshots and stores both per-response and aggregated fan-out query data. |
+| `geo-audit-report/scripts/dataforseo-geo.py` | Collects DataForSEO AI Optimization results and normalizes them into the same audit schema used by the Bright Data collector. |
 | `geo-audit-report/scripts/render-report.mjs` | Renders `results.json` into a standalone `report.html`, duplicates it into the current working directory, and prints the generated file paths. |
 | `geo-audit-report/SKILL.md` | Defines audit phases, required artifacts, static export expectations, and tracked-prompts companion-file rules. |
 | `geo-audit-report/template/src/lib/audit-data.ts` | Normalizes fan-out details and computes fallbacks for older audit JSON files. |
@@ -23,8 +28,17 @@
   - whether the brand appeared in the final response
   - whether the brand was cited
   - whether the brand domain was found in captured search results
-  - the captured search result traces when Bright Data exposes them
+  - the captured search result traces when the provider exposes them
 - `fan_out_summary` aggregates the queries across the whole run so the dashboard can show how often each query was made and whether the brand appeared or was cited.
+
+## Provider notes
+
+- Bright Data remains the better source for search-trigger and search-result trace fidelity.
+- DataForSEO fallback uses:
+  - ChatGPT scraper
+  - Gemini scraper
+  - Perplexity responses
+- DataForSEO does not replicate Bright Data dataset snapshots and may expose weaker fan-out/search-trigger diagnostics depending on the chatbot.
 
 ## Companion artifacts
 
@@ -48,7 +62,7 @@ After the collector finishes:
 
 ## Markdown rendering
 
-The static exporter turns each `answer_text_markdown` field into HTML before writing the final page. This keeps the deliverable readable when Bright Data returns headings, lists, links, code fences, or paragraph breaks in Markdown form.
+The static exporter turns each `answer_text_markdown` field into HTML before writing the final page. This keeps the deliverable readable when either provider returns headings, lists, links, code fences, or paragraph breaks in Markdown form.
 
 ## Compatibility
 
