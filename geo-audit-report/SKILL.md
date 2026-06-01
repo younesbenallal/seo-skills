@@ -1,6 +1,6 @@
 ---
 name: geo-audit-report
-description: Create a GEO audit using Bright Data or DataForSEO and output a reusable dashboard-ready JSON, a static HTML report, and a Next.js template app.
+description: Create a GEO audit using Bright Data or DataForSEO and output a reusable dashboard-ready JSON, a static HTML report, and a Next.js template app that should be used by default.
 ---
 
 # GEO audit report (provider → dashboard)
@@ -8,7 +8,7 @@ description: Create a GEO audit using Bright Data or DataForSEO and output a reu
 You help the user:
 1) define prompts that matter for their business,  
 2) collect results from major LLM experiences (ChatGPT / Perplexity / optionally Gemini),  
-3) generate a dashboard-ready audit package with explicit JSON artifacts and a standalone HTML export,  
+3) generate a dashboard-ready audit package with explicit JSON artifacts and the Next.js template wired by default, plus a standalone HTML export,  
 4) review the results and turn them into actionable insights.
 
 Automated collection can use either Bright Data or DataForSEO.
@@ -53,7 +53,8 @@ Treat the workflow as four distinct phases. Do not blur them together.
 - verify that the JSON artifacts are complete
 - prepare the dashboard inputs
 - render the standalone HTML page from `results.json`
-- only then connect the run to the Next.js template if an interactive dashboard is still useful
+- connect the run to the Next.js template by default
+- only skip the template when the user explicitly asks not to use it, or force majeure prevents it (for example: missing dependencies, broken build tooling, or incomplete artifacts that make the template unusable)
 
 ### Phase 4: analysis
 
@@ -62,7 +63,7 @@ Treat the workflow as four distinct phases. Do not blur them together.
 - add optional manual recommendations
 - give the user the exact local HTML file path so they can click it from chat
 
-If a run failed or the JSON is incomplete, stop in Phase 2 or 3 and say so clearly instead of pretending the dashboard is ready.
+If a run failed or the JSON is incomplete, stop in Phase 2 or 3 and say so clearly instead of pretending the dashboard or template is ready.
 
 ## How to gather prompts with the user
 
@@ -189,7 +190,7 @@ Provider tradeoffs:
 - With DataForSEO:
   - ChatGPT uses `llm_scraper/live/advanced`
   - Gemini uses `llm_scraper/live/advanced`
-  - Perplexity uses `llm_responses/live`
+  - only ChatGPT and Gemini are supported in this skill
   - fan-out and source traces are less complete than Bright Data
   - there is no Bright Data-style dataset snapshot workflow
 
@@ -260,13 +261,12 @@ Do not ask the user to paste either secret in chat, and never print the values.
 
 Before running the DataForSEO script, ask the user which chatbots they want to run:
 - ChatGPT
-- Perplexity
 - Gemini
 
 Important DataForSEO nuance:
 - ChatGPT and Gemini use scraper endpoints
-- Perplexity uses a responses endpoint, not a scraper endpoint
-- Do not claim DataForSEO has Bright Data-equivalent search-trigger telemetry for every chatbot
+- Perplexity is intentionally not supported in this fallback
+- Do not claim DataForSEO has Bright Data-equivalent search-trigger telemetry
 
 ## Collection scripts (Python)
 
@@ -285,6 +285,7 @@ DataForSEO collector:
 - stores one raw response per chatbot/prompt pair
 - saves the same normalized `results.json` schema used by the Bright Data collector
 - does not use dataset IDs or snapshot polling
+- only supports ChatGPT and Gemini
 
 Important implementation notes:
 - Do not force ChatGPT web search on or off in the input payload. Let the model decide naturally so the audit stays as close as possible to a real user experience.
@@ -295,7 +296,6 @@ Important implementation notes:
 DataForSEO-specific notes:
 - ChatGPT scraper exposes `fan_out_queries`, `sources`, and `search_results`, which map well to the current schema.
 - Gemini scraper maps well for citations and answer text, but has weaker search-trace detail than Bright Data ChatGPT.
-- Perplexity responses can still be normalized into the same schema, but source/search diagnostics are weaker than scraper-based collection.
 - Do not overstate search-trigger certainty when using DataForSEO. Missing citations does not necessarily mean no search happened.
 
 Timing note:
@@ -331,7 +331,7 @@ python3 geo-audit-report/scripts/brightdata-geo.py \
 python3 geo-audit-report/scripts/dataforseo-geo.py \
   --check-url "https://example.com" \
   --prompts-file prompts.txt \
-  --chatbots "chatgpt,perplexity,gemini" \
+  --chatbots "chatgpt,gemini" \
   --country "US" \
   --language "en" \
   --target-domains "example.com" \
@@ -393,9 +393,11 @@ The audit is not complete unless the dated run folder contains the expected arti
    - Optionally add a couple of manual recommendations in `manual_recommendations`
    - Generate `report.html` in the same dated output folder with `geo-audit-report/scripts/render-report.mjs`
    - Duplicate that HTML file into the current working directory
+   - Wire the dated run into the Next.js template unless the user explicitly told you not to, or force majeure prevents it
+   - Validate that the template can read the audit data
    - Return the absolute local file path to the user so they can click it directly from chat
 
-4. Present these conclusions clearly and concisely to the user, and let them know the JSON and static HTML deliverables are ready.
+4. Present these conclusions clearly and concisely to the user, and let them know the template and static HTML deliverables are ready. If the template was skipped, explain exactly why.
 
 ## Static HTML export
 
@@ -422,28 +424,37 @@ node geo-audit-report/scripts/render-report.mjs \
 
 **IMPORTANT**: The Python script produces the audit JSON, and the Next.js template in `geo-audit-report/template` reads that JSON directly during build time.
 
-Treat the Next.js template as the interactive companion artifact for the skill. The default end-user deliverable is the standalone HTML report. If the user wants the dashboard too, the path is:
+Treat the Next.js template as the default artifact for this skill in almost all cases. The standalone HTML report is still required, but it is the companion deliverable, not the substitute. Use the template unless:
+
+- the user explicitly instructs you not to use it
+- force majeure makes it impractical or impossible in this run (for example dependency failures, broken template build/runtime, or unusable audit artifacts)
+
+The default path is:
 
 1. run the collector
 2. verify the JSON artifacts
 3. render the static HTML export
 4. connect the run to the template
-5. review the dashboard
+5. review the template output
+6. report both deliverables back to the user
 
 Do not describe the audit as “done” if the collector succeeded but the JSON does not match what the dashboard expects.
+Do not describe the audit as “done” if you skipped the template without one of the allowed exceptions above.
 
 The expected workflow is:
 
 1. Run the collector to produce `results.json`
 2. Render `results.json` to `report.html`
-3. Share the absolute local file path for that HTML report in the final response
-4. Copy the same JSON into the template app's `public/data/...` folder or point the build to it with `AUDIT_DATA_PATH` and `TRACKED_PROMPTS_PATH`
-5. Add a few manual recommendations directly in the JSON after reviewing the data
-6. Run the Next build if the user wants a static exported dashboard bundle
-7. Launch the app and review the three tabs:
+3. Copy the same JSON into the template app's `public/data/...` folder or point the build to it with `AUDIT_DATA_PATH` and `TRACKED_PROMPTS_PATH`
+4. Add a few manual recommendations directly in the JSON after reviewing the data
+5. Run the Next build or otherwise launch the template so the dashboard can actually be used
+   - keep the exported dashboard compatible with direct local-file opening, not only hosted server access
+   - ensure asset paths are relative so the export does not break on `file://` with absolute `/_next/...` URLs
+6. Launch the app and review the three tabs:
    - Overview
    - Prompts
    - Sources
+7. Share the absolute local file path for the HTML report and the template access path in the final response
 
 ### Dashboard input contract
 

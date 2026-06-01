@@ -2,7 +2,7 @@
 
 ## What changed
 
-`geo-audit-report` now ships with a standalone HTML renderer so each run can end with a clickable `report.html`, not just JSON and a dashboard template. The renderer also converts captured Markdown answers into HTML and duplicates the final page into the current working directory for easier retrieval. The companion dashboard template is now a static-first Next.js app rather than Vite.
+`geo-audit-report` now ships with a standalone HTML renderer so each run can end with a clickable `report.html`, not just JSON. The renderer also converts captured Markdown answers into HTML and duplicates the final page into the current working directory for easier retrieval. The Next.js template remains the default dashboard deliverable and should be wired for almost every run unless the user explicitly says not to use it or force majeure blocks it.
 
 The skill now supports two collection providers:
 - Bright Data as the primary, higher-fidelity option
@@ -37,17 +37,16 @@ The skill now supports two collection providers:
 - DataForSEO fallback uses:
   - ChatGPT scraper
   - Gemini scraper
-  - Perplexity responses
-- DataForSEO does not replicate Bright Data dataset snapshots and may expose weaker fan-out/search-trigger diagnostics depending on the chatbot.
+- DataForSEO does not replicate Bright Data dataset snapshots and exposes weaker fan-out/search-trigger diagnostics than Bright Data.
 
 ## Companion artifacts
 
 - `results.json` is the immutable run output.
 - `results.partial.json` is the in-progress checkpoint written as chatbot snapshots finish processing.
 - `tracked-prompts.json` is the long-lived history file used across multiple runs.
-- `report.html` is now the default static deliverable written beside the dated run.
+- `report.html` is the companion static deliverable written beside the dated run.
 - `geo-audit-report-{date}.html` is the convenience duplicate written to the current working directory.
-- The Next.js template under `geo-audit-report/template` remains the interactive companion deliverable when the user wants a dashboard.
+- The Next.js template under `geo-audit-report/template` is the default dashboard deliverable for normal runs.
 
 ## Static export flow
 

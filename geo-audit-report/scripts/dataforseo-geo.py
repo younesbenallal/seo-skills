@@ -50,10 +50,6 @@ CHATBOT_SPECS = {
         "endpoint": "/v3/ai_optimization/gemini/llm_scraper/live/advanced",
         "mode": "scraper",
     },
-    "perplexity": {
-        "endpoint": "/v3/ai_optimization/perplexity/llm_responses/live",
-        "mode": "responses",
-    },
 }
 
 COUNTRY_TO_LOCATION = {
@@ -616,86 +612,9 @@ def parse_chatbots(value: str) -> List[str]:
         if not chatbot:
             continue
         if chatbot not in CHATBOT_SPECS:
-            raise SystemExit(f"Unsupported DataForSEO chatbot '{chatbot}'. Supported: chatgpt, gemini, perplexity")
+            raise SystemExit(f"Unsupported DataForSEO chatbot '{chatbot}'. Supported: chatgpt, gemini")
         requested.append(chatbot)
     return requested
-
-
-def to_annotation_sources(annotations: Any) -> List[Dict[str, Any]]:
-    if not isinstance(annotations, list):
-        return []
-
-    out = []
-    for item in annotations:
-        if not isinstance(item, dict):
-            continue
-        url = item.get("url") if isinstance(item.get("url"), str) else ""
-        title = item.get("title") if isinstance(item.get("title"), str) else ""
-        domain = ""
-        if url:
-            try:
-                domain = urllib.parse.urlparse(url).netloc
-            except Exception:
-                domain = ""
-        if not domain and "." in title:
-            domain = title
-        out.append(
-            {
-                "title": title or None,
-                "url": url or None,
-                "domain": normalize_domain(domain) if domain else None,
-                "type": classify_domain(domain or url),
-            }
-        )
-
-    deduped: List[Dict[str, Any]] = []
-    seen = set()
-    for item in out:
-        key = (item.get("url"), item.get("title"))
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(item)
-    return [item for item in deduped if item.get("url") or item.get("title")]
-
-
-def normalize_responses_record(result_record: Dict[str, Any]) -> Dict[str, Any]:
-    items = result_record.get("items") or []
-    text_parts: List[str] = []
-    collected_sources: List[Dict[str, Any]] = []
-
-    if isinstance(items, list):
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            if str(item.get("type") or "") != "message":
-                continue
-            message = item.get("message") or {}
-            if not isinstance(message, dict):
-                continue
-            sections = message.get("sections") or []
-            if not isinstance(sections, list):
-                continue
-            for section in sections:
-                if not isinstance(section, dict):
-                    continue
-                if str(section.get("type") or "") != "text":
-                    continue
-                text = str(section.get("text") or "").strip()
-                if text:
-                    text_parts.append(text)
-                collected_sources.extend(to_annotation_sources(section.get("annotations")))
-
-    fan_out = result_record.get("fan_out_queries") or []
-    normalized = {
-        "markdown": "\n\n".join(text_parts).strip(),
-        "sources": collected_sources,
-        "fan_out_queries": fan_out if isinstance(fan_out, list) else [],
-        "datetime": result_record.get("datetime"),
-        "model": str(result_record.get("model_name") or result_record.get("model") or "").strip() or None,
-        "web_search_used": bool(result_record.get("web_search")),
-    }
-    return normalized
 
 
 def post_prompt(
@@ -707,30 +626,19 @@ def post_prompt(
     locale: LocaleTarget,
     force_web_search: bool,
     tag: str,
-    perplexity_model: str,
 ) -> Dict[str, Any]:
     spec = CHATBOT_SPECS[chatbot]
     endpoint = str(spec["endpoint"])
     mode = str(spec["mode"])
-    if mode == "scraper":
-        payload = [
-            {
-                "keyword": prompt,
-                **({"location_code": locale.location_code} if locale.location_code is not None else {"location_name": locale.location_name}),
-                **({"language_code": locale.language_code} if locale.language_code else {"language_name": locale.language_name}),
-                "tag": tag,
-                **({"force_web_search": True} if chatbot == "chatgpt" and force_web_search else {}),
-            }
-        ]
-    else:
-        payload = [
-            {
-                "user_prompt": prompt,
-                "model_name": perplexity_model,
-                "tag": tag,
-                **({"web_search_country_iso_code": locale.country_iso_code} if locale.country_iso_code else {}),
-            }
-        ]
+    payload = [
+        {
+            "keyword": prompt,
+            **({"location_code": locale.location_code} if locale.location_code is not None else {"location_name": locale.location_name}),
+            **({"language_code": locale.language_code} if locale.language_code else {"language_name": locale.language_name}),
+            "tag": tag,
+            **({"force_web_search": True} if chatbot == "chatgpt" and force_web_search else {}),
+        }
+    ]
 
     response = http_json(f"{base_url.rstrip('/')}{endpoint}", "POST", auth_header, payload=payload, timeout_sec=180)
     if not isinstance(response, dict):
@@ -754,13 +662,12 @@ def post_prompt(
         raise RuntimeError(f"DataForSEO returned no result rows for {chatbot}: {task}")
 
     raw_result = results[0]
-    normalized_result = raw_result if mode == "scraper" else normalize_responses_record(raw_result)
 
     return {
         "task_id": str(task.get("id") or ""),
         "status": "ready",
         "cost": task.get("cost"),
-        "result": normalized_result,
+        "result": raw_result,
         "raw_result": raw_result,
         "request_data": task.get("data") if isinstance(task.get("data"), dict) else {},
         "response_path": task.get("path") if isinstance(task.get("path"), list) else [],
@@ -783,7 +690,7 @@ def main() -> None:
     parser.add_argument("--base-url", default=os.environ.get("DATA_FOR_SEO_API_URL", DEFAULT_BASE_URL))
     parser.add_argument("--check-url", required=True, help="Audit target URL, stored in results.json for report context")
     parser.add_argument("--prompts-file", required=True, help="Text file (one prompt per line) or JSON array")
-    parser.add_argument("--chatbots", default="chatgpt,gemini", help="Comma-separated list: chatgpt,gemini,perplexity")
+    parser.add_argument("--chatbots", default="chatgpt,gemini", help="Comma-separated list: chatgpt,gemini")
     parser.add_argument("--country", default="US", help="Country code or full location name, e.g. US or United States")
     parser.add_argument("--language", default="en", help="Language code or full language name, e.g. en or English")
     parser.add_argument("--location-name", default="", help="Explicit DataForSEO location_name override")
@@ -797,7 +704,6 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="Re-run prompts even if raw results exist in the dated folder")
     parser.add_argument("--force-web-search", action="store_true", help="Only for ChatGPT. Forces web search, which is less faithful to natural behavior.")
     parser.add_argument("--delay-ms", type=int, default=250, help="Delay between live calls to avoid bursty traffic")
-    parser.add_argument("--perplexity-model", default="sonar", help="DataForSEO Perplexity model_name for LLM Responses live")
     args = parser.parse_args()
 
     login = str(args.login).strip()
@@ -851,7 +757,6 @@ def main() -> None:
                     locale=locale,
                     force_web_search=bool(args.force_web_search),
                     tag=tag,
-                    perplexity_model=str(args.perplexity_model).strip() or "sonar",
                 )
                 write_json(raw_path, raw_payload)
                 if args.delay_ms > 0:

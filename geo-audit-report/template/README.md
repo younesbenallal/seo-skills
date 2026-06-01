@@ -42,6 +42,8 @@ npm run build
 
 That writes a static bundle to `out/`.
 
+The template is configured to emit relative asset paths, so opening `out/index.html` directly from disk should still load the exported CSS and JS instead of pointing at absolute `/_next/...` URLs.
+
 ## Manual recommendations
 
 After reviewing the audit, add recommendations directly in the `manual_recommendations` array inside the audit JSON. The overview tab renders them automatically.
