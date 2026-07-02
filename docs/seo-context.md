@@ -46,6 +46,7 @@ These skills now explicitly check `.agents/seo-context.md` first:
 - `illustration-ideas`
 - `seo-audit-report`
 - `geo-audit-report`
+- `competitor-intelligence`
 
 ## Why this matters
 

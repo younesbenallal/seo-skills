@@ -1,0 +1,4 @@
+interface:
+  display_name: "Competitor Intelligence"
+  short_description: "Analyze and monitor SEO competitors"
+  default_prompt: "Use $competitor-intelligence to identify, analyze, and monitor my SEO competitors."

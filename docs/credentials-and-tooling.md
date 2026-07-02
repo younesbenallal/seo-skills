@@ -135,6 +135,7 @@ Used by:
 - `search-intent-coverage`
 - optionally `seo-roast`
 - optionally `programmatic-seo`
+- optionally `competitor-intelligence` for competitor discovery
 
 User setup:
 
@@ -162,6 +163,23 @@ Agent behavior:
 - if present, use it
 - if missing and the skill supports exports, offer CSV/JSON export as the fallback
 - otherwise stop and ask the user to install/configure it
+
+### SEO intelligence providers
+
+Used optionally by:
+
+- `competitor-intelligence`
+- `programmatic-seo`
+
+Supported sources include Ahrefs, Semrush, DataForSEO, or an equivalent provider.
+
+Agent behavior:
+
+- detect an already configured provider MCP before asking about access
+- otherwise accept a local CSV/JSON export
+- keep country, date, device, database, and domain scope consistent across compared sites
+- never ask the user to paste provider credentials in chat
+- continue with sitemap analysis when provider access is unavailable
 
 ### Bright Data API
 

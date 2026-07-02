@@ -77,6 +77,7 @@ agent-browser screenshot --full full.png
 - `linking-opportunities`: auth mode `mcp`, requires SERP API MCP, Browser optional
 - `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
 - `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
+- `competitor-intelligence`: auth mode `none` for sitemap analysis; SERP/SEO-provider MCPs or manual exports are optional
 - `seo-audit-report`: auth mode `manual-file`, optional GSC MCP export input
 - `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
 
@@ -85,14 +86,14 @@ agent-browser screenshot --full full.png
 - **Browser MCP** or **agent-browser CLI** (recommended: agent-browser): read content, navigate, copy text, capture screenshots.
 - **SERP API MCP**: fetch live Google SERPs (don’t rely on Google via browser automation).
 - **Google Search Console MCP**: pull query/page metrics to drive content updates.
-- **Ahrefs/Semrush MCP (optional)**: keyword research + competitor data for `programmatic-seo`.
+- **Ahrefs/Semrush/DataForSEO MCP (optional)**: keyword, page, traffic, and backlink data for `programmatic-seo` and `competitor-intelligence`.
 - **Bright Data API key** or **DataForSEO login/password**: local env vars for `geo-audit-report`.
 
 ### Option B — manual symlink
 
 ```bash
 mkdir -p ~/.agents/skills
-for d in seo-context linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo geo-audit-report; do
+for d in seo-context linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report; do
   ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
@@ -111,6 +112,7 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
 - `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
 - `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
+- `competitor-intelligence`: discover direct and audience competitors, reverse-engineer sitemap/content patterns, run SEO gap analysis, and monitor changes.
 - `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data or DataForSEO; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
 
 ## Included helper scripts
@@ -119,6 +121,8 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - GEO collection: `geo-audit-report/scripts/brightdata-geo.py`
 - GEO collection fallback: `geo-audit-report/scripts/dataforseo-geo.py`
 - GEO static HTML export: `geo-audit-report/scripts/render-report.mjs`
+- Competitor sitemap inventory: `competitor-intelligence/scripts/sitemap_inventory.py`
+- Competitor sitemap snapshot comparison: `competitor-intelligence/scripts/compare_inventories.py`
 
 ## Suggested usage flow
 
@@ -127,10 +131,11 @@ For most projects, start with `seo-context` once, then use the task-specific ski
 Example flow:
 
 1. `seo-context` to capture the site, goals, market, competitors, and tooling
-2. `search-intent-coverage` for content briefs
-3. `subkeyword-injector` for refreshes
-4. `linking-opportunities` for authority work
-5. `seo-roast` or `geo-audit-report` for audits and diagnostics
+2. `competitor-intelligence` to discover competitors and map strategic gaps
+3. `search-intent-coverage` for content briefs
+4. `subkeyword-injector` for refreshes
+5. `linking-opportunities` for authority work
+6. `seo-roast` or `geo-audit-report` for audits and diagnostics
 
 ## Skill creation process (reference)
 
