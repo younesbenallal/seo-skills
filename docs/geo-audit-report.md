@@ -37,7 +37,7 @@ The skill now supports two collection providers:
 Each response separates:
 
 - `answer_text_markdown`: cleaned final answer
-- `actual_citations`: only provider citation records where `cited` is not false
+- `actual_citations`: only provider citation records explicitly marked `cited: true`
 - `citation_candidates`: every citation candidate
 - `uncited_citation_candidates`: candidates explicitly marked `cited: false`
 - `search_sources`: structured search retrieval
