@@ -47,6 +47,24 @@ const unique = (items) => [...new Set((Array.isArray(items) ? items : []).filter
 
 const numberOrZero = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
+const actualCitations = (response) =>
+  Array.isArray(response.actual_citations)
+    ? response.actual_citations
+    : Array.isArray(response.sources)
+      ? response.sources
+      : [];
+
+const citationCandidates = (response) =>
+  Array.isArray(response.citation_candidates)
+    ? response.citation_candidates
+      : actualCitations(response);
+
+const evidenceAvailable = (response, channel, legacyField) => {
+  const state = response.evidence_status?.[channel]?.state;
+  if (state) return state === "supported" || state === "inferred";
+  return response[legacyField] !== undefined;
+};
+
 const percent = (value, precision = 0) => {
   if (!Number.isFinite(value)) return "0%";
   return `${(value * 100).toFixed(precision)}%`;
@@ -203,8 +221,14 @@ const collectDomainSummary = (responses) => {
   const domains = new Map();
 
   for (const response of responses) {
-    for (const source of Array.isArray(response.sources) ? response.sources : []) {
-      const domain = String(source.domain || "").trim();
+    for (const source of actualCitations(response)) {
+      const domain = (() => {
+        try {
+          return new URL(source.url).hostname.replace(/^www\./, "").toLowerCase();
+        } catch {
+          return String(source.domain || "").trim();
+        }
+      })();
       if (!domain) continue;
 
       const current =
@@ -238,20 +262,28 @@ const buildRecommendations = ({
   competitorMentions,
 }) => {
   const recommendations = [];
-  const totalResponses = responses.length || 1;
+  const answerEvidence = responses.filter((response) =>
+    evidenceAvailable(response, "answer", "answer_text_markdown")
+  );
+  const citationEvidence = responses.filter((response) =>
+    evidenceAvailable(response, "actual_citations", "sources")
+  );
+  const searchEvidence = responses.filter((response) =>
+    evidenceAvailable(response, "web_search", "used_web_search")
+  );
   const citedResponses = responses.filter((response) => response.cited).length;
   const visibilityResponses = responses.filter((response) => numberOrZero(response.mentions) > 0).length;
   const searchTriggered = responses.filter((response) => response.used_web_search).length;
 
-  if (visibilityResponses / totalResponses < 0.5) {
+  if (answerEvidence.length && visibilityResponses / answerEvidence.length < 0.5) {
     recommendations.push("Strengthen category and comparison pages for the prompts where the brand is absent, because visibility is still under half of captured responses.");
   }
 
-  if (citedResponses / totalResponses < 0.25) {
+  if (citationEvidence.length && citedResponses / citationEvidence.length < 0.25) {
     recommendations.push("Prioritize citation-ready assets such as original research, benchmark pages, and answer-first comparison content so assistants have clearer sources to cite.");
   }
 
-  if (searchTriggered / totalResponses > 0.5) {
+  if (searchEvidence.length && searchTriggered / searchEvidence.length > 0.5) {
     recommendations.push("Search is triggering frequently, so on-site discoverability and third-party citation coverage matter as much as prompt phrasing.");
   }
 
@@ -292,18 +324,41 @@ const buildReport = (audit) => {
   const snapshots = Array.isArray(audit.snapshots) ? audit.snapshots : [];
   const fanOutSummary = Array.isArray(audit.fan_out_summary) ? audit.fan_out_summary : [];
   const manualRecommendations = Array.isArray(audit.manual_recommendations) ? audit.manual_recommendations : [];
+  const diagnostics = audit.collection_diagnostics || {};
 
   const promptSummaries = collectPromptSummaries(responses);
   const citedResponses = responses.filter((response) => response.cited).length;
   const visibilityResponses = responses.filter((response) => numberOrZero(response.mentions) > 0).length;
   const searchTriggeredResponses = responses.filter((response) => response.used_web_search).length;
+  const answerEvidenceCount = responses.filter((response) =>
+    evidenceAvailable(response, "answer", "answer_text_markdown")
+  ).length;
+  const citationEvidenceCount = responses.filter((response) =>
+    evidenceAvailable(response, "actual_citations", "sources")
+  ).length;
+  const searchEvidenceCount = responses.filter((response) =>
+    evidenceAvailable(response, "web_search", "used_web_search")
+  ).length;
+  const actualCitationAppearances = responses.flatMap(actualCitations).length;
+  const uniqueActualCitations = unique(responses.flatMap(actualCitations).map((source) => source.url)).length;
+  const candidateAppearances = responses.flatMap(citationCandidates).length;
+  const mapPlacements = responses.flatMap((response) =>
+    Array.isArray(response.map_results) ? response.map_results : []
+  ).length;
   const averageRank = average(
     responses
       .map((response) => response.first_citation_rank)
       .filter((value) => Number.isFinite(value))
   );
   const competitorMentions = unique(
-    responses.flatMap((response) => Array.isArray(response.competitor_domains) ? response.competitor_domains : [])
+    responses.flatMap((response) => {
+      if (Array.isArray(response.competitor_entities)) {
+        return response.competitor_entities
+          .filter((entity) => Array.isArray(entity.channels) && entity.channels.includes("answer"))
+          .map((entity) => entity.name || entity.domain);
+      }
+      return Array.isArray(response.competitor_domains) ? response.competitor_domains : [];
+    })
   );
 
   const chatbotSummaries = snapshots.map((snapshot) => {
@@ -380,23 +435,34 @@ const buildReport = (audit) => {
     <section class="metrics-grid">
       ${renderMetricCard({
         label: "Visible Responses",
-        value: `${visibilityResponses}/${responses.length}`,
-        detail: `${percent(responses.length ? visibilityResponses / responses.length : 0)} mention the brand or domain.`,
+        value: answerEvidenceCount ? `${visibilityResponses}/${answerEvidenceCount}` : "n/a",
+        detail: answerEvidenceCount
+          ? `${percent(visibilityResponses / answerEvidenceCount)} of responses with answer evidence mention the brand or domain.`
+          : "Answer evidence was not provided.",
       })}
       ${renderMetricCard({
         label: "Cited Responses",
-        value: `${citedResponses}/${responses.length}`,
-        detail: `${percent(responses.length ? citedResponses / responses.length : 0)} cite the brand directly.`,
+        value: citationEvidenceCount ? `${citedResponses}/${citationEvidenceCount}` : "n/a",
+        detail: citationEvidenceCount
+          ? `${percent(citedResponses / citationEvidenceCount)} of responses with reliable citation evidence cite the brand directly.`
+          : "Actual-citation status was not provided.",
       })}
       ${renderMetricCard({
         label: "Search Triggered",
-        value: `${searchTriggeredResponses}/${responses.length}`,
-        detail: `${percent(responses.length ? searchTriggeredResponses / responses.length : 0)} of responses triggered web search.`,
+        value: searchEvidenceCount ? `${searchTriggeredResponses}/${searchEvidenceCount}` : "n/a",
+        detail: searchEvidenceCount
+          ? `${percent(searchTriggeredResponses / searchEvidenceCount)} of responses with search evidence triggered web search.`
+          : "Web-search status was not provided.",
       })}
       ${renderMetricCard({
-        label: "Average Citation Rank",
-        value: averageRank === null ? "n/a" : `#${averageRank.toFixed(1)}`,
-        detail: "Mean first citation position across responses with citations.",
+        label: "Actual Citations",
+        value: `${actualCitationAppearances}`,
+        detail: `${uniqueActualCitations} unique pages were explicitly marked cited.`,
+      })}
+      ${renderMetricCard({
+        label: "Candidates / Maps",
+        value: `${candidateAppearances} / ${mapPlacements}`,
+        detail: "Citation candidates and local map placements are tracked separately.",
       })}
     </section>
   `;
@@ -425,6 +491,15 @@ const buildReport = (audit) => {
           <div class="kv-item">
             <strong>Competitor mentions</strong>
             <span>${escapeHtml(competitorMentions.join(", ") || "None captured.")}</span>
+          </div>
+          <div class="kv-item">
+            <strong>Collection diagnostics</strong>
+            <span>
+              ${escapeHtml(String(diagnostics.status || "not reported"))}.
+              ${escapeHtml(String(numberOrZero(diagnostics.records_normalized)))} normalized,
+              ${escapeHtml(String(numberOrZero(diagnostics.records_rejected)))} rejected,
+              ${escapeHtml(String(numberOrZero(diagnostics.warning_count)))} warnings.
+            </span>
           </div>
         </div>
       </article>
@@ -559,16 +634,19 @@ const buildReport = (audit) => {
                   ${promptSummary.responses
                     .map((response) => {
                       const fanOutDetails = Array.isArray(response.fan_out_details) ? response.fan_out_details : [];
-                      const sourceItems = Array.isArray(response.sources) ? response.sources : [];
+                      const sourceItems = actualCitations(response);
+                      const answerAvailable = evidenceAvailable(response, "answer", "answer_text_markdown");
+                      const citationsAvailable = evidenceAvailable(response, "actual_citations", "sources");
+                      const searchAvailable = evidenceAvailable(response, "web_search", "used_web_search");
                       return `
                         <div class="response-grid">
                           <div>
                             <div class="response-meta">
                               <span class="chip">${escapeHtml(response.model || response.chatbot || "Unknown chatbot")}</span>
-                              <span class="chip ${response.cited ? "chip--good" : numberOrZero(response.mentions) > 0 ? "chip--warn" : "chip--bad"}">
-                                ${response.cited ? "Cited" : numberOrZero(response.mentions) > 0 ? "Mentioned only" : "Not visible"}
+                              <span class="chip ${response.cited ? "chip--good" : answerAvailable && citationsAvailable ? "chip--bad" : "chip--warn"}">
+                                ${!answerAvailable ? "Answer unavailable" : !citationsAvailable ? "Citation status unavailable" : response.cited ? "Cited" : numberOrZero(response.mentions) > 0 ? "Mentioned, not cited" : "Not visible"}
                               </span>
-                              <span class="chip">${response.used_web_search ? "Search triggered" : "No search"}</span>
+                              <span class="chip">${!searchAvailable ? "Search status unavailable" : response.used_web_search ? "Search triggered" : "No search"}</span>
                               <span class="chip">Captured ${escapeHtml(formatTimestamp(response.captured_at || audit.run_at))}</span>
                             </div>
                             <div class="markdown-body" style="margin-top: 12px;">
@@ -599,7 +677,7 @@ const buildReport = (audit) => {
                               )}</span>
                             </div>
                             <div class="kv-item">
-                              <strong>Top sources</strong>
+                              <strong>Actual cited sources</strong>
                               <span>
                                 ${
                                   sourceItems.length
@@ -610,7 +688,9 @@ const buildReport = (audit) => {
                                           return toLink(source.url, label);
                                         })
                                         .join("<br />")
-                                    : "No source list available."
+                                    : citationsAvailable
+                                      ? "No actual citations captured."
+                                      : "Actual-citation status was not provided."
                                 }
                               </span>
                             </div>

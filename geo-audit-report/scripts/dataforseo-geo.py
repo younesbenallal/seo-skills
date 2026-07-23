@@ -386,6 +386,18 @@ class PromptResult:
     competitor_domains: List[str]
     brands_mentioned: List[str]
     sources: List[Dict[str, Any]]
+    actual_citations: List[Dict[str, Any]]
+    citation_candidates: List[Dict[str, Any]]
+    uncited_citation_candidates: List[Dict[str, Any]]
+    search_sources: List[Dict[str, Any]]
+    attached_links: List[Dict[str, Any]]
+    map_results: List[Dict[str, Any]]
+    target_found_in_search: bool
+    target_found_in_maps: bool
+    competitor_entities: List[Dict[str, Any]]
+    provider_metadata: Dict[str, Any]
+    evidence_status: Dict[str, Dict[str, Any]]
+    normalization: Dict[str, Any]
 
 
 @dataclass
@@ -468,6 +480,61 @@ def analyze_record(
         competitor_domains=sorted(set(competitors_found)),
         brands_mentioned=extract_brand_entities(record),
         sources=sources,
+        actual_citations=sources,
+        citation_candidates=sources,
+        uncited_citation_candidates=[],
+        search_sources=[],
+        attached_links=[],
+        map_results=[],
+        target_found_in_search=False,
+        target_found_in_maps=False,
+        competitor_entities=[],
+        provider_metadata={
+            "datetime": record.get("datetime"),
+            "provider_has_structured_maps": False,
+            "provider_has_search_sources": False,
+            "unknown_fields": {},
+        },
+        evidence_status={
+            "answer": {
+                "state": "supported" if markdown else "missing",
+                "records": 1 if markdown else 0,
+                "note": None,
+            },
+            "web_search": {
+                "state": "inferred",
+                "records": 1,
+                "note": "DataForSEO search usage is derived from available trace fields.",
+            },
+            "actual_citations": {
+                "state": "inferred",
+                "records": len(sources),
+                "note": "DataForSEO source records are treated as citation evidence.",
+            },
+            "citation_candidates": {
+                "state": "inferred",
+                "records": len(sources),
+                "note": "DataForSEO does not expose a separate candidate layer.",
+            },
+            "search_sources": {"state": "missing", "records": 0, "note": None},
+            "attached_links": {"state": "missing", "records": 0, "note": None},
+            "maps": {"state": "missing", "records": 0, "note": None},
+            "fan_out_queries": {
+                "state": "supported" if isinstance(fan_out, list) else "malformed",
+                "records": fan_out_count,
+                "note": None,
+            },
+        },
+        normalization={
+            "status": "warning",
+            "warnings": [
+                {
+                    "code": "provider_compatibility_inference",
+                    "field": "actual_citations",
+                    "message": "DataForSEO source semantics were mapped to the shared citation contract.",
+                }
+            ],
+        },
     )
 
 
@@ -480,8 +547,13 @@ def build_results_payload(
     snapshots: List[Dict[str, str]],
     all_results: List["PromptResult"],
 ) -> Dict[str, Any]:
+    warnings = [
+        {"chatbot": result.chatbot, "prompt": result.prompt, **warning}
+        for result in all_results
+        for warning in result.normalization.get("warnings", [])
+    ]
     return {
-        "schema_version": "geo-audit-v2",
+        "schema_version": "geo-audit-v3",
         "provider": "dataforseo",
         "provider_method": "ai_optimization_live",
         "run_at": run_at,
@@ -490,6 +562,17 @@ def build_results_payload(
         "brand_terms": brand_terms,
         "snapshots": snapshots,
         "manual_recommendations": [],
+        "collection_diagnostics": {
+            "status": "partial" if warnings else "complete",
+            "records_received": len(all_results),
+            "records_normalized": len(all_results),
+            "records_rejected": 0,
+            "warning_count": len(warnings),
+            "warnings": warnings,
+            "rejected_records": [],
+            "unknown_provider_fields": [],
+            "capabilities": {},
+        },
         "fan_out_summary": aggregate_fan_out_queries(all_results),
         "results": [result.__dict__ for result in all_results],
         "responses": [result.__dict__ for result in all_results],
