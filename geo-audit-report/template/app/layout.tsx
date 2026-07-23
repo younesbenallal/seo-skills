@@ -1,10 +1,16 @@
 import type { Metadata } from "next"
+import { Geist } from "next/font/google"
 
 import "@/app/globals.css"
 
+const geist = Geist({
+  subsets: ["latin"],
+  display: "swap",
+})
+
 export const metadata: Metadata = {
-  title: "GEO Audit Dashboard",
-  description: "Static-first dashboard for Bright Data GEO audits.",
+  title: "Geo visibility audit",
+  description: "Prospect-facing AI search visibility, citation, and local map audit.",
 }
 
 export default function RootLayout({
@@ -13,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={geist.className}>
       <body>{children}</body>
     </html>
   )

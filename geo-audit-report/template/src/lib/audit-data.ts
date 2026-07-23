@@ -1,8 +1,33 @@
-type AuditSource = {
+type Source = {
   title?: string | null
   url?: string | null
   domain?: string | null
+  display_domain?: string | null
   type?: string | null
+  source_kind?: string | null
+  cited?: boolean | null
+  position?: number | null
+  answer_position?: number | null
+  description?: string | null
+  date_published?: string | null
+}
+
+type MapResult = {
+  name?: string | null
+  category?: string | null
+  rating?: number | null
+  review_count?: number | null
+  website_url?: string | null
+  domain?: string | null
+  position?: number | null
+  phone_number?: string | null
+  directions_url?: string | null
+}
+
+type CompetitorEntity = {
+  name?: string | null
+  domain?: string | null
+  channels?: string[]
 }
 
 type AuditResponse = {
@@ -14,658 +39,428 @@ type AuditResponse = {
   mentions?: number
   cited?: boolean
   first_citation_rank?: number | null
-  citations_count?: number
-  fan_out_queries?: string[]
-  fan_out_details?: AuditFanOutDetail[]
-  fan_out_count?: number
   used_web_search?: boolean
-  sources_count?: number
-  ugc_sources_count?: number
-  youtube_sources_count?: number
-  competitor_domains?: string[]
-  brands_mentioned?: string[]
-  sources?: AuditSource[]
-}
-
-type AuditFanOutDetail = {
-  query?: string
-  brand_appeared_in_response?: boolean
-  brand_cited_in_response?: boolean
-  brand_found_in_search_results?: boolean
-  matched_target_domains?: string[]
-  search_results_count?: number
-  search_results?: AuditSource[]
-}
-
-type AuditFanOutSummary = {
-  query?: string
-  count?: number
-  appeared_in_responses?: number
-  not_appeared_in_responses?: number
-  cited_in_responses?: number
-  found_in_search_results?: number
-  prompts?: string[]
-  chatbots?: string[]
-  matched_target_domains?: string[]
-}
-
-export type SourceRecord = {
-  title: string
-  url: string
-  domain: string
-  type: string
-}
-
-export type ResponseRecord = {
-  chatbot: string
-  model: string
-  prompt: string
-  captured_at: string
-  answer_text_markdown: string
-  mentions: number
-  cited: boolean
-  first_citation_rank: number | null
-  citations_count: number
-  fan_out_queries: string[]
-  fan_out_details: FanOutDetailRecord[]
-  fan_out_count: number
-  used_web_search: boolean
-  sources_count: number
-  ugc_sources_count: number
-  youtube_sources_count: number
-  competitor_domains: string[]
-  brands_mentioned: string[]
-  sources: SourceRecord[]
-}
-
-export type FanOutDetailRecord = {
-  query: string
-  brand_appeared_in_response: boolean
-  brand_cited_in_response: boolean
-  brand_found_in_search_results: boolean
-  matched_target_domains: string[]
-  search_results_count: number
-  search_results: SourceRecord[]
-}
-
-export type FanOutSummaryRecord = {
-  query: string
-  count: number
-  appeared_in_responses: number
-  not_appeared_in_responses: number
-  cited_in_responses: number
-  found_in_search_results: number
-  prompts: string[]
-  chatbots: string[]
-  matched_target_domains: string[]
+  fan_out_queries?: string[]
+  target_found_in_search?: boolean
+  target_found_in_maps?: boolean
+  sources?: Source[]
+  actual_citations?: Source[]
+  citation_candidates?: Source[]
+  uncited_citation_candidates?: Source[]
+  search_sources?: Source[]
+  attached_links?: Array<{
+    text?: string | null
+    url?: string | null
+    domain?: string | null
+    position?: number | null
+  }>
+  map_results?: MapResult[]
+  competitor_entities?: CompetitorEntity[]
+  evidence_status?: Record<
+    string,
+    {
+      state?: "supported" | "missing" | "inferred" | "malformed"
+      records?: number
+      note?: string | null
+    }
+  >
+  normalization?: {
+    status?: string
+    warnings?: Array<{
+      code?: string
+      field?: string
+      message?: string
+    }>
+  }
 }
 
 type ManualRecommendation = {
   title: string
   summary: string
   priority: string
-  owner: string
+  owner?: string
 }
 
-type AuditFile = {
+export type AuditFileRecord = {
   schema_version?: string
+  provider?: string
+  provider_method?: string
   run_at: string
   check_url: string
   target_domains: string[]
   brand_terms: string[]
-  snapshots: Array<{ chatbot: string; status: string }>
+  snapshots: Array<{
+    chatbot: string
+    status: string
+    collection_method?: string
+  }>
   manual_recommendations?: ManualRecommendation[]
-  fan_out_summary?: AuditFanOutSummary[]
+  collection_diagnostics?: {
+    status?: string
+    records_received?: number
+    records_normalized?: number
+    records_rejected?: number
+    warning_count?: number
+    warnings?: unknown[]
+    rejected_records?: unknown[]
+    unknown_provider_fields?: string[]
+    capabilities?: Record<string, Record<string, number>>
+  }
   responses?: AuditResponse[]
   results?: AuditResponse[]
 }
 
-type TrackedPromptHistory = {
-  date: string
-  visibility: number
-  prompt_count?: number
-  cited_count?: number
-}
-
-type TrackedPrompt = {
-  prompt: string
-  first_tracked_at?: string
-  last_tracked_at?: string
-  status?: string
-  notes?: string
-  history?: TrackedPromptHistory[]
-}
-
-type TrackedPromptsFile = {
-  tracked_prompts: TrackedPrompt[]
+export type TrackedPromptsRecord = {
+  tracked_prompts: Array<{
+    prompt: string
+    history?: Array<{
+      date: string
+      visibility: number
+      prompt_count?: number
+      cited_count?: number
+    }>
+  }>
 }
 
 type SuccessfulLoad = {
   ok: true
-  audit: AuditFile
-  trackedPrompts: TrackedPromptsFile
+  audit: AuditFileRecord
+  trackedPrompts: TrackedPromptsRecord
 }
 
-type FailedLoad = {
-  ok: false
-  error: string
-}
+export type DashboardLoadResult =
+  | SuccessfulLoad
+  | {
+      ok: false
+      error: string
+    }
 
-export type DashboardLoadSuccess = SuccessfulLoad
-export type DashboardLoadFailure = FailedLoad
-export type DashboardLoadResult = SuccessfulLoad | FailedLoad
-export type AuditFileRecord = AuditFile
-export type TrackedPromptsRecord = TrackedPromptsFile
+export type SourceRecord = ReturnType<typeof normalizeSource>
+export type ResponseRecord = ReturnType<typeof normalizeResponse>
 
-export type PromptGroup = {
-  prompt: string
-  responses: ResponseRecord[]
-  visibility: number
-  citations: number
-  averageRank: number | null
-  models: string[]
-}
+const safeArray = <T,>(value: T[] | undefined | null) =>
+  Array.isArray(value) ? value : []
 
-export type DomainGroup = {
-  domain: string
-  responsesCount: number
-  uniquePages: number
-  pages: Array<{
-    title: string
-    url: string
-    responseCount: number
-  }>
-}
-
-function normalizeFanOutDetail(detail: AuditFanOutDetail): FanOutDetailRecord {
-  return {
-    query: detail.query ?? "",
-    brand_appeared_in_response: Boolean(detail.brand_appeared_in_response),
-    brand_cited_in_response: Boolean(detail.brand_cited_in_response),
-    brand_found_in_search_results: Boolean(
-      detail.brand_found_in_search_results
-    ),
-    matched_target_domains: safeArray(detail.matched_target_domains).filter(
-      Boolean
-    ),
-    search_results_count:
-      detail.search_results_count ?? safeArray(detail.search_results).length,
-    search_results: safeArray(detail.search_results).map(normalizeSource),
+const domainFromUrl = (value: string) => {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase()
+  } catch {
+    return ""
   }
 }
 
-function normalizeFanOutSummary(
-  summary: AuditFanOutSummary
-): FanOutSummaryRecord {
-  return {
-    query: summary.query ?? "",
-    count: summary.count ?? 0,
-    appeared_in_responses: summary.appeared_in_responses ?? 0,
-    not_appeared_in_responses: summary.not_appeared_in_responses ?? 0,
-    cited_in_responses: summary.cited_in_responses ?? 0,
-    found_in_search_results: summary.found_in_search_results ?? 0,
-    prompts: safeArray(summary.prompts).filter(Boolean),
-    chatbots: safeArray(summary.chatbots).filter(Boolean),
-    matched_target_domains: safeArray(summary.matched_target_domains).filter(
-      Boolean
-    ),
-  }
-}
-
-function safeArray<T>(value: T[] | undefined | null) {
-  return Array.isArray(value) ? value : []
-}
-
-function normalizeSource(source: AuditSource): SourceRecord {
+function normalizeSource(source: Source) {
+  const url = source.url ?? ""
   return {
     title: source.title ?? "",
-    url: source.url ?? "",
-    domain: normalizeDomain(source.domain ?? source.url ?? ""),
+    url,
+    domain: domainFromUrl(url) || source.domain || "",
+    displayDomain: source.display_domain ?? "",
     type: source.type ?? "web",
+    sourceKind: source.source_kind ?? "citation",
+    cited: source.cited ?? null,
+    position: source.position ?? null,
+    answerPosition: source.answer_position ?? null,
+    description: source.description ?? "",
+    datePublished: source.date_published ?? "",
   }
 }
 
-function normalizeResponse(response: AuditResponse): ResponseRecord {
-  const normalizedSources = safeArray(response.sources).map(normalizeSource)
+function normalizeResponse(response: AuditResponse) {
+  const candidates = safeArray(response.citation_candidates).map(normalizeSource)
+  const actual = safeArray(
+    response.actual_citations?.length ? response.actual_citations : response.sources
+  ).map(normalizeSource)
+  const uncited = response.uncited_citation_candidates
+    ? response.uncited_citation_candidates.map(normalizeSource)
+    : candidates.filter((source) => source.cited === false)
+  const state = (
+    channel: string,
+    fallback: "supported" | "missing" = "missing"
+  ) => response.evidence_status?.[channel]?.state ?? fallback
+
   return {
     chatbot: response.chatbot,
-    model: response.model || response.chatbot,
+    model: response.model ?? "",
     prompt: response.prompt,
-    captured_at: response.captured_at || "",
-    answer_text_markdown: response.answer_text_markdown || "",
-    mentions: response.mentions || 0,
+    capturedAt: response.captured_at ?? "",
+    answerMarkdown: response.answer_text_markdown ?? "",
+    mentions: response.mentions ?? 0,
     cited: Boolean(response.cited),
-    first_citation_rank: response.first_citation_rank ?? null,
-    citations_count: response.citations_count ?? normalizedSources.length,
-    fan_out_queries: safeArray(response.fan_out_queries).filter(Boolean),
-    fan_out_details: safeArray(response.fan_out_details)
-      .map(normalizeFanOutDetail)
-      .filter((detail) => detail.query),
-    fan_out_count:
-      response.fan_out_count ?? safeArray(response.fan_out_queries).length,
-    used_web_search: Boolean(response.used_web_search),
-    sources_count: response.sources_count ?? normalizedSources.length,
-    ugc_sources_count: response.ugc_sources_count ?? 0,
-    youtube_sources_count: response.youtube_sources_count ?? 0,
-    competitor_domains: safeArray(response.competitor_domains).filter(Boolean),
-    brands_mentioned: safeArray(response.brands_mentioned).filter(Boolean),
-    sources: normalizedSources,
+    firstCitationRank: response.first_citation_rank ?? null,
+    usedWebSearch: Boolean(response.used_web_search),
+    targetFoundInSearch: Boolean(response.target_found_in_search),
+    targetFoundInMaps: Boolean(response.target_found_in_maps),
+    fanOutQueries: safeArray(response.fan_out_queries),
+    actualCitations: actual,
+    citationCandidates: candidates.length ? candidates : actual,
+    uncitedCitationCandidates: uncited,
+    searchSources: safeArray(response.search_sources).map(normalizeSource),
+    attachedLinks: safeArray(response.attached_links).map((link) => ({
+      text: link.text ?? "",
+      url: link.url ?? "",
+      domain: domainFromUrl(link.url ?? "") || link.domain || "",
+      position: link.position ?? null,
+    })),
+    mapResults: safeArray(response.map_results).map((result) => ({
+      name: result.name ?? "",
+      category: result.category ?? "",
+      rating: result.rating ?? null,
+      reviewCount: result.review_count ?? null,
+      websiteUrl: result.website_url ?? "",
+      domain: domainFromUrl(result.website_url ?? "") || result.domain || "",
+      position: result.position ?? null,
+      phoneNumber: result.phone_number ?? "",
+      directionsUrl: result.directions_url ?? "",
+    })),
+    competitorEntities: safeArray(response.competitor_entities).map((entity) => ({
+      name: entity.name ?? entity.domain ?? "Unknown",
+      domain: entity.domain ?? "",
+      channels: safeArray(entity.channels),
+    })),
+    evidenceStatus: {
+      answer: state("answer", response.answer_text_markdown !== undefined ? "supported" : "missing"),
+      webSearch: state(
+        "web_search",
+        response.used_web_search !== undefined ? "supported" : "missing"
+      ),
+      actualCitations: state(
+        "actual_citations",
+        response.actual_citations !== undefined || response.sources !== undefined
+          ? "supported"
+          : "missing"
+      ),
+      citationCandidates: state(
+        "citation_candidates",
+        response.citation_candidates !== undefined ? "supported" : "missing"
+      ),
+      searchSources: state(
+        "search_sources",
+        response.search_sources !== undefined ? "supported" : "missing"
+      ),
+      attachedLinks: state(
+        "attached_links",
+        response.attached_links !== undefined ? "supported" : "missing"
+      ),
+      maps: state("maps", response.map_results !== undefined ? "supported" : "missing"),
+    },
+    normalizationWarnings: safeArray(response.normalization?.warnings),
   }
 }
 
-function normalizeAudit(audit: AuditFile): AuditFile {
-  const rawResponses = safeArray(audit.responses).length
-    ? safeArray(audit.responses)
-    : safeArray(audit.results)
+const uniqueBy = <T,>(items: T[], key: (item: T) => string) =>
+  [...new Map(items.filter((item) => key(item)).map((item) => [key(item), item])).values()]
+
+export function buildAuditViewModel(
+  audit: AuditFileRecord,
+  trackedPrompts: TrackedPromptsRecord
+) {
+  const rawResponses =
+    audit.responses?.length ? audit.responses : audit.results ?? []
+  const responses = rawResponses.map(normalizeResponse)
+  const isAvailable = (state: string) =>
+    state === "supported" || state === "inferred"
+  const prompts = [...new Set(responses.map((response) => response.prompt))]
+  const searched = responses.filter((response) => response.usedWebSearch).length
+  const retrieved = responses.filter((response) => response.searchSources.length > 0).length
+  const mapped = responses.filter((response) => response.mapResults.length > 0).length
+  const mentioned = responses.filter((response) => response.mentions > 0).length
+  const cited = responses.filter((response) => response.cited).length
+  const foundInSearch = responses.filter((response) => response.targetFoundInSearch).length
+  const foundInMaps = responses.filter((response) => response.targetFoundInMaps).length
+  const availability = {
+    webSearch: responses.filter((response) =>
+      isAvailable(response.evidenceStatus.webSearch)
+    ).length,
+    searchSources: responses.filter((response) =>
+      isAvailable(response.evidenceStatus.searchSources)
+    ).length,
+    maps: responses.filter((response) => isAvailable(response.evidenceStatus.maps))
+      .length,
+    answers: responses.filter((response) =>
+      isAvailable(response.evidenceStatus.answer)
+    ).length,
+    actualCitations: responses.filter((response) =>
+      isAvailable(response.evidenceStatus.actualCitations)
+    ).length,
+    citationCandidates: responses.filter((response) =>
+      isAvailable(response.evidenceStatus.citationCandidates)
+    ).length,
+  }
+  const actualCitations = responses.flatMap((response) => response.actualCitations)
+  const citationCandidates = responses.flatMap(
+    (response) => response.citationCandidates
+  )
+  const searchSources = responses.flatMap((response) => response.searchSources)
+  const mapResults = responses.flatMap((response) => response.mapResults)
+  const uniqueCitedPages = uniqueBy(actualCitations, (source) => source.url)
+  const uniqueCandidatePages = uniqueBy(citationCandidates, (source) => source.url)
+
+  const promptGroups = prompts.map((prompt) => {
+    const matches = responses.filter((response) => response.prompt === prompt)
+    return {
+      prompt,
+      responses: matches,
+      searched: matches.some((response) =>
+        isAvailable(response.evidenceStatus.webSearch)
+      )
+        ? matches.some((response) => response.usedWebSearch)
+        : null,
+      retrieved: matches.some((response) =>
+        isAvailable(response.evidenceStatus.searchSources)
+      )
+        ? matches.some((response) => response.searchSources.length > 0)
+        : null,
+      mapped: matches.some((response) => isAvailable(response.evidenceStatus.maps))
+        ? matches.some((response) => response.mapResults.length > 0)
+        : null,
+      mentioned: matches.some((response) =>
+        isAvailable(response.evidenceStatus.answer)
+      )
+        ? matches.some((response) => response.mentions > 0)
+        : null,
+      cited: matches.some((response) =>
+        isAvailable(response.evidenceStatus.actualCitations)
+      )
+        ? matches.some((response) => response.cited)
+        : null,
+      foundInSearch: matches.some((response) =>
+        isAvailable(response.evidenceStatus.searchSources)
+      )
+        ? matches.some((response) => response.targetFoundInSearch)
+        : null,
+      foundInMaps: matches.some((response) =>
+        isAvailable(response.evidenceStatus.maps)
+      )
+        ? matches.some((response) => response.targetFoundInMaps)
+        : null,
+    }
+  })
+
+  const domainMap = new Map<
+    string,
+    { domain: string; appearances: number; pages: Map<string, SourceRecord> }
+  >()
+  for (const source of actualCitations) {
+    if (!source.domain) continue
+    const current = domainMap.get(source.domain) ?? {
+      domain: source.domain,
+      appearances: 0,
+      pages: new Map(),
+    }
+    current.appearances += 1
+    current.pages.set(source.url, source)
+    domainMap.set(source.domain, current)
+  }
+  const citedDomains = [...domainMap.values()]
+    .map((item) => ({ ...item, pages: [...item.pages.values()] }))
+    .sort((left, right) => right.appearances - left.appearances)
+
+  const competitorMap = new Map<
+    string,
+    { name: string; domain: string; channels: Set<string>; prompts: Set<string> }
+  >()
+  for (const response of responses) {
+    for (const entity of response.competitorEntities) {
+      const key = entity.domain || entity.name.toLowerCase()
+      const current = competitorMap.get(key) ?? {
+        name: entity.name,
+        domain: entity.domain,
+        channels: new Set(),
+        prompts: new Set(),
+      }
+      entity.channels.forEach((channel) => current.channels.add(channel))
+      current.prompts.add(response.prompt)
+      competitorMap.set(key, current)
+    }
+  }
+  const competitors = [...competitorMap.values()]
+    .map((item) => ({
+      ...item,
+      channels: [...item.channels],
+      promptCount: item.prompts.size,
+    }))
+    .sort((left, right) => right.promptCount - left.promptCount)
+
+  const mapGroups = new Map<
+    string,
+    {
+      name: string
+      domain: string
+      bestPosition: number | null
+      rating: number | null
+      reviewCount: number | null
+      category: string
+      promptCount: number
+      websiteUrl: string
+    }
+  >()
+  for (const response of responses) {
+    for (const result of response.mapResults) {
+      const key = result.domain || result.name.toLowerCase()
+      const current = mapGroups.get(key)
+      mapGroups.set(key, {
+        name: result.name || current?.name || "Unknown",
+        domain: result.domain || current?.domain || "",
+        bestPosition:
+          current?.bestPosition === null || current?.bestPosition === undefined
+            ? result.position
+            : result.position === null
+              ? current.bestPosition
+              : Math.min(current.bestPosition, result.position),
+        rating: result.rating ?? current?.rating ?? null,
+        reviewCount: result.reviewCount ?? current?.reviewCount ?? null,
+        category: result.category || current?.category || "",
+        promptCount: (current?.promptCount ?? 0) + 1,
+        websiteUrl: result.websiteUrl || current?.websiteUrl || "",
+      })
+    }
+  }
+
+  const historyDates = new Set(
+    safeArray(trackedPrompts.tracked_prompts).flatMap((item) =>
+      safeArray(item.history).map((history) => history.date)
+    )
+  )
 
   return {
-    schema_version: audit.schema_version || "geo-audit-v1",
-    run_at: audit.run_at,
-    check_url: audit.check_url,
-    target_domains: safeArray(audit.target_domains),
-    brand_terms: safeArray(audit.brand_terms),
-    snapshots: safeArray(audit.snapshots),
-    manual_recommendations: safeArray(audit.manual_recommendations),
-    fan_out_summary: safeArray(audit.fan_out_summary).map(
-      normalizeFanOutSummary
+    brandName:
+      audit.brand_terms?.[0] || audit.target_domains?.[0] || "Brand",
+    responses,
+    promptGroups,
+    citedDomains,
+    competitors,
+    mapGroups: [...mapGroups.values()].sort(
+      (left, right) =>
+        right.promptCount - left.promptCount ||
+        (left.bestPosition ?? 99) - (right.bestPosition ?? 99)
     ),
-    responses: rawResponses.map(normalizeResponse),
-    results: rawResponses.map(normalizeResponse),
+    metrics: {
+      promptCount: prompts.length,
+      searched,
+      retrieved,
+      mapped,
+      mentioned,
+      cited,
+      foundInSearch,
+      foundInMaps,
+      actualCitationAppearances: actualCitations.length,
+      uniqueCitedPages: uniqueCitedPages.length,
+      candidateAppearances: citationCandidates.length,
+      uniqueCandidatePages: uniqueCandidatePages.length,
+      searchSourceAppearances: searchSources.length,
+      mapPlacements: mapResults.length,
+      availability,
+    },
+    recommendations: safeArray(audit.manual_recommendations),
+    hasLongitudinalHistory: historyDates.size > 1,
+    diagnostics: audit.collection_diagnostics,
   }
-}
-
-async function fetchJson<T>(targetPath: string) {
-  const response = await fetch(targetPath)
-
-  if (!response.ok) {
-    throw new Error(`Unable to load ${targetPath} (${response.status})`)
-  }
-
-  return (await response.json()) as T
 }
 
 export function createDashboardLoadSuccess(
-  audit: AuditFile,
-  trackedPrompts: TrackedPromptsFile
-): SuccessfulLoad {
-  return {
-    ok: true,
-    audit: normalizeAudit(audit),
-    trackedPrompts: {
-      tracked_prompts: safeArray(trackedPrompts.tracked_prompts),
-    },
-  }
-}
-
-export async function loadAuditDashboardData(): Promise<DashboardLoadResult> {
-  const auditPath =
-    process.env.NEXT_PUBLIC_AUDIT_DATA_PATH || "/data/demo/brightdata-results.json"
-  const trackedPromptsPath =
-    process.env.NEXT_PUBLIC_TRACKED_PROMPTS_PATH ||
-    "/data/demo/tracked-prompts.json"
-
-  try {
-    const [audit, trackedPrompts] = await Promise.all([
-      fetchJson<AuditFile>(auditPath),
-      fetchJson<TrackedPromptsFile>(trackedPromptsPath),
-    ])
-
-    return createDashboardLoadSuccess(audit, trackedPrompts)
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
-  }
-}
-
-function mean(values: number[]) {
-  if (values.length === 0) {
-    return null
-  }
-
-  return Math.round(
-    values.reduce((sum, value) => sum + value, 0) / values.length
-  )
-}
-
-function percentage(part: number, total: number) {
-  if (total === 0) {
-    return 0
-  }
-
-  return Math.round((part / total) * 100)
-}
-
-function groupByPrompt(responses: ResponseRecord[]) {
-  const promptMap = new Map<string, ResponseRecord[]>()
-
-  for (const response of responses) {
-    const existing = promptMap.get(response.prompt) || []
-    existing.push(response)
-    promptMap.set(response.prompt, existing)
-  }
-
-  return [...promptMap.entries()].map(([prompt, promptResponses]) => ({
-    prompt,
-    responses: promptResponses,
-    visibility: percentage(
-      promptResponses.filter((response) => response.cited).length,
-      promptResponses.length
-    ),
-    citations: promptResponses.reduce(
-      (total, response) => total + response.citations_count,
-      0
-    ),
-    averageRank: mean(
-      promptResponses
-        .map((response) => response.first_citation_rank)
-        .filter((rank): rank is number => rank !== null)
-    ),
-    models: [
-      ...new Set(
-        promptResponses.map((response) => response.model || response.chatbot)
-      ),
-    ],
-  }))
-}
-
-function buildDomainGroups(responses: ResponseRecord[]) {
-  const groups = new Map<
-    string,
-    {
-      responseIds: Set<string>
-      pages: Map<
-        string,
-        { title: string; url: string; responseIds: Set<string> }
-      >
-    }
-  >()
-
-  for (const response of responses) {
-    for (const source of response.sources) {
-      if (!source.url || !source.domain) {
-        continue
-      }
-
-      const responseId = `${response.chatbot}:${response.prompt}`
-      const domainEntry = groups.get(source.domain) || {
-        responseIds: new Set<string>(),
-        pages: new Map<
-          string,
-          { title: string; url: string; responseIds: Set<string> }
-        >(),
-      }
-
-      domainEntry.responseIds.add(responseId)
-
-      const existingPage = domainEntry.pages.get(source.url) || {
-        title: source.title || source.url,
-        url: source.url,
-        responseIds: new Set<string>(),
-      }
-      existingPage.responseIds.add(responseId)
-      domainEntry.pages.set(source.url, existingPage)
-      groups.set(source.domain, domainEntry)
-    }
-  }
-
-  return [...groups.entries()]
-    .map(([domain, entry]) => ({
-      domain,
-      responsesCount: entry.responseIds.size,
-      uniquePages: entry.pages.size,
-      pages: [...entry.pages.values()]
-        .map((page) => ({
-          title: page.title,
-          url: page.url,
-          responseCount: page.responseIds.size,
-        }))
-        .sort((left, right) => right.responseCount - left.responseCount),
-    }))
-    .sort((left, right) => right.responsesCount - left.responsesCount)
-}
-
-function buildTimeline(trackedPrompts: TrackedPromptsFile) {
-  const points = new Map<
-    string,
-    { totalVisibility: number; promptCount: number }
-  >()
-
-  for (const prompt of trackedPrompts.tracked_prompts) {
-    for (const point of safeArray(prompt.history)) {
-      const existing = points.get(point.date) || {
-        totalVisibility: 0,
-        promptCount: 0,
-      }
-      existing.totalVisibility += point.visibility
-      existing.promptCount += 1
-      points.set(point.date, existing)
-    }
-  }
-
-  return [...points.entries()]
-    .map(([date, point]) => ({
-      date,
-      visibility: Math.round(point.totalVisibility / point.promptCount),
-      promptCount: point.promptCount,
-    }))
-    .sort((left, right) => left.date.localeCompare(right.date))
-}
-
-function buildFanOutSummaryFromResponses(responses: ResponseRecord[]) {
-  const fanOutMap = new Map<string, FanOutSummaryRecord>()
-
-  for (const response of responses) {
-    const details =
-      response.fan_out_details.length > 0
-        ? response.fan_out_details
-        : response.fan_out_queries.map((query) => ({
-            query,
-            brand_appeared_in_response: response.mentions > 0,
-            brand_cited_in_response: response.cited,
-            brand_found_in_search_results: false,
-            matched_target_domains: [],
-            search_results_count: 0,
-            search_results: [],
-          }))
-
-    for (const detail of details) {
-      const key = detail.query.toLowerCase()
-      const current = fanOutMap.get(key) || {
-        query: detail.query,
-        count: 0,
-        appeared_in_responses: 0,
-        not_appeared_in_responses: 0,
-        cited_in_responses: 0,
-        found_in_search_results: 0,
-        prompts: [],
-        chatbots: [],
-        matched_target_domains: [],
-      }
-
-      current.count += 1
-      current.appeared_in_responses += detail.brand_appeared_in_response ? 1 : 0
-      current.not_appeared_in_responses += detail.brand_appeared_in_response
-        ? 0
-        : 1
-      current.cited_in_responses += detail.brand_cited_in_response ? 1 : 0
-      current.found_in_search_results += detail.brand_found_in_search_results
-        ? 1
-        : 0
-      current.prompts = [...new Set([...current.prompts, response.prompt])]
-      current.chatbots = [...new Set([...current.chatbots, response.chatbot])]
-      current.matched_target_domains = [
-        ...new Set([
-          ...current.matched_target_domains,
-          ...detail.matched_target_domains,
-        ]),
-      ]
-
-      fanOutMap.set(key, current)
-    }
-  }
-
-  return [...fanOutMap.values()].sort(
-    (left, right) =>
-      right.count - left.count ||
-      right.appeared_in_responses - left.appeared_in_responses ||
-      left.query.localeCompare(right.query)
-  )
-}
-
-export function buildAuditViewModel(
-  audit: AuditFile,
-  trackedPrompts: TrackedPromptsFile
-) {
-  const responses = safeArray(audit.responses).map(normalizeResponse)
-  const citedResponses = responses.filter((response) => response.cited)
-  const mentionedResponses = responses.filter(
-    (response) => response.mentions > 0
-  )
-  const domainGroups = buildDomainGroups(responses)
-  const fanOutSummary =
-    safeArray(audit.fan_out_summary).length > 0
-      ? safeArray(audit.fan_out_summary).map(normalizeFanOutSummary)
-      : buildFanOutSummaryFromResponses(responses)
-  const topDomains = domainGroups.map((group) => ({
-    label: group.domain,
-    count: group.uniquePages,
-    share: percentage(
-      group.uniquePages,
-      Math.max(domainGroups[0]?.uniquePages || 1, 1)
-    ),
-  }))
-  const competitorMentionMap = new Map<string, number>()
-
-  for (const response of responses) {
-    for (const competitor of response.competitor_domains) {
-      competitorMentionMap.set(
-        competitor,
-        (competitorMentionMap.get(competitor) || 0) + 1
-      )
-    }
-  }
-
-  const maxCompetitorCount = Math.max(...competitorMentionMap.values(), 1)
-  const competitorMentions = [...competitorMentionMap.entries()].map(
-    ([label, count]) => ({
-      label,
-      count,
-      share: percentage(count, maxCompetitorCount),
-    })
-  )
-
-  const chatbotMap = new Map<
-    string,
-    {
-      total: number
-      cited: number
-      citations: number
-      ranks: number[]
-    }
-  >()
-
-  for (const response of responses) {
-    const chatbot = chatbotMap.get(response.chatbot) || {
-      total: 0,
-      cited: 0,
-      citations: 0,
-      ranks: [],
-    }
-    chatbot.total += 1
-    chatbot.cited += response.cited ? 1 : 0
-    chatbot.citations += response.citations_count
-    if (response.first_citation_rank !== null) {
-      chatbot.ranks.push(response.first_citation_rank)
-    }
-    chatbotMap.set(response.chatbot, chatbot)
-  }
-
-  const chatbotSummaries = [...chatbotMap.entries()].map(
-    ([label, chatbot]) => ({
-      label,
-      visibility: percentage(chatbot.cited, chatbot.total),
-      citationCount: chatbot.citations,
-      averageRank: mean(chatbot.ranks),
-    })
-  )
-
-  return {
-    audit,
-    trackedPrompts,
-    responses,
-    brandName: audit.brand_terms[0] || audit.target_domains[0] || "Brand",
-    mentionRate: percentage(mentionedResponses.length, responses.length),
-    citationRate: percentage(citedResponses.length, responses.length),
-    averageRank: mean(
-      citedResponses
-        .map((response) => response.first_citation_rank)
-        .filter((rank): rank is number => rank !== null)
-    ),
-    totalSources: new Set(
-      responses.flatMap((response) =>
-        response.sources.map((source) => source.url).filter(Boolean)
-      )
-    ).size,
-    responsesWithSources: responses.filter(
-      (response) => response.sources.length > 0
-    ).length,
-    fanOutSummary,
-    promptGroups: groupByPrompt(responses).sort(
-      (left, right) =>
-        right.responses.length - left.responses.length ||
-        left.prompt.localeCompare(right.prompt)
-    ),
-    visibilityTimeline: buildTimeline(trackedPrompts),
-    domainGroups,
-    topDomains,
-    competitorMentions,
-    chatbotSummaries,
-    recommendations: safeArray(audit.manual_recommendations),
-  }
-}
-
-export function normalizeDomain(value: string) {
-  const cleaned = value
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .split("/")[0]
-
-  const parts = cleaned.split(".").filter(Boolean)
-  if (parts.length <= 2) {
-    return cleaned
-  }
-
-  return parts.slice(-2).join(".")
-}
-
-export function formatDate(value: string) {
-  if (!value) {
-    return "Unknown date"
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date)
-}
-
-export function formatPercent(value: number) {
-  return `${Math.round(value)}%`
-}
-
-export function pluralize(count: number, singular: string, plural: string) {
-  return count === 1 ? singular : plural
-}
-
-export function sortByCountDesc<T extends { count: number }>(items: T[]) {
-  return [...items].sort((left, right) => right.count - left.count)
+  audit: AuditFileRecord,
+  trackedPrompts: TrackedPromptsRecord
+): DashboardLoadResult {
+  return { ok: true, audit, trackedPrompts }
 }

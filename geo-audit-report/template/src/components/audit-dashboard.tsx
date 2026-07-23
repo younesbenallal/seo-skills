@@ -1,487 +1,247 @@
 "use client"
 
-import { useDeferredValue, useState } from "react"
 import {
   ArrowUpRight,
-  Bot,
+  Check,
+  CircleAlert,
   ExternalLink,
-  Globe,
-  Link2,
+  MapPin,
   Search,
+  X,
 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
-import { Gemini } from "@/src/components/ui/svgs/gemini"
-import { Openai } from "@/src/components/ui/svgs/openai"
-import { Perplexity } from "@/src/components/ui/svgs/perplexity"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/src/components/ui/accordion"
-import { Badge } from "@/src/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card"
-import { Input } from "@/src/components/ui/input"
-import { Separator } from "@/src/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import {
   buildAuditViewModel,
-  formatDate,
-  formatPercent,
-  pluralize,
-  sortByCountDesc,
   type DashboardLoadResult,
-  type DomainGroup,
-  type FanOutSummaryRecord,
-  type PromptGroup,
+  type ResponseRecord,
+  type SourceRecord,
 } from "@/src/lib/audit-data"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/src/components/ui/accordion"
+import { Badge } from "@/src/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 
-function ChatbotLogo({
-  chatbot,
-  className,
-}: {
-  chatbot: string
-  className?: string
-}) {
-  const normalized = chatbot.toLowerCase()
+const percent = (value: number, total: number) =>
+  `${Math.round((value / Math.max(total, 1)) * 100)}%`
 
-  if (
-    normalized.includes("gpt") ||
-    normalized.includes("openai") ||
-    normalized.includes("chatgpt")
-  ) {
-    return <Openai className={className} />
-  }
-
-  if (normalized.includes("perplex")) {
-    return <Perplexity className={className} />
-  }
-
-  if (normalized.includes("gemini")) {
-    return <Gemini className={className} />
-  }
-
-  return <Bot className={className} />
+const formatDate = (value: string) => {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date)
 }
 
-function MetricCard({
-  title,
+function Signal({ value, label }: { value: boolean | null; label: string }) {
+  if (value === null) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <CircleAlert className="size-3.5" />
+        Not provided
+      </span>
+    )
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+        value ? "text-emerald-700" : "text-rose-700"
+      }`}
+    >
+      {value ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+      {label}
+    </span>
+  )
+}
+
+function Metric({
+  label,
   value,
   detail,
 }: {
-  title: string
+  label: string
   value: string
   detail: string
 }) {
   return (
-    <Card className="border-border/80 shadow-none">
-      <CardHeader className="pb-3">
-        <CardDescription className="text-xs text-muted-foreground">
-          {title}
-        </CardDescription>
-        <CardTitle className="text-3xl font-semibold tracking-tight">
-          {value}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground">
-        {detail}
+    <Card className="border-border bg-card shadow-none">
+      <CardContent className="p-5">
+        <p className="text-xs font-medium text-zinc-500">{label}</p>
+        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-700">{value}</p>
+        <p className="mt-2 text-xs font-medium leading-5 text-zinc-500">{detail}</p>
       </CardContent>
     </Card>
   )
 }
 
-function MeterRow({
+function FunnelStep({
   label,
-  value,
-  meta,
+  count,
+  total,
 }: {
   label: string
-  value: number
-  meta: string
+  count: number
+  total: number
 }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <div className="min-w-0">
-          <p className="truncate font-medium text-foreground">{label}</p>
-          <p className="truncate text-xs text-muted-foreground">{meta}</p>
+  if (total === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/75 bg-muted/20 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium">{label}</p>
+          <span className="text-muted-foreground">n/a</span>
         </div>
-        <span className="shrink-0 font-medium text-foreground">
-          {formatPercent(value)}
+        <p className="mt-3 text-xs text-muted-foreground">Evidence not provided</p>
+      </div>
+    )
+  }
+  const healthy = count === total
+  return (
+    <div className="relative rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-zinc-600">{label}</p>
+        <span className={`font-semibold ${healthy ? "text-emerald-700" : count ? "text-amber-700" : "text-rose-700"}`}>
+          {count}/{total}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-muted">
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-foreground/80 transition-[width]"
-          style={{ width: `${Math.max(value, 4)}%` }}
+          className={healthy ? "h-full bg-emerald-500" : count ? "h-full bg-amber-500" : "h-full bg-rose-500"}
+          style={{ width: percent(count, total) }}
         />
       </div>
     </div>
   )
 }
 
-function ChatbotSummary({
-  label,
-  visibility,
-  citationCount,
-  averageRank,
+function SourceList({
+  title,
+  sources,
+  empty,
 }: {
-  label: string
-  visibility: number
-  citationCount: number
-  averageRank: number | null
+  title: string
+  sources: SourceRecord[]
+  empty: string
 }) {
   return (
-    <div className="rounded-xl border border-border/80 bg-card p-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-md bg-muted/70">
-            <ChatbotLogo
-              chatbot={label}
-              className="size-4 fill-current text-foreground"
-            />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-foreground">{label}</p>
-            <p className="text-xs text-muted-foreground">
-              {citationCount} {pluralize(citationCount, "citation", "citations")}
-            </p>
-          </div>
-        </div>
-        <Badge variant="secondary" className="rounded-md px-2.5 py-1">
-          {averageRank === null ? "no rank" : `avg rank #${averageRank}`}
-        </Badge>
+    <section className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <Badge variant="secondary">{sources.length}</Badge>
       </div>
-      <div className="mt-4 h-2 rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-foreground"
-          style={{ width: `${Math.max(visibility, 6)}%` }}
-        />
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        visibility across tracked prompt responses
-      </p>
-    </div>
-  )
-}
-
-function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
-  return (
-    <AccordionItem
-      value={promptGroup.prompt}
-      className="overflow-hidden rounded-xl border border-border/80 bg-background px-5"
-    >
-      <AccordionTrigger className="py-5 hover:no-underline">
-        <div className="flex min-w-0 flex-1 flex-col gap-3 text-left">
-          <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-base font-medium text-foreground">
-                {promptGroup.prompt}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {promptGroup.responses.length}{" "}
-                {pluralize(promptGroup.responses.length, "response", "responses")}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="rounded-md">
-                visibility {formatPercent(promptGroup.visibility)}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                citations {promptGroup.citations}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                avg rank{" "}
-                {promptGroup.averageRank === null
-                  ? "n/a"
-                  : `#${promptGroup.averageRank}`}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                search triggered{" "}
-                {
-                  promptGroup.responses.filter(
-                    (response) => response.used_web_search
-                  ).length
-                }
-                /{promptGroup.responses.length}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            {promptGroup.models.map((model) => (
-              <span
-                key={model}
-                className="inline-flex items-center gap-2 rounded-md border border-border/80 px-2.5 py-1"
-              >
-                <ChatbotLogo
-                  chatbot={model}
-                  className="size-3.5 fill-current text-foreground"
-                />
-                <span>{model}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-4 pb-5">
-        {promptGroup.responses.map((response) => (
-          <Card
-            key={`${response.chatbot}-${response.prompt}`}
-            className="rounded-lg border-border/75 shadow-none"
-          >
-            <CardHeader className="gap-4 border-b border-border/70">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-md bg-muted/70">
-                    <ChatbotLogo
-                      chatbot={response.chatbot}
-                      className="size-4 fill-current text-foreground"
-                    />
-                  </span>
-                  <div>
-                    <CardTitle className="text-lg">
-                      {response.model || response.chatbot}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      captured {formatDate(response.captured_at)}
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="rounded-md">
-                    visibility {response.cited ? "cited" : "mentioned only"}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    {response.citations_count}{" "}
-                    {pluralize(response.citations_count, "citation", "citations")}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    fan-out {response.fan_out_queries.length}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    search {response.used_web_search ? "triggered" : "not triggered"}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-5">
-              {response.brands_mentioned.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">brands mentioned</p>
-                  <div className="flex flex-wrap gap-2">
-                    {response.brands_mentioned.map((brand) => (
-                      <Badge
-                        key={`${response.prompt}-${brand}`}
-                        variant="outline"
-                        className="rounded-md"
-                      >
-                        {brand}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">response</p>
-                <div className="rounded-lg bg-muted/40 p-4 text-sm leading-7 text-foreground">
-                  <p className="whitespace-pre-wrap">
-                    {response.answer_text_markdown || "No response body available."}
-                  </p>
-                </div>
-              </div>
-
-              {response.fan_out_queries.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">fan-out prompts</p>
-                  <div className="space-y-2">
-                    {(response.fan_out_details.length > 0
-                      ? response.fan_out_details
-                      : response.fan_out_queries.map((query) => ({
-                          query,
-                          brand_appeared_in_response: response.mentions > 0,
-                          brand_cited_in_response: response.cited,
-                          brand_found_in_search_results: false,
-                          matched_target_domains: [],
-                          search_results_count: 0,
-                          search_results: [],
-                        }))
-                    ).map((detail) => (
-                      <div
-                        key={`${response.prompt}-${detail.query}`}
-                        className="rounded-lg border border-border/75 bg-muted/25 p-3"
-                      >
-                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                          <p className="text-sm font-medium text-foreground">
-                            {detail.query}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary" className="rounded-md">
-                              response{" "}
-                              {detail.brand_appeared_in_response
-                                ? "mentions us"
-                                : "misses us"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              citation {detail.brand_cited_in_response ? "yes" : "no"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              serp{" "}
-                              {detail.brand_found_in_search_results
-                                ? "contains us"
-                                : "misses us"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              {detail.search_results_count} search results
-                            </Badge>
-                          </div>
-                        </div>
-                        {detail.search_results.length > 0 ? (
-                          <div className="mt-3 space-y-2">
-                            {detail.search_results.slice(0, 5).map((result) => (
-                              <a
-                                key={`${detail.query}-${result.url}`}
-                                href={result.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-xs transition-colors hover:bg-background"
-                              >
-                                <div className="min-w-0">
-                                  <p className="truncate font-medium text-foreground">
-                                    {result.title || result.url}
-                                  </p>
-                                  <p className="truncate text-muted-foreground">
-                                    {result.domain}
-                                  </p>
-                                </div>
-                                <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-                              </a>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {response.sources.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">sources</p>
-                  <div className="space-y-2">
-                    {response.sources.slice(0, 8).map((source) => (
-                      <a
-                        key={source.url}
-                        href={source.url || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3 text-sm transition-colors hover:bg-muted/40"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-foreground">
-                            {source.title || source.url}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {source.domain}
-                          </p>
-                        </div>
-                        <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ))}
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function FanOutSummaryPanel({ summary }: { summary: FanOutSummaryRecord }) {
-  return (
-    <div className="rounded-xl border border-border/80 bg-background p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{summary.query}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {summary.count} {pluralize(summary.count, "time", "times")} across{" "}
-            {summary.prompts.length} {pluralize(summary.prompts.length, "prompt", "prompts")}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="rounded-md">
-            appeared {summary.appeared_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            missed {summary.not_appeared_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            cited {summary.cited_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            serp hits {summary.found_in_search_results}
-          </Badge>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SourcePanel({ domainGroup }: { domainGroup: DomainGroup }) {
-  return (
-    <AccordionItem
-      value={domainGroup.domain}
-      className="overflow-hidden rounded-xl border border-border/80 bg-background px-5"
-    >
-      <AccordionTrigger className="py-5 hover:no-underline">
-        <div className="flex min-w-0 flex-1 items-start justify-between gap-6 text-left">
-          <div className="min-w-0">
-            <p className="truncate text-base font-medium text-foreground">
-              {domainGroup.domain}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {domainGroup.uniquePages} {pluralize(domainGroup.uniquePages, "page", "pages")} across{" "}
-              {domainGroup.responsesCount} {pluralize(domainGroup.responsesCount, "response", "responses")}
-            </p>
-          </div>
-          <div className="hidden shrink-0 gap-6 text-sm text-muted-foreground md:flex">
-            <span>{domainGroup.uniquePages} pages</span>
-            <span>{domainGroup.responsesCount} responses</span>
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pb-5">
-        <div className="space-y-3">
-          {domainGroup.pages.map((page) => (
+      {sources.length ? (
+        <div className="grid gap-2">
+          {sources.map((source, index) => (
             <a
-              key={page.url}
-              href={page.url}
+              key={`${source.url}-${index}`}
+              href={source.url || "#"}
               target="_blank"
               rel="noreferrer"
-              className="flex flex-col gap-3 rounded-lg border border-border/70 px-4 py-4 transition-colors hover:bg-muted/40 md:flex-row md:items-center md:justify-between"
+              className="flex items-start justify-between gap-4 rounded-lg border border-border/70 p-3 text-sm transition-colors hover:bg-muted/40"
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">
-                  {page.title || page.url}
-                </p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {page.url}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                <span>{page.responseCount} responses</span>
-                <ArrowUpRight className="size-4" />
-              </div>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">
+                  {source.title || source.url}
+                </span>
+                <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
+                  {source.domain}
+                  {source.position ? ` · position ${source.position}` : ""}
+                </span>
+              </span>
+              <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
             </a>
           ))}
+        </div>
+      ) : (
+        <p className="rounded-lg border border-dashed bg-zinc-50 p-4 text-sm font-medium text-zinc-500">{empty}</p>
+      )}
+    </section>
+  )
+}
+
+function Evidence({ response }: { response: ResponseRecord }) {
+  const citationsAvailable = ["supported", "inferred"].includes(
+    response.evidenceStatus.actualCitations
+  )
+  const answerAvailable = ["supported", "inferred"].includes(
+    response.evidenceStatus.answer
+  )
+  const status =
+    !answerAvailable
+      ? "Answer unavailable"
+      : response.mentions > 0
+      ? response.cited
+        ? "Mentioned and cited"
+        : "Mentioned, not cited"
+      : "Brand absent"
+
+  return (
+    <AccordionItem value={`${response.chatbot}-${response.prompt}`} className="rounded-xl border px-5">
+      <AccordionTrigger className="gap-4 py-5 hover:no-underline">
+        <div className="min-w-0 flex-1 text-left">
+          <p className="text-sm font-medium">{response.prompt}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Badge variant={response.mentions > 0 ? "secondary" : "destructive"}>{status}</Badge>
+            <Badge variant="outline">
+              {citationsAvailable
+                ? `${response.actualCitations.length} actual citations`
+                : "Citation status unavailable"}
+            </Badge>
+            <Badge variant="outline">
+              {["supported", "inferred"].includes(response.evidenceStatus.maps)
+                ? `${response.mapResults.length} map results`
+                : "Map data unavailable"}
+            </Badge>
+          </div>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="space-y-7 pb-6">
+        <section>
+          <h4 className="mb-3 text-sm font-medium">Final answer</h4>
+          <div className="prose max-w-none rounded-xl border bg-zinc-50 p-5 text-sm leading-7">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{response.answerMarkdown}</ReactMarkdown>
+          </div>
+        </section>
+
+        <div className="grid gap-7 xl:grid-cols-2">
+          <SourceList
+            title="Actual cited pages"
+            sources={response.actualCitations}
+            empty={
+              citationsAvailable
+                ? "No pages were cited in this answer."
+                : "The provider did not supply reliable actual-citation status."
+            }
+          />
+          <SourceList
+            title="Uncited citation candidates"
+            sources={response.uncitedCitationCandidates}
+            empty="No uncited citation candidates were captured."
+          />
+          <SourceList
+            title="Captured search sources"
+            sources={response.searchSources}
+            empty="No structured search sources were captured."
+          />
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Map placements</h4>
+              <Badge variant="secondary">{response.mapResults.length}</Badge>
+            </div>
+            <div className="space-y-2">
+              {response.mapResults.slice(0, 10).map((result) => (
+                <div key={`${result.name}-${result.position}`} className="rounded-lg border p-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-medium">#{result.position ?? "–"} {result.name}</span>
+                    <span className="text-xs font-medium text-zinc-500">
+                      {result.rating ?? "–"} ★ · {result.reviewCount ?? 0} reviews
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs font-medium text-zinc-500">{result.category}</p>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </AccordionContent>
     </AccordionItem>
@@ -489,403 +249,265 @@ function SourcePanel({ domainGroup }: { domainGroup: DomainGroup }) {
 }
 
 export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
-  const [sourceQuery, setSourceQuery] = useState("")
-  const deferredSourceQuery = useDeferredValue(sourceQuery)
-
   if (!loaded.ok) {
     return (
-      <main className="min-h-svh bg-background px-6 py-12">
-        <div className="mx-auto max-w-3xl">
-          <Card className="border-border/80 shadow-none">
-            <CardHeader>
-              <CardTitle>Unable to load audit data</CardTitle>
-              <CardDescription>
-                The dashboard could not read the configured JSON files.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>{loaded.error}</p>
-              <p>
-                Check <code>AUDIT_DATA_PATH</code> and <code>TRACKED_PROMPTS_PATH</code>,
-                then restart the dev server.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="grid min-h-svh place-items-center bg-zinc-100 p-6">
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle>Unable to load audit data</CardTitle>
+            <CardDescription>{loaded.error}</CardDescription>
+          </CardHeader>
+        </Card>
       </main>
     )
   }
 
   const { audit, trackedPrompts } = loaded
   const view = buildAuditViewModel(audit, trackedPrompts)
-  const filteredDomainGroups = view.domainGroups.filter((domainGroup) => {
-    if (!deferredSourceQuery.trim()) {
-      return true
-    }
-
-    const query = deferredSourceQuery.trim().toLowerCase()
-    return (
-      domainGroup.domain.toLowerCase().includes(query) ||
-      domainGroup.pages.some(
-        (page) =>
-          page.url.toLowerCase().includes(query) ||
-          page.title.toLowerCase().includes(query)
-      )
-    )
-  })
+  const { metrics } = view
+  const invisible =
+    metrics.availability.answers === metrics.promptCount &&
+    metrics.availability.actualCitations === metrics.promptCount &&
+    metrics.availability.searchSources === metrics.promptCount &&
+    metrics.availability.maps === metrics.promptCount &&
+    metrics.mentioned === 0 &&
+    metrics.cited === 0 &&
+    metrics.foundInSearch === 0 &&
+    metrics.foundInMaps === 0
+  const automaticActions = [
+    {
+      title: "Win the pages assistants already retrieve",
+      summary: `Study the ${metrics.uniqueCitedPages} pages assistants actually cite, then publish stronger service, comparison, and proof pages for the same buyer intents.`,
+      priority: "P0",
+    },
+    {
+      title: "Build local authority",
+      summary:
+        metrics.availability.maps > 0
+          ? `The brand appeared in ${metrics.foundInMaps}/${metrics.availability.maps} available prompt-level map sets. Strengthen the Google Business Profile, reviews, categories, local citations, and Paris service pages.`
+          : "Map evidence was not provided, so local visibility is unknown. Validate the map collection before drawing a local-search conclusion.",
+      priority: "P0",
+    },
+    {
+      title: "Close the retrieval-to-answer gap",
+      summary:
+        metrics.availability.searchSources > 0
+          ? `The domain appeared in captured search sources for ${metrics.foundInSearch}/${metrics.availability.searchSources} available prompts. Prioritize prompts where retrieval is close but the final answer still omits the brand.`
+          : "Structured search-source evidence was not provided. Treat retrieval visibility as unknown until it is collected.",
+      priority: "P1",
+    },
+  ]
+  const recommendations = view.recommendations.length
+    ? view.recommendations
+    : automaticActions
 
   return (
-    <main className="min-h-svh bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(244,244,245,0.65))]">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="rounded-2xl border border-border/80 bg-background/95 p-6 shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <p className="text-xs text-muted-foreground">geo audit dashboard</p>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  {view.brandName}
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Static-first Next dashboard for GEO audits. Point
-                  the build at a run JSON, export, and you get a shareable HTML bundle.
+    <main className="min-h-svh bg-zinc-100">
+      <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 py-7 sm:px-6 lg:px-8">
+        <header className="overflow-hidden rounded-3xl border border-zinc-200 bg-white p-7 text-zinc-700 shadow-none sm:p-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-medium text-zinc-500">Geo visibility audit</p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-700 sm:text-5xl">{view.brandName}</h1>
+              <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
+                <p className="font-medium leading-7 text-zinc-600">
+                  {invisible
+                    ? `The brand is currently invisible across all ${metrics.promptCount} tested buying prompts: no final-answer mentions, citations, search-source appearances, or map placements.`
+                    : `The brand appears in ${metrics.mentioned}/${metrics.availability.answers} available prompt answers and is cited in ${metrics.cited}/${metrics.availability.actualCitations} prompts with reliable citation evidence. Missing evidence is reported as unknown.`}
                 </p>
               </div>
             </div>
-
-            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-              <div className="rounded-lg border border-border/70 px-4 py-3">
-                <p className="text-xs">generated</p>
-                <p className="mt-1 font-medium text-foreground">
-                  {formatDate(audit.run_at)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border/70 px-4 py-3">
-                <p className="text-xs">site</p>
-                <a
-                  href={audit.check_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 flex items-center gap-2 font-medium text-foreground hover:text-muted-foreground"
-                >
-                  <span className="truncate">{audit.check_url}</span>
-                  <ExternalLink className="size-4 shrink-0" />
-                </a>
-              </div>
+            <div className="text-sm font-medium text-zinc-500">
+              <p>{formatDate(audit.run_at)}</p>
+              <a className="mt-2 inline-flex items-center gap-2 font-semibold text-zinc-700" href={audit.check_url} target="_blank" rel="noreferrer">
+                {audit.target_domains?.[0] || audit.check_url}
+                <ArrowUpRight className="size-4" />
+              </a>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            title="Mention rate"
-            value={formatPercent(view.mentionRate)}
-            detail="Percentage of responses that mention the brand at least once."
-          />
-          <MetricCard
-            title="Citation rate"
-            value={formatPercent(view.citationRate)}
-            detail="Share of responses that directly cite one of the tracked domains."
-          />
-          <MetricCard
-            title="Average rank"
-            value={view.averageRank === null ? "n/a" : `#${view.averageRank}`}
-            detail="Average first citation rank when the brand appears in the source list."
-          />
-          <MetricCard
-            title="Sources"
-            value={`${view.totalSources}`}
-            detail="Unique links cited across all chatbot responses in this audit."
-          />
+        <section>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Priority action plan</h2>
+            <p className="mt-1 text-sm font-medium text-zinc-500">What to do next, before the underlying evidence.</p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {recommendations.slice(0, 3).map((item) => (
+              <Card key={item.title} className="border-border/75 shadow-none">
+                <CardHeader>
+                  <Badge variant="secondary" className="w-fit">{item.priority.replace("P", "Priority ")}</Badge>
+                  <CardTitle className="text-base">{item.title}</CardTitle>
+                  <CardDescription className="leading-6">{item.summary}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </section>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full justify-start rounded-lg border border-border/70 bg-background p-1">
-            <TabsTrigger value="overview" className="rounded-md px-4">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="prompts" className="rounded-md px-4">
-              Prompts
-            </TabsTrigger>
-            <TabsTrigger value="sources" className="rounded-md px-4">
-              Sources
-            </TabsTrigger>
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Opportunity funnel</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FunnelStep label="Web searched" count={metrics.searched} total={metrics.availability.webSearch} />
+            <FunnelStep label="Sources retrieved" count={metrics.retrieved} total={metrics.availability.searchSources} />
+            <FunnelStep label="Map set shown" count={metrics.mapped} total={metrics.availability.maps} />
+            <FunnelStep label="Brand mentioned" count={metrics.mentioned} total={metrics.availability.answers} />
+            <FunnelStep label="Brand cited" count={metrics.cited} total={metrics.availability.actualCitations} />
+          </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Actual citation appearances" value={metrics.availability.actualCitations > 0 ? `${metrics.actualCitationAppearances}` : "n/a"} detail={metrics.availability.actualCitations > 0 ? `${metrics.uniqueCitedPages} unique pages were truly cited.` : "Citation status was not provided reliably."} />
+          <Metric label="Citation candidates" value={metrics.availability.citationCandidates > 0 ? `${metrics.candidateAppearances}` : "n/a"} detail={metrics.availability.citationCandidates > 0 ? `${metrics.uniqueCandidatePages} unique pages were captured as candidates.` : "Citation candidates were not provided reliably."} />
+          <Metric label="Search-source records" value={metrics.availability.searchSources > 0 ? `${metrics.searchSourceAppearances}` : "n/a"} detail={metrics.availability.searchSources > 0 ? "Structured pages retrieved during web search." : "Structured search-source evidence was not provided."} />
+          <Metric label="Map placements" value={metrics.availability.maps > 0 ? `${metrics.mapPlacements}` : "n/a"} detail={metrics.availability.maps > 0 ? "Local listings captured across all prompts." : "Map evidence was not provided."} />
+        </section>
+
+        <Card className="border-border bg-card shadow-none">
+          <CardHeader>
+            <CardTitle>Prompt matrix</CardTitle>
+            <CardDescription>One row per buyer question. Green means the signal was present; red means it was absent.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-80">Prompt</TableHead>
+                  <TableHead>Search</TableHead>
+                  <TableHead>Brand in search</TableHead>
+                  <TableHead>Brand in maps</TableHead>
+                  <TableHead>Mention</TableHead>
+                  <TableHead>Citation</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {view.promptGroups.map((group) => (
+                  <TableRow key={group.prompt}>
+                    <TableCell className="font-medium leading-6">{group.prompt}</TableCell>
+                    <TableCell><Signal value={group.searched} label={group.searched ? "Yes" : "No"} /></TableCell>
+                    <TableCell><Signal value={group.foundInSearch} label={group.foundInSearch ? "Brand found" : "Brand absent"} /></TableCell>
+                    <TableCell><Signal value={group.foundInMaps} label={group.foundInMaps ? "Brand found" : "Brand absent"} /></TableCell>
+                    <TableCell><Signal value={group.mentioned} label={group.mentioned ? "Mentioned" : "Absent"} /></TableCell>
+                    <TableCell><Signal value={group.cited} label={group.cited ? "Cited" : "Not cited"} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="competition" className="space-y-5">
+          <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl border bg-white p-1">
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="competition">Competitive landscape</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="local">Local visibility</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="citations">Actual citations</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="evidence">Evidence viewer</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="method">Methodology</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <CardTitle>Visibility over time</CardTitle>
-                  <CardDescription>
-                    Derived from the tracked prompts history JSON.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.visibilityTimeline.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Add entries to <code>tracked-prompts.json</code> to unlock
-                      timeline tracking.
-                    </p>
-                  ) : (
-                    view.visibilityTimeline.map((point) => (
-                      <MeterRow
-                        key={point.date}
-                        label={formatDate(point.date)}
-                        value={point.visibility}
-                        meta={`${point.promptCount} tracked prompts`}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <CardTitle>Competitor mentions</CardTitle>
-                  <CardDescription>
-                    Domains surfaced in the answers next to the brand.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.competitorMentions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No competitor domains were detected in the current sample.
-                    </p>
-                  ) : (
-                    sortByCountDesc(view.competitorMentions).map((item) => (
-                      <MeterRow
-                        key={item.label}
-                        label={item.label}
-                        value={item.share}
-                        meta={`${item.count} mentions`}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </section>
-
-            <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Bot className="size-4 text-muted-foreground" />
-                    <CardTitle>Chatbot coverage</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Performance split by AI product for the current audit run.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  {view.chatbotSummaries.map((chatbot) => (
-                    <ChatbotSummary
-                      key={chatbot.label}
-                      label={chatbot.label}
-                      visibility={chatbot.visibility}
-                      citationCount={chatbot.citationCount}
-                      averageRank={chatbot.averageRank}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Link2 className="size-4 text-muted-foreground" />
-                    <CardTitle>Top cited domains</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Most frequently cited sources grouped by domain.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.topDomains.slice(0, 6).map((domain) => (
-                    <MeterRow
-                      key={domain.label}
-                      label={domain.label}
-                      value={domain.share}
-                      meta={`${domain.count} cited pages`}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </section>
-
-            <Card className="border-border/80 shadow-none">
+          <TabsContent value="competition">
+            <Card className="shadow-none">
               <CardHeader>
-                <CardTitle>Manual recommendations</CardTitle>
-                <CardDescription>
-                  Edit <code>manual_recommendations</code> in the audit JSON after
-                  reviewing the results.
-                </CardDescription>
+                <CardTitle>Competitors by evidence channel</CardTitle>
+                <CardDescription>Answer recommendations, actual citations, captured candidates, search retrieval, and map results stay separate.</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {view.recommendations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No manual recommendations yet.
-                  </p>
-                ) : (
-                  view.recommendations.map((recommendation) => (
-                    <div
-                      key={recommendation.title}
-                      className="rounded-xl border border-border/70 bg-muted/25 p-5"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-medium text-foreground">
-                          {recommendation.title}
-                        </h3>
-                        <Badge variant="secondary" className="rounded-md">
-                          {recommendation.priority}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                        {recommendation.summary}
-                      </p>
-                      <p className="mt-4 text-xs text-muted-foreground">
-                        {recommendation.owner}
-                      </p>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Entity</TableHead><TableHead>Prompt coverage</TableHead><TableHead>Channels</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {view.competitors.slice(0, 50).map((item) => (
+                      <TableRow key={item.domain || item.name}>
+                        <TableCell>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-xs font-medium text-zinc-500">{item.domain}</p>
+                        </TableCell>
+                        <TableCell>{item.promptCount}/{metrics.promptCount}</TableCell>
+                        <TableCell><div className="flex flex-wrap gap-1">{item.channels.map((channel) => <Badge key={channel} variant="outline">{channel.replaceAll("_", " ")}</Badge>)}</div></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="local">
+            <Card className="shadow-none">
+              <CardHeader>
+                <div className="flex items-center gap-2"><MapPin className="size-5" /><CardTitle>Local map landscape</CardTitle></div>
+                <CardDescription>Best position and prompt coverage across structured map results.</CardDescription>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Business</TableHead><TableHead>Best position</TableHead><TableHead>Coverage</TableHead><TableHead>Rating</TableHead><TableHead>Reviews</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {view.mapGroups.map((item) => (
+                      <TableRow key={item.domain || item.name}>
+                        <TableCell>
+                          {item.websiteUrl ? <a href={item.websiteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline">{item.name}<ExternalLink className="size-3" /></a> : <span className="font-medium">{item.name}</span>}
+                          <p className="text-xs font-medium text-zinc-500">{item.category}</p>
+                        </TableCell>
+                        <TableCell>#{item.bestPosition ?? "–"}</TableCell>
+                        <TableCell>{item.promptCount}/{metrics.promptCount}</TableCell>
+                        <TableCell>{item.rating ?? "–"} ★</TableCell>
+                        <TableCell>{item.reviewCount ?? "–"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="citations">
+            <Card className="shadow-none">
+              <CardHeader><CardTitle>Domains actually cited</CardTitle><CardDescription>Only records explicitly marked cited by the provider are included.</CardDescription></CardHeader>
+              <CardContent className="space-y-4">
+                {view.citedDomains.map((group) => (
+                  <div key={group.domain} className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between gap-3"><h3 className="font-medium">{group.domain}</h3><Badge variant="secondary">{group.appearances} appearances</Badge></div>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {group.pages.map((page) => <a key={page.url} href={page.url} target="_blank" rel="noreferrer" className="truncate text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:underline">{page.title || page.url}</a>)}
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <CardTitle>fan-out query summary</CardTitle>
-                <CardDescription>
-                  Every search query the AI models made, grouped and counted
-                  with whether we appeared in the resulting response.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {view.fanOutSummary.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No search-engine fan-out queries were captured in this audit.
+          <TabsContent value="evidence">
+            <Accordion type="multiple" className="space-y-3">
+              {view.responses.map((response) => <Evidence key={`${response.chatbot}-${response.prompt}`} response={response} />)}
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="method">
+            <Card className="shadow-none">
+              <CardHeader><CardTitle>Methodology and collection status</CardTitle></CardHeader>
+              <CardContent className="grid gap-4 text-sm font-medium text-zinc-500 md:grid-cols-2">
+                <div className="rounded-xl border p-4"><p className="font-medium text-foreground">Contract</p><p className="mt-2">{audit.schema_version || "legacy"} · {audit.provider || "unknown provider"} · {audit.provider_method || "unknown method"}</p></div>
+                <div className="rounded-xl border p-4"><p className="font-medium text-foreground">Collection</p>{audit.snapshots.map((snapshot) => <p key={snapshot.chatbot} className="mt-2">{snapshot.chatbot}: {snapshot.status} ({snapshot.collection_method || "snapshot"})</p>)}</div>
+                <div className="rounded-xl border p-4 md:col-span-2"><div className="flex items-center gap-2 font-medium text-foreground"><Search className="size-4" />Signal definitions</div><p className="mt-2 leading-6"><strong>Web searched</strong> uses the provider’s canonical <code>web_search_triggered</code> signal. <strong>Actual citations</strong> include only citation records marked <code>cited: true</code>. Search sources, attached links, uncited candidates, and maps are reported separately.</p></div>
+                <div className="rounded-xl border p-4 md:col-span-2">
+                  <p className="font-medium text-foreground">Normalization diagnostics</p>
+                  <p className="mt-2 leading-6">
+                    Status: {view.diagnostics?.status || "not reported"} ·{" "}
+                    {view.diagnostics?.records_normalized ?? view.responses.length} normalized ·{" "}
+                    {view.diagnostics?.records_rejected ?? 0} rejected ·{" "}
+                    {view.diagnostics?.warning_count ?? 0} warnings.
                   </p>
-                ) : (
-                  view.fanOutSummary.map((summary) => (
-                    <FanOutSummaryPanel key={summary.query} summary={summary} />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="prompts" className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-3">
-              <MetricCard
-                title="Tracked prompts"
-                value={`${view.promptGroups.length}`}
-                detail="Unique prompts represented in the current audit run."
-              />
-              <MetricCard
-                title="Responses"
-                value={`${view.responses.length}`}
-                detail="Total chatbot responses included in the audit JSON."
-              />
-              <MetricCard
-                title="Tracked history"
-                value={`${trackedPrompts.tracked_prompts.length}`}
-                detail="Prompts listed in the separate over-time tracking JSON."
-              />
-            </section>
-
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <CardTitle>Prompt breakdown</CardTitle>
-                <CardDescription>
-                  Each prompt expands into the responses captured for every AI chatbot.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="multiple" className="space-y-4">
-                  {view.promptGroups.map((promptGroup) => (
-                    <PromptPanel
-                      key={promptGroup.prompt}
-                      promptGroup={promptGroup}
-                    />
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="sources" className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-3">
-              <MetricCard
-                title="Source domains"
-                value={`${view.domainGroups.length}`}
-                detail="Distinct domains used by the AI products in the current file."
-              />
-              <MetricCard
-                title="Unique pages"
-                value={`${view.totalSources}`}
-                detail="Unique cited URLs after deduplication across responses."
-              />
-              <MetricCard
-                title="Responses with sources"
-                value={`${view.responsesWithSources}`}
-                detail="Responses that cite at least one source."
-              />
-            </section>
-
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <CardTitle>Source inventory</CardTitle>
-                    <CardDescription>
-                      Grouped by domain, then expanded into the exact pages cited by the chatbots.
-                    </CardDescription>
-                  </div>
-                  <div className="w-full max-w-sm">
-                    <label className="relative block">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={sourceQuery}
-                        onChange={(event) => setSourceQuery(event.target.value)}
-                        placeholder="Search domains or URLs..."
-                        className="pl-10"
-                      />
-                    </label>
-                  </div>
+                  {view.diagnostics?.unknown_provider_fields?.length ? (
+                    <p className="mt-2 leading-6">
+                      Preserved unknown provider fields:{" "}
+                      {view.diagnostics.unknown_provider_fields.join(", ")}.
+                    </p>
+                  ) : null}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="multiple" className="space-y-4">
-                  {filteredDomainGroups.map((domainGroup) => (
-                    <SourcePanel
-                      key={domainGroup.domain}
-                      domainGroup={domainGroup}
-                    />
-                  ))}
-                </Accordion>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Separator />
-
-        <footer className="flex flex-col gap-3 pb-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Globe className="size-4" />
-            <span>
-              Generated by{" "}
-              <a
-                href="https://holly-and-stick.com"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-foreground hover:text-muted-foreground"
-              >
-                Holly&amp;Stick
-              </a>
-            </span>
-          </div>
-          <p>Audit JSON in, static export out.</p>
-        </footer>
       </div>
     </main>
   )

@@ -51,6 +51,21 @@ Treat the workflow as four distinct phases. Do not blur them together.
 ### Phase 3: audit package
 
 - verify that the JSON artifacts are complete
+- require `geo-audit-v3` semantics:
+  - final-answer brand mentions
+  - actual citations (`cited: true`)
+  - uncited citation candidates
+  - captured search sources
+  - attached links
+  - structured map placements
+  - competitor entities with evidence channels
+  - provider metadata and collection status
+- normalize defensively:
+  - turn missing arrays into empty arrays while marking their evidence state `missing`
+  - safely coerce recognizable boolean and numeric variations and record a warning
+  - preserve unknown provider fields under `provider_metadata.unknown_fields`
+  - reject only the malformed record, not the entire run
+  - never infer actual citations when reliable `cited` flags are unavailable
 - prepare the dashboard inputs
 - render the standalone HTML page from `results.json`
 - connect the run to the Next.js template by default
@@ -59,11 +74,25 @@ Treat the workflow as four distinct phases. Do not blur them together.
 ### Phase 4: analysis
 
 - analyze the run
-- summarize visibility, citations, search-trigger behavior, and fan-out
+- summarize the opportunity funnel: searched → retrieved → mapped → mentioned → cited
+- report actual citations separately from candidates and search sources
+- analyze answer, citation, search, and map competitors as separate channels
+- surface a prioritized, prospect-facing action plan before raw evidence
 - add optional manual recommendations
 - give the user the exact local HTML file path so they can click it from chat
 
 If a run failed or the JSON is incomplete, stop in Phase 2 or 3 and say so clearly instead of pretending the dashboard or template is ready.
+
+### Evidence states
+
+Every response must expose `evidence_status` for answer, web search, actual citations, citation candidates, search sources, attached links, maps, and fan-out queries:
+
+- `supported`: the provider supplied a canonical value
+- `inferred`: a safe coercion or structural normalization was applied
+- `missing`: the provider did not supply enough evidence
+- `malformed`: the provider supplied unusable evidence
+
+Treat `missing` and `malformed` as unknown, never as zero. Only report absence when the channel is `supported` or `inferred`.
 
 ## How to gather prompts with the user
 
@@ -194,6 +223,26 @@ Provider tradeoffs:
   - fan-out and source traces are less complete than Bright Data
   - there is no Bright Data-style dataset snapshot workflow
 
+### Bright Data collection mode
+
+- Use synchronous `/datasets/v3/scrape` by default for 1-20 prompts.
+- Let the collector handle automatic conversion to a snapshot when Bright Data returns `snapshot_id`.
+- Use asynchronous `/datasets/v3/trigger` for more than 20 prompts, explicit batch runs, or when `--collection-mode async` is requested.
+- Preserve the raw provider response before normalization.
+- To rebuild a report from an existing raw export without a paid rerun, use:
+
+```bash
+python geo-audit-report/scripts/normalize-brightdata-geo.py \
+  --raw <raw-brightdata.json> \
+  --out <run-dir>/results.json \
+  --check-url <site-url> \
+  --target-domains <domain> \
+  --brand-terms <comma-separated-brand-terms> \
+  --dataset-id <original-dataset-id> \
+  --snapshot-id <original-snapshot-id> \
+  --run-at <original-run-timestamp>
+```
+
 ## Tooling & credentials
 
 - Auth mode: `env`
@@ -258,6 +307,19 @@ export DATA_FOR_SEO_PASSWORD="your-password"
 ```
 
 Do not ask the user to paste either secret in chat, and never print the values.
+
+## Verification gates
+
+Before delivering a report:
+
+1. Compare raw and normalized record counts.
+2. Confirm citation appearances equal the number of provider records marked `cited: true`.
+3. Derive canonical domains from URLs; retain provider display labels separately.
+4. Confirm search sources, attached links, and map placements were not dropped.
+5. Confirm absent brands are labelled absent, not “mentioned only.”
+6. Confirm Markdown answers render and provider UI boilerplate is removed.
+7. Run collector unit tests, dashboard typecheck/lint/build, and inspect the exported report.
+8. Inspect `collection_diagnostics`; disclose partial runs, warnings, rejected records, and unavailable channels.
 
 Before running the DataForSEO script, ask the user which chatbots they want to run:
 - ChatGPT

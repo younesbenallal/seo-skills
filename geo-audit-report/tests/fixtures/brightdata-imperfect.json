@@ -1,0 +1,31 @@
+[
+  {
+    "prompt": "Which agency should I choose?",
+    "answer_text_markdown": "Studio Alpha is one option.",
+    "web_search_triggered": "true",
+    "citations": [
+      {
+        "url": "https://alpha.example/",
+        "title": "Studio Alpha",
+        "position": "1"
+      }
+    ],
+    "search_sources": {
+      "url": "https://alpha.example/",
+      "title": "Studio Alpha",
+      "rank": "1"
+    },
+    "future_provider_field": {
+      "version": 4
+    }
+  },
+  {
+    "prompt": "Who offers local video production?",
+    "answer_text_markdown": "Several studios operate locally.",
+    "web_search_triggered": "not-a-boolean",
+    "citations": "not-an-array",
+    "map": "not-an-array",
+    "links_attached": []
+  },
+  "malformed record"
+]

@@ -2,11 +2,9 @@
 """
 Bright Data GEO / LLM visibility collector.
 
-This script mirrors the Bright Data "datasets/v3" workflow:
-1) Trigger dataset run (returns snapshot_id)
-2) Poll progress until ready/failed
-3) Download snapshot results
-4) Save results to results.json
+This script uses Bright Data's synchronous endpoint for runs of up to 20
+prompts, with automatic fallback to the snapshot workflow when Bright Data
+returns a snapshot_id. Larger runs use the snapshot workflow directly.
 
 Note: Render the static HTML report from results.json with
 `node geo-audit-report/scripts/render-report.mjs --in <results.json>`.
@@ -44,6 +42,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_BASE_URL = "https://api.brightdata.com"
 
+EVIDENCE_STATES = {"supported", "missing", "inferred", "malformed"}
+
 
 CHATGPT_OUTPUT_FIELDS = [
     "url",
@@ -65,6 +65,7 @@ CHATGPT_OUTPUT_FIELDS = [
     "search_sources",
     "model",
     "web_search_query",
+    "prompt_sent_at",
 ]
 
 PERPLEXITY_OUTPUT_FIELDS = [
@@ -90,6 +91,87 @@ GEMINI_OUTPUT_FIELDS = [
     "index",
     "web_search_query",
 ]
+
+KNOWN_PROVIDER_FIELDS = set(
+    CHATGPT_OUTPUT_FIELDS
+    + PERPLEXITY_OUTPUT_FIELDS
+    + GEMINI_OUTPUT_FIELDS
+    + ["answer_text", "source_html", "response_raw", "answer_html", "web_search"]
+)
+
+
+def coerce_bool(value: Any) -> Tuple[Optional[bool], bool]:
+    if isinstance(value, bool):
+        return value, False
+    if value in (0, 1) and not isinstance(value, bool):
+        return bool(value), True
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes"}:
+            return True, True
+        if normalized in {"false", "0", "no"}:
+            return False, True
+    return None, False
+
+
+def coerce_number(value: Any) -> Tuple[Optional[float], bool]:
+    if isinstance(value, bool):
+        return None, False
+    if isinstance(value, (int, float)):
+        return float(value), False
+    if isinstance(value, str):
+        try:
+            return float(value.strip()), True
+        except ValueError:
+            pass
+    return None, False
+
+
+def coerce_integer(value: Any) -> Tuple[Optional[int], bool]:
+    number, coerced = coerce_number(value)
+    if number is None or not number.is_integer():
+        return None, False
+    return int(number), coerced
+
+
+def read_list_field(
+    record: Dict[str, Any],
+    field: str,
+    warnings: List[Dict[str, Any]],
+) -> Tuple[List[Any], str]:
+    if field not in record or record.get(field) is None:
+        return [], "missing"
+    value = record.get(field)
+    if isinstance(value, list):
+        return value, "supported"
+    if isinstance(value, dict):
+        warnings.append(
+            {
+                "code": "singleton_object_coerced_to_array",
+                "field": field,
+                "message": f"{field} was an object and was safely wrapped in an array.",
+            }
+        )
+        return [value], "inferred"
+    warnings.append(
+        {
+            "code": "malformed_array",
+            "field": field,
+            "message": f"{field} was {type(value).__name__}; expected an array.",
+        }
+    )
+    return [], "malformed"
+
+
+def evidence_state(
+    state: str,
+    *,
+    records: int,
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    if state not in EVIDENCE_STATES:
+        state = "malformed"
+    return {"state": state, "records": records, "note": note}
 
 
 def get_custom_output_fields(chatbot: str) -> str:
@@ -158,6 +240,27 @@ def trigger_dataset(
     return str(snapshot_id)
 
 
+def scrape_dataset(
+    *,
+    base_url: str,
+    api_key: str,
+    dataset_id: str,
+    input_rows: List[Dict[str, Any]],
+    custom_output_fields: str,
+) -> Any:
+    url = build_url(
+        base_url,
+        "/datasets/v3/scrape",
+        {
+            "dataset_id": dataset_id,
+            "custom_output_fields": custom_output_fields,
+            "include_errors": "true",
+            "format": "json",
+        },
+    )
+    return http_json(url, "POST", api_key, payload=input_rows, timeout_sec=120)
+
+
 def poll_progress(
     *,
     base_url: str,
@@ -215,6 +318,18 @@ def normalize_domain(value: str) -> str:
     return v
 
 
+def canonical_domain(url: str, fallback: str = "") -> str:
+    if url:
+        try:
+            hostname = urllib.parse.urlparse(url).hostname or ""
+            if hostname:
+                return normalize_domain(hostname.removeprefix("www."))
+        except Exception:
+            pass
+    fallback_domain = normalize_domain(fallback)
+    return fallback_domain if "." in fallback_domain else ""
+
+
 def classify_domain(domain: str) -> str:
     d = normalize_domain(domain)
     if any(d.endswith(x) for x in ["reddit.com", "quora.com", "medium.com", "stackoverflow.com", "stackexchange.com"]):
@@ -242,33 +357,296 @@ def count_mentions(text: str, brand_terms: List[str], target_domains: List[str])
     return count
 
 
-def to_sources(record: Dict[str, Any]) -> List[Dict[str, Any]]:
-    citations = record.get("citations") or []
-    sources = record.get("sources") or []
-    combined = []
-    if isinstance(citations, list):
-        combined.extend([c for c in citations if isinstance(c, dict)])
-    if isinstance(sources, list):
-        combined.extend([s for s in sources if isinstance(s, dict)])
+def normalize_source(
+    item: Dict[str, Any],
+    *,
+    source_kind: str,
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    warnings = warnings if warnings is not None else []
+    url = item.get("url") if isinstance(item.get("url"), str) else ""
+    title = item.get("title") if isinstance(item.get("title"), str) else ""
+    display_domain = item.get("domain") if isinstance(item.get("domain"), str) else ""
+    domain = canonical_domain(url, display_domain)
+    position, position_coerced = coerce_integer(item.get("position"))
+    answer_position, answer_position_coerced = coerce_integer(item.get("answer_position"))
+    rank, rank_coerced = coerce_integer(item.get("rank"))
+    cited, cited_coerced = coerce_bool(item.get("cited"))
+    for field, was_coerced in [
+        ("position", position_coerced),
+        ("answer_position", answer_position_coerced),
+        ("rank", rank_coerced),
+        ("cited", cited_coerced),
+    ]:
+        if was_coerced:
+            warnings.append(
+                {
+                    "code": "safe_scalar_coercion",
+                    "field": field,
+                    "message": f"{field} was safely coerced to its canonical type.",
+                }
+            )
+    for field, normalized in [
+        ("position", position),
+        ("answer_position", answer_position),
+        ("rank", rank),
+    ]:
+        if item.get(field) is not None and normalized is None:
+            warnings.append(
+                {
+                    "code": "malformed_number",
+                    "field": field,
+                    "message": f"{field} was present but not a usable integer.",
+                }
+            )
+    return {
+        "title": title or None,
+        "url": url or None,
+        "domain": domain or None,
+        "display_domain": display_domain or None,
+        "type": classify_domain(domain or url),
+        "source_kind": source_kind,
+        "cited": cited,
+        "position": position if position is not None else rank,
+        "answer_position": answer_position,
+        "description": item.get("description") or item.get("snippet") or None,
+        "date_published": item.get("date_published") or None,
+    }
+
+
+def normalize_source_list(
+    record: Dict[str, Any],
+    field: str,
+    *,
+    source_kind: str,
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Dict[str, Any]], str]:
+    warnings = warnings if warnings is not None else []
+    items, state = read_list_field(record, field, warnings)
     out = []
-    for item in combined:
-        url = item.get("url") if isinstance(item.get("url"), str) else ""
-        title = item.get("title") if isinstance(item.get("title"), str) else ""
-        domain = item.get("domain") if isinstance(item.get("domain"), str) else ""
-        if not domain and url:
-            try:
-                domain = urllib.parse.urlparse(url).netloc
-            except Exception:
-                domain = ""
-        out.append(
+    for item in items:
+        if isinstance(item, dict):
+            normalized = normalize_source(item, source_kind=source_kind, warnings=warnings)
+            if normalized.get("url") or normalized.get("title"):
+                out.append(normalized)
+            else:
+                warnings.append(
+                    {
+                        "code": "empty_evidence_item",
+                        "field": field,
+                        "message": f"Ignored a {field} item without a usable URL or title.",
+                    }
+                )
+                state = "malformed"
+        else:
+            warnings.append(
+                {
+                    "code": "malformed_array_item",
+                    "field": field,
+                    "message": f"Ignored a non-object item in {field}.",
+                }
+            )
+            state = "malformed"
+    return out, state
+
+
+def split_citations(
+    record: Dict[str, Any],
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], str, str]:
+    warnings = warnings if warnings is not None else []
+    candidates, candidates_state = normalize_source_list(
+        record,
+        "citations",
+        source_kind="citation_candidate",
+        warnings=warnings,
+    )
+    cited_values = [item.get("cited") for item in candidates]
+    raw_items = record.get("citations") if isinstance(record.get("citations"), list) else []
+    malformed_flags = any(
+        isinstance(item, dict)
+        and item.get("cited") is not None
+        and coerce_bool(item.get("cited"))[0] is None
+        for item in raw_items
+    )
+    if candidates_state in {"missing", "malformed"}:
+        actual_state = candidates_state
+    elif malformed_flags:
+        actual_state = "malformed"
+        warnings.append(
             {
-                "title": title or None,
-                "url": url or None,
-                "domain": normalize_domain(domain) if domain else None,
-                "type": classify_domain(domain or url),
+                "code": "citation_flags_malformed",
+                "field": "citations.cited",
+                "message": "Some cited flags were unusable; only explicit true values count.",
             }
         )
-    return [x for x in out if x.get("url") or x.get("title")]
+    elif candidates and all(value is None for value in cited_values):
+        actual_state = "missing"
+        warnings.append(
+            {
+                "code": "citation_flags_missing",
+                "field": "citations.cited",
+                "message": "Citation candidates were captured, but actual citation status is unknown.",
+            }
+        )
+    elif any(value is None for value in cited_values):
+        actual_state = "malformed"
+        warnings.append(
+            {
+                "code": "citation_flags_partial",
+                "field": "citations.cited",
+                "message": "Some citation candidates lacked a usable cited flag; only explicit true values count.",
+            }
+        )
+    else:
+        actual_state = "inferred" if candidates_state == "inferred" else "supported"
+    actual = [item for item in candidates if item.get("cited") is True]
+    return actual, candidates, actual_state, candidates_state
+
+
+def normalize_attached_links(
+    record: Dict[str, Any],
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Dict[str, Any]], str]:
+    warnings = warnings if warnings is not None else []
+    items, state = read_list_field(record, "links_attached", warnings)
+    out = []
+    for item in items:
+        if not isinstance(item, dict):
+            warnings.append(
+                {
+                    "code": "malformed_array_item",
+                    "field": "links_attached",
+                    "message": "Ignored a non-object attached link.",
+                }
+            )
+            state = "malformed"
+            continue
+        url = item.get("url") if isinstance(item.get("url"), str) else ""
+        text = item.get("text") if isinstance(item.get("text"), str) else ""
+        position, coerced = coerce_integer(item.get("position"))
+        if coerced:
+            warnings.append(
+                {
+                    "code": "safe_scalar_coercion",
+                    "field": "links_attached.position",
+                    "message": "Attached-link position was safely coerced to a number.",
+                }
+            )
+        if item.get("position") is not None and position is None:
+            warnings.append(
+                {
+                    "code": "malformed_number",
+                    "field": "links_attached.position",
+                    "message": "Attached-link position was not a usable integer.",
+                }
+            )
+        out.append(
+            {
+                "text": text or None,
+                "url": url or None,
+                "domain": canonical_domain(url) or None,
+                "position": position,
+            }
+        )
+        if not url and not text:
+            out.pop()
+            warnings.append(
+                {
+                    "code": "empty_evidence_item",
+                    "field": "links_attached",
+                    "message": "Ignored an attached link without a usable URL or label.",
+                }
+            )
+            state = "malformed"
+    return out, state
+
+
+def normalize_map_results(
+    record: Dict[str, Any],
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Dict[str, Any]], str]:
+    warnings = warnings if warnings is not None else []
+    items, state = read_list_field(record, "map", warnings)
+    out = []
+    for item in items:
+        if not isinstance(item, dict):
+            warnings.append(
+                {
+                    "code": "malformed_array_item",
+                    "field": "map",
+                    "message": "Ignored a non-object map result.",
+                }
+            )
+            state = "malformed"
+            continue
+        website_url = item.get("website_url") if isinstance(item.get("website_url"), str) else ""
+        rating, rating_coerced = coerce_number(item.get("rating"))
+        review_count, reviews_coerced = coerce_integer(item.get("review_count"))
+        position, position_coerced = coerce_integer(item.get("position"))
+        for field, was_coerced in [
+            ("map.rating", rating_coerced),
+            ("map.review_count", reviews_coerced),
+            ("map.position", position_coerced),
+        ]:
+            if was_coerced:
+                warnings.append(
+                    {
+                        "code": "safe_scalar_coercion",
+                        "field": field,
+                        "message": f"{field} was safely coerced to a number.",
+                    }
+                )
+        for field, raw_value, normalized in [
+            ("map.rating", item.get("rating"), rating),
+            ("map.review_count", item.get("review_count"), review_count),
+            ("map.position", item.get("position"), position),
+        ]:
+            if raw_value is not None and normalized is None:
+                warnings.append(
+                    {
+                        "code": "malformed_number",
+                        "field": field,
+                        "message": f"{field} was present but not a usable number.",
+                    }
+                )
+        name = str(item.get("name") or "").strip()
+        out.append(
+            {
+                "name": name or None,
+                "category": str(item.get("category") or "").strip() or None,
+                "rating": rating,
+                "review_count": review_count,
+                "website_url": website_url or None,
+                "domain": canonical_domain(website_url) or None,
+                "position": position,
+                "phone_number": item.get("phone_number") or None,
+                "directions_url": item.get("directions_url") or None,
+                "description": item.get("description") or None,
+            }
+        )
+        if not name and not website_url:
+            out.pop()
+            warnings.append(
+                {
+                    "code": "empty_evidence_item",
+                    "field": "map",
+                    "message": "Ignored a map result without a usable name or website.",
+                }
+            )
+            state = "malformed"
+    return out, state
+
+
+def clean_answer_markdown(value: Any) -> str:
+    markdown = str(value or "").replace("\r\n", "\n").strip()
+    leading_boilerplate = r"^(?:#{1,6}\s*)?Give feedback\s*\n+"
+    trailing_boilerplate = (
+        r"\n*(?:#{1,6}\s*)?Give feedback\s*"
+        r"(?:\n+(?:Good response|Bad response|Copy|Regenerate)[^\n]*)*\s*$"
+    )
+    markdown = re.sub(leading_boilerplate, "", markdown, flags=re.IGNORECASE)
+    return re.sub(trailing_boilerplate, "", markdown, flags=re.IGNORECASE).strip()
 
 
 def compute_first_citation_rank(sources: List[Dict[str, Any]], target_domains: List[str]) -> Optional[int]:
@@ -283,7 +661,35 @@ def compute_first_citation_rank(sources: List[Dict[str, Any]], target_domains: L
     return None
 
 
-def compute_used_web_search(record: Dict[str, Any]) -> bool:
+def compute_used_web_search(
+    record: Dict[str, Any],
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[Optional[bool], str]:
+    warnings = warnings if warnings is not None else []
+    if "web_search_triggered" not in record or record.get("web_search_triggered") is None:
+        return None, "missing"
+    triggered, coerced = coerce_bool(record.get("web_search_triggered"))
+    if triggered is None:
+        warnings.append(
+            {
+                "code": "malformed_boolean",
+                "field": "web_search_triggered",
+                "message": "web_search_triggered was present but not a recognizable boolean.",
+            }
+        )
+        return None, "malformed"
+    if coerced:
+        warnings.append(
+            {
+                "code": "safe_scalar_coercion",
+                "field": "web_search_triggered",
+                "message": "web_search_triggered was safely coerced to a boolean.",
+            }
+        )
+    return triggered, "inferred" if coerced else "supported"
+
+
+def legacy_used_web_search(record: Dict[str, Any]) -> bool:
     web_search_query = record.get("web_search_query") or []
     if isinstance(web_search_query, list) and len(web_search_query) > 0:
         return True
@@ -313,52 +719,95 @@ def domain_matches_target(domain_or_url: str, target_domains: List[str]) -> Opti
     return None
 
 
-def to_search_results(record: Dict[str, Any]) -> List[Dict[str, Any]]:
-    search_sources = record.get("search_sources") or []
-    if not isinstance(search_sources, list):
-        return []
+def to_search_results(
+    record: Dict[str, Any],
+    warnings: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[Dict[str, Any]], str]:
+    return normalize_source_list(
+        record,
+        "search_sources",
+        source_kind="search_source",
+        warnings=warnings,
+    )
 
-    out: List[Dict[str, Any]] = []
-    for item in search_sources:
-        if not isinstance(item, dict):
-            continue
-        url = item.get("url") if isinstance(item.get("url"), str) else ""
-        title = item.get("title") if isinstance(item.get("title"), str) else ""
-        rank = item.get("rank")
-        domain = ""
-        if url:
-            try:
-                domain = urllib.parse.urlparse(url).netloc
-            except Exception:
-                domain = ""
-        out.append(
-            {
-                "title": title or None,
-                "url": url or None,
-                "domain": normalize_domain(domain) if domain else None,
-                "rank": rank if isinstance(rank, int) else None,
-            }
+
+def entity_name(source: Dict[str, Any]) -> str:
+    display = str(source.get("display_domain") or "").strip()
+    if display and "." not in display:
+        return display
+    title = str(source.get("title") or "").strip()
+    if title:
+        return re.split(r"\s[-–—|:]\s", title, maxsplit=1)[0].strip()
+    return str(source.get("domain") or "").strip()
+
+
+def build_competitor_entities(
+    *,
+    markdown: str,
+    actual_citations: List[Dict[str, Any]],
+    citation_candidates: List[Dict[str, Any]],
+    search_sources: List[Dict[str, Any]],
+    attached_links: List[Dict[str, Any]],
+    map_results: List[Dict[str, Any]],
+    target_domains: List[str],
+    brand_terms: List[str],
+) -> List[Dict[str, Any]]:
+    entities: Dict[str, Dict[str, Any]] = {}
+    targets = {normalize_domain(item) for item in target_domains}
+    target_terms = {item.strip().lower() for item in brand_terms if item.strip()}
+    answer_lower = markdown.lower()
+    compact_answer = re.sub(r"[^a-z0-9]+", "", answer_lower)
+
+    def add(name: str, domain: str, channel: str) -> None:
+        clean_name = name.strip()
+        clean_domain = canonical_domain("", domain)
+        if not clean_name and not clean_domain:
+            return
+        if clean_domain in targets or clean_name.lower() in target_terms:
+            return
+        key = clean_domain or clean_name.lower()
+        current = entities.setdefault(
+            key,
+            {"name": clean_name or clean_domain, "domain": clean_domain or None, "channels": set()},
         )
+        current["channels"].add(channel)
 
-    return [item for item in out if item.get("url") or item.get("title")]
+    for source in citation_candidates:
+        name = entity_name(source)
+        domain = str(source.get("domain") or "")
+        compact_name = re.sub(r"[^a-z0-9]+", "", name.lower())
+        if name and (
+            name.lower() in answer_lower
+            or (len(compact_name) >= 5 and compact_name in compact_answer)
+        ):
+            add(name, domain, "answer")
+        add(name, domain, "citation" if source in actual_citations else "citation_candidate")
+    for source in search_sources:
+        add(entity_name(source), str(source.get("domain") or ""), "search")
+    for link in attached_links:
+        name = str(link.get("text") or link.get("domain") or "")
+        add(name, str(link.get("domain") or ""), "attached_link")
+    for placement in map_results:
+        add(str(placement.get("name") or ""), str(placement.get("domain") or ""), "map")
+
+    return [
+        {**item, "channels": sorted(item["channels"])}
+        for item in sorted(entities.values(), key=lambda item: str(item["name"]).lower())
+    ]
 
 
 def build_fan_out_details(
     *,
-    record: Dict[str, Any],
+    queries: List[str],
     target_domains: List[str],
     mentions: int,
     cited: bool,
+    search_results: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
-    raw_queries = record.get("web_search_query") or []
-    if not isinstance(raw_queries, list):
-        return []
-
-    queries = [str(item).strip() for item in raw_queries if str(item).strip()]
     if len(queries) == 0:
         return []
 
-    search_results = to_search_results(record)
+    search_results = search_results or []
     matched_domains = sorted(
         {
             match
@@ -462,13 +911,25 @@ class PromptResult:
     fan_out_queries: List[str]
     fan_out_details: List[Dict[str, Any]]
     fan_out_count: int
-    used_web_search: bool
+    used_web_search: Optional[bool]
     sources_count: int
     ugc_sources_count: int
     youtube_sources_count: int
     competitor_domains: List[str]
     brands_mentioned: List[str]
     sources: List[Dict[str, Any]]
+    actual_citations: List[Dict[str, Any]]
+    citation_candidates: List[Dict[str, Any]]
+    uncited_citation_candidates: List[Dict[str, Any]]
+    search_sources: List[Dict[str, Any]]
+    attached_links: List[Dict[str, Any]]
+    map_results: List[Dict[str, Any]]
+    target_found_in_search: bool
+    target_found_in_maps: bool
+    competitor_entities: List[Dict[str, Any]]
+    provider_metadata: Dict[str, Any]
+    evidence_status: Dict[str, Dict[str, Any]]
+    normalization: Dict[str, Any]
 
 
 def analyze_record(
@@ -481,25 +942,92 @@ def analyze_record(
     competitor_domains: List[str],
 ) -> PromptResult:
     prompt = str(record.get("prompt") or "").strip()
-    markdown = str(record.get("answer_text_markdown") or "")
-    sources = to_sources(record)
-    first_rank = compute_first_citation_rank(sources, target_domains)
+    warnings: List[Dict[str, Any]] = []
+    markdown_value = record.get("answer_text_markdown")
+    if markdown_value is None:
+        markdown_value = record.get("answer_text")
+    answer_state = "supported" if isinstance(markdown_value, str) else "missing"
+    if markdown_value is not None and not isinstance(markdown_value, str):
+        answer_state = "inferred"
+        warnings.append(
+            {
+                "code": "safe_scalar_coercion",
+                "field": "answer_text_markdown",
+                "message": "Answer text was safely coerced to a string.",
+            }
+        )
+    markdown = clean_answer_markdown(markdown_value)
+    actual_citations, citation_candidates, actual_citations_state, candidates_state = split_citations(
+        record,
+        warnings,
+    )
+    uncited_candidates = [item for item in citation_candidates if item.get("cited") is False]
+    search_sources, search_sources_state = to_search_results(record, warnings)
+    attached_links, attached_links_state = normalize_attached_links(record, warnings)
+    map_results, maps_state = normalize_map_results(record, warnings)
+    first_rank = compute_first_citation_rank(actual_citations, target_domains)
     cited = first_rank is not None
     mentions = count_mentions(markdown, brand_terms, target_domains)
-    used_web_search = compute_used_web_search(record)
-    fan_out = record.get("web_search_query") or []
-    fan_out_count = len(fan_out) if isinstance(fan_out, list) else 0
-    citations = record.get("citations") or []
+    used_web_search, web_search_state = compute_used_web_search(record, warnings)
+    raw_fan_out, fan_out_state = read_list_field(record, "web_search_query", warnings)
+    fan_out = []
+    for item in raw_fan_out:
+        if isinstance(item, str) and item.strip():
+            fan_out.append(item.strip())
+            continue
+        warnings.append(
+            {
+                "code": "malformed_array_item",
+                "field": "web_search_query",
+                "message": "Ignored a fan-out query that was not a non-empty string.",
+            }
+        )
+        fan_out_state = "malformed"
+    fan_out_count = len(fan_out)
+    target_found_in_search = any(
+        domain_matches_target(str(item.get("domain") or item.get("url") or ""), target_domains)
+        for item in search_sources
+    )
+    target_found_in_maps = any(
+        domain_matches_target(str(item.get("domain") or item.get("website_url") or ""), target_domains)
+        for item in map_results
+    )
     brands_mentioned = record.get("recommendations") or []
     fan_out_details = build_fan_out_details(
-        record=record,
+        queries=fan_out,
         target_domains=target_domains,
         mentions=mentions,
         cited=cited,
+        search_results=search_sources,
     )
 
-    ugc = sum(1 for s in sources if s.get("type") == "ugc")
-    yt = sum(1 for s in sources if s.get("type") == "youtube")
+    metadata_booleans = {}
+    for field in ["is_map", "shopping_visible"]:
+        raw_value = record.get(field)
+        if raw_value is None:
+            metadata_booleans[field] = None
+            continue
+        normalized, coerced = coerce_bool(raw_value)
+        metadata_booleans[field] = normalized
+        if normalized is None:
+            warnings.append(
+                {
+                    "code": "malformed_boolean",
+                    "field": field,
+                    "message": f"{field} was present but not a recognizable boolean.",
+                }
+            )
+        elif coerced:
+            warnings.append(
+                {
+                    "code": "safe_scalar_coercion",
+                    "field": field,
+                    "message": f"{field} was safely coerced to a boolean.",
+                }
+            )
+
+    ugc = sum(1 for s in actual_citations if s.get("type") == "ugc")
+    yt = sum(1 for s in actual_citations if s.get("type") == "youtube")
 
     competitors_found: List[str] = []
     answer_lower = markdown.lower()
@@ -508,6 +1036,16 @@ def analyze_record(
         if d and d in answer_lower:
             competitors_found.append(d)
     competitors_found = sorted(set(competitors_found))
+    competitor_entities = build_competitor_entities(
+        markdown=markdown,
+        actual_citations=actual_citations,
+        citation_candidates=citation_candidates,
+        search_sources=search_sources,
+        attached_links=attached_links,
+        map_results=map_results,
+        target_domains=target_domains,
+        brand_terms=brand_terms,
+    )
 
     return PromptResult(
         chatbot=chatbot,
@@ -518,29 +1056,61 @@ def analyze_record(
         mentions=mentions,
         cited=cited,
         first_citation_rank=first_rank,
-        citations_count=len(citations) if isinstance(citations, list) else 0,
-        fan_out_queries=[str(item).strip() for item in fan_out if str(item).strip()]
-        if isinstance(fan_out, list)
-        else [],
+        citations_count=len(actual_citations),
+        fan_out_queries=fan_out,
         fan_out_details=fan_out_details,
         fan_out_count=fan_out_count,
         used_web_search=used_web_search,
-        sources_count=len(sources),
+        sources_count=len(actual_citations),
         ugc_sources_count=ugc,
         youtube_sources_count=yt,
         competitor_domains=competitors_found,
         brands_mentioned=[str(item).strip() for item in brands_mentioned if str(item).strip()]
         if isinstance(brands_mentioned, list)
         else [],
-        sources=sources,
+        sources=actual_citations,
+        actual_citations=actual_citations,
+        citation_candidates=citation_candidates,
+        uncited_citation_candidates=uncited_candidates,
+        search_sources=search_sources,
+        attached_links=attached_links,
+        map_results=map_results,
+        target_found_in_search=target_found_in_search,
+        target_found_in_maps=target_found_in_maps,
+        competitor_entities=competitor_entities,
+        provider_metadata={
+            "index": record.get("index"),
+            "country": record.get("country"),
+            "prompt_sent_at": record.get("prompt_sent_at"),
+            "is_map": metadata_booleans["is_map"],
+            "shopping_visible": metadata_booleans["shopping_visible"],
+            "unknown_fields": {
+                key: value for key, value in record.items() if key not in KNOWN_PROVIDER_FIELDS
+            },
+        },
+        evidence_status={
+            "answer": evidence_state(answer_state, records=1 if markdown else 0),
+            "web_search": evidence_state(web_search_state, records=1 if used_web_search is not None else 0),
+            "actual_citations": evidence_state(
+                actual_citations_state,
+                records=len(actual_citations),
+                note=(
+                    "Only explicit cited=true records count."
+                    if actual_citations_state != "supported"
+                    else None
+                ),
+            ),
+            "citation_candidates": evidence_state(candidates_state, records=len(citation_candidates)),
+            "search_sources": evidence_state(search_sources_state, records=len(search_sources)),
+            "attached_links": evidence_state(attached_links_state, records=len(attached_links)),
+            "maps": evidence_state(maps_state, records=len(map_results)),
+            "fan_out_queries": evidence_state(fan_out_state, records=len(fan_out)),
+        },
+        normalization={
+            "status": "warning" if warnings else "ok",
+            "warnings": warnings,
+        },
     )
-
-
-def clean_record(record: Dict[str, Any]) -> Dict[str, Any]:
-    """Remove unwanted properties from BrightData response."""
-    unwanted_fields = ["source_html", "response_raw", "answer_html", "answer_text"]
-    cleaned = {k: v for k, v in record.items() if k not in unwanted_fields}
-    return cleaned
 
 
 def build_inputs(prompts: List[str], check_url: str, country: str, chatbot: str) -> List[Dict[str, Any]]:
@@ -579,19 +1149,81 @@ def build_results_payload(
     check_url: str,
     target_domains: List[str],
     brand_terms: List[str],
-    snapshots: List[Dict[str, str]],
+    snapshots: List[Dict[str, Any]],
     all_results: List["PromptResult"],
+    rejected_records: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
+    rejected_records = rejected_records or []
+    warnings = [
+        {
+            "chatbot": result.chatbot,
+            "prompt": result.prompt,
+            **warning,
+        }
+        for result in all_results
+        for warning in result.normalization.get("warnings", [])
+    ]
+    unknown_fields = sorted(
+        {
+            field
+            for result in all_results
+            for field in result.provider_metadata.get("unknown_fields", {})
+        }
+    )
+    channels = [
+        "answer",
+        "web_search",
+        "actual_citations",
+        "citation_candidates",
+        "search_sources",
+        "attached_links",
+        "maps",
+        "fan_out_queries",
+    ]
+    capabilities = {
+        channel: {
+            state: sum(
+                1
+                for result in all_results
+                if result.evidence_status.get(channel, {}).get("state") == state
+            )
+            for state in sorted(EVIDENCE_STATES)
+        }
+        for channel in channels
+    }
+    has_unavailable_evidence = any(
+        result.evidence_status.get(channel, {}).get("state") in {"missing", "malformed"}
+        for result in all_results
+        for channel in channels
+    )
+    diagnostics_status = (
+        "partial"
+        if rejected_records or has_unavailable_evidence
+        else "complete_with_warnings"
+        if warnings
+        else "complete"
+    )
     return {
-        "schema_version": "geo-audit-v2",
+        "schema_version": "geo-audit-v3",
         "provider": "brightdata",
-        "provider_method": "datasets_v3",
+        "provider_method": "datasets_v3_auto",
         "run_at": run_at,
         "check_url": check_url,
         "target_domains": target_domains,
         "brand_terms": brand_terms,
         "snapshots": snapshots,
         "manual_recommendations": [],
+        "collection_diagnostics": {
+            "status": diagnostics_status,
+            "records_received": len(all_results) + len(rejected_records),
+            "records_normalized": len(all_results),
+            "records_rejected": len(rejected_records),
+            "warning_count": len(warnings),
+            "warnings": warnings,
+            "rejected_records": rejected_records,
+            "unknown_provider_fields": unknown_fields,
+            "capabilities": capabilities,
+        },
         "fan_out_summary": aggregate_fan_out_queries(all_results),
         "results": [r.__dict__ for r in all_results],
         "responses": [r.__dict__ for r in all_results],
@@ -610,6 +1242,12 @@ def main() -> None:
     parser.add_argument("--gemini-dataset-id", default="", help="Bright Data dataset id for Gemini")
 
     parser.add_argument("--country", default="US")
+    parser.add_argument(
+        "--collection-mode",
+        choices=["auto", "sync", "async"],
+        default="auto",
+        help="auto uses synchronous collection for up to 20 prompts and async otherwise",
+    )
     parser.add_argument("--poll-delay-sec", type=int, default=5)
     parser.add_argument("--poll-attempts", type=int, default=180)  # Increased to 15 minutes (180 * 5 sec)
 
@@ -654,7 +1292,7 @@ def main() -> None:
     if not jobs:
         raise SystemExit("No dataset ids provided. Set at least --chatgpt-dataset-id or --perplexity-dataset-id.")
 
-    snapshots: List[Dict[str, str]] = []
+    snapshots: List[Dict[str, Any]] = []
     pending_indices: List[int] = []
     for chatbot, dataset_id in jobs:
         meta_path = snapshot_meta_path(out_dir, chatbot)
@@ -679,24 +1317,64 @@ def main() -> None:
             )
             snapshots.append(existing_snapshot)
         else:
-            print(f"Triggering {chatbot} dataset...")
             inputs = build_inputs(prompts, args.check_url, args.country, chatbot=chatbot)
             custom_fields = get_custom_output_fields(chatbot)
-            snapshot_id = trigger_dataset(
-                base_url=args.base_url,
-                api_key=api_key,
-                dataset_id=dataset_id,
-                input_rows=inputs,
-                custom_output_fields=custom_fields,
+            use_sync = args.collection_mode == "sync" or (
+                args.collection_mode == "auto" and len(inputs) <= 20
             )
-            snapshots.append(
-                {
-                    "chatbot": chatbot,
-                    "dataset_id": dataset_id,
-                    "snapshot_id": snapshot_id,
-                    "status": "triggered",
-                }
-            )
+            if use_sync:
+                print(f"Collecting {chatbot} synchronously...")
+                response = scrape_dataset(
+                    base_url=args.base_url,
+                    api_key=api_key,
+                    dataset_id=dataset_id,
+                    input_rows=inputs,
+                    custom_output_fields=custom_fields,
+                )
+                if isinstance(response, list):
+                    raw_path = raw_snapshot_path(out_dir, chatbot, "sync")
+                    write_json(raw_path, response)
+                    snapshots.append(
+                        {
+                            "chatbot": chatbot,
+                            "dataset_id": dataset_id,
+                            "snapshot_id": "sync",
+                            "status": "ready",
+                            "collection_method": "sync",
+                        }
+                    )
+                elif isinstance(response, dict) and response.get("snapshot_id"):
+                    snapshots.append(
+                        {
+                            "chatbot": chatbot,
+                            "dataset_id": dataset_id,
+                            "snapshot_id": str(response["snapshot_id"]),
+                            "status": "triggered",
+                            "collection_method": "sync_auto_async",
+                        }
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Bright Data sync request returned an unexpected response: {response}"
+                    )
+            else:
+                print(f"Triggering {chatbot} dataset asynchronously...")
+                snapshot_id = trigger_dataset(
+                    base_url=args.base_url,
+                    api_key=api_key,
+                    dataset_id=dataset_id,
+                    input_rows=inputs,
+                    custom_output_fields=custom_fields,
+                )
+                snapshots.append(
+                    {
+                        "chatbot": chatbot,
+                        "dataset_id": dataset_id,
+                        "snapshot_id": snapshot_id,
+                        "status": "triggered",
+                        "collection_method": "async",
+                    }
+                )
             write_json(meta_path, snapshots[-1])
 
         if snapshots[-1]["status"] != "ready":
@@ -743,6 +1421,7 @@ def main() -> None:
         return
 
     all_results: List[PromptResult] = []
+    rejected_records: List[Dict[str, Any]] = []
     for snap in snapshots:
         chatbot = snap["chatbot"]
         snapshot_id = snap["snapshot_id"]
@@ -757,30 +1436,41 @@ def main() -> None:
         else:
             raw = download_snapshot(base_url=args.base_url, api_key=api_key, snapshot_id=snapshot_id, fmt="json")
 
-            if isinstance(raw, list):
-                cleaned_raw = [clean_record(record) if isinstance(record, dict) else record for record in raw]
-            elif isinstance(raw, dict):
-                cleaned_raw = clean_record(raw)
-            else:
-                cleaned_raw = raw
-
-            write_json(raw_path, cleaned_raw)
+            write_json(raw_path, raw)
 
         if not isinstance(raw, list):
             continue
         for record in raw:
             if not isinstance(record, dict):
                 continue
-            analyzed = analyze_record(
-                chatbot=chatbot,
-                record=record,
-                run_at=run_at,
-                target_domains=target_domains,
-                brand_terms=brand_terms,
-                competitor_domains=competitor_domains,
-            )
-            if analyzed.prompt:
-                all_results.append(analyzed)
+            try:
+                analyzed = analyze_record(
+                    chatbot=chatbot,
+                    record=record,
+                    run_at=run_at,
+                    target_domains=target_domains,
+                    brand_terms=brand_terms,
+                    competitor_domains=competitor_domains,
+                )
+                if analyzed.prompt:
+                    all_results.append(analyzed)
+                else:
+                    rejected_records.append(
+                        {
+                            "chatbot": chatbot,
+                            "index": record.get("index"),
+                            "reason": "missing_prompt",
+                        }
+                    )
+            except Exception as error:
+                rejected_records.append(
+                    {
+                        "chatbot": chatbot,
+                        "index": record.get("index"),
+                        "prompt": str(record.get("prompt") or "")[:200],
+                        "reason": f"{type(error).__name__}: {error}",
+                    }
+                )
 
         write_json(
             os.path.join(out_dir, "results.partial.json"),
@@ -791,6 +1481,7 @@ def main() -> None:
                 brand_terms=brand_terms,
                 snapshots=snapshots,
                 all_results=all_results,
+                rejected_records=rejected_records,
             ),
         )
 
@@ -803,6 +1494,7 @@ def main() -> None:
             brand_terms=brand_terms,
             snapshots=snapshots,
             all_results=all_results,
+            rejected_records=rejected_records,
         ),
     )
 
