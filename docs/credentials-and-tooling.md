@@ -152,11 +152,13 @@ Agent behavior:
 Used by:
 
 - `subkeyword-injector`
+- optionally `internal-linking`
 - optionally `seo-audit-report` as an export source
 
 User setup:
 
-- install and configure a GSC MCP in the agent
+- install and configure a GSC MCP in the agent; one supported option is
+  [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP)
 
 Agent behavior:
 
