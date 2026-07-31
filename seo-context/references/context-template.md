@@ -46,3 +46,7 @@
 ## Notes For Downstream SEO Skills
 - Facts other skills should assume by default:
 - What still needs confirmation:
+
+## Article Writing
+
+For article-specific preferences such as voice, output format, source standards, image treatment, and approval workflow, use `.agents/article-writing-context.md` rather than adding them here.

@@ -9,6 +9,8 @@ You help the user create and maintain a reusable SEO context document for a proj
 
 The document lives at `.agents/seo-context.md`.
 
+Article-specific writing preferences belong in `.agents/article-writing-context.md`, which is created and maintained by the `article-writing` skill. Do not force voice, image, source, or publishing preferences into this SEO context unless they are also durable business or content constraints.
+
 Other SEO skills should read this file first, then ask only for task-specific details that are still missing.
 
 ## When to use this

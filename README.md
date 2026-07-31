@@ -71,6 +71,7 @@ agent-browser screenshot --full full.png
 ### Skills → access requirements
 
 - `seo-context`: auth mode `none`
+- `article-writing`: auth mode `env`, requires `DATA_FOR_SEO_LOGIN` and `DATA_FOR_SEO_PASSWORD`
 - `seo-roast`: auth mode `none`, optional Browser and optional SERP API MCP
 - `illustration-ideas`: auth mode `none`, Browser preferred
 - `subkeyword-injector`: auth mode `mcp`, requires GSC MCP, Browser optional
@@ -94,7 +95,7 @@ agent-browser screenshot --full full.png
 
 ```bash
 mkdir -p ~/.agents/skills
-for d in seo-context internal-linking linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report; do
+for d in seo-context article-writing internal-linking linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report; do
   ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
@@ -106,6 +107,7 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 ## Skills
 
 - `seo-context`: create a reusable `.agents/seo-context.md` file so SEO skills stop re-asking for the same basics.
+- `article-writing`: research and write articles using reusable preferences from `.agents/article-writing-context.md`; on first use, inspect the site and propose those preferences for confirmation.
 - `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters with contextual links.
 - `linking-opportunities`: find link opportunities on a target site using SERPs.
 - `seo-roast`: SEO-focused roast of a landing page/article; optionally generates a screenshot-heavy HTML report.
@@ -128,17 +130,18 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 
 ## Suggested usage flow
 
-For most projects, start with `seo-context` once, then use the task-specific skills.
+For most projects, start with `seo-context` once, then use the task-specific skills. On the first article-writing task, the skill will inspect the site's existing content and invite the user to create `.agents/article-writing-context.md` with confirmed writing, source, media, formatting, and approval preferences.
 
 Example flow:
 
 1. `seo-context` to capture the site, goals, market, competitors, and tooling
 2. `competitor-intelligence` to discover competitors and map strategic gaps
 3. `search-intent-coverage` for content briefs
-4. `subkeyword-injector` for refreshes
-5. `internal-linking` for on-site authority flow and topical clusters
-6. `linking-opportunities` for external link prospecting
-7. `seo-roast` or `geo-audit-report` for audits and diagnostics
+4. `article-writing` to research and draft articles, including first-run editorial context setup
+5. `subkeyword-injector` for refreshes
+6. `internal-linking` for on-site authority flow and topical clusters
+7. `linking-opportunities` for external link prospecting
+8. `seo-roast` or `geo-audit-report` for audits and diagnostics
 
 ## Skill creation process (reference)
 
