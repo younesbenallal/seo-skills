@@ -20,6 +20,12 @@ Map what competitors publish, infer the strategy behind it, and turn the evidenc
 
 Do not require the user's site when they only want a competitor profiled.
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Tooling and credentials
 
 - Auth mode: `none` for sitemap analysis; `mcp` or `manual-file` for SERP and SEO-provider data
@@ -27,7 +33,7 @@ Do not require the user's site when they only want a competitor profiled.
 - Optional: SERP API MCP for discovery; Ahrefs, Semrush, DataForSEO, or equivalent MCP/export for deeper analysis
 - Fallback: user-provided domains, sitemap files, and CSV/JSON exports
 
-Follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials. Detect callable tools first. Do not block basic sitemap work because premium data is unavailable.
+Read and follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials. Detect callable tools first. Do not block basic sitemap work because premium data is unavailable.
 
 For live Google competitor discovery, require a configured SERP data tool. Do not scrape Google result pages through browser automation. If no SERP tool exists, continue with known/user-provided domains or ask for a SERP export.
 

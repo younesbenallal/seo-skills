@@ -1,9 +1,11 @@
-# Credentials And Tooling
+# Context, Credentials, And Tooling
 
 This repo now uses one shared contract for tools, MCPs, and credentials.
 
-The goal is to keep three things consistent across every skill:
+The goal is to keep these things consistent across every skill:
 
+- skills discover relevant project context and connected tools before making availability claims
+- important missing inputs are confirmed with the user instead of silently inferred
 - users get one clear setup path
 - skills follow the same behavior when access is present or missing
 - secrets stay on the user's machine and never in chat
@@ -19,6 +21,33 @@ Every skill should follow these rules:
 5. After the user confirms setup, verify presence only and continue.
 6. Prefer MCP-managed auth over repo-local secret handling whenever an MCP is the intended integration path.
 7. Do not invent a fallback auth mode unless the skill explicitly supports one.
+
+## Mandatory task preflight
+
+Before substantive analysis, generation, or editing:
+
+1. Read `.seo-context.md` when present and inspect relevant project evidence.
+2. Inspect the tools and MCPs that are actually callable in the current runtime. A missing local export, env var, or repo config does not prove that a connected tool is unavailable.
+3. Resolve the current project identity from strong evidence such as its canonical domain, sitemap, framework metadata, deployment config, `.seo-context.md`, or README. Treat the folder name as a hint, not proof.
+4. When a connected service exposes several sites, properties, workspaces, or accounts, list or search them and select a unique match for the current project. Ask the user to choose only when the match remains ambiguous.
+5. Identify high-impact task inputs that remain unknown and cannot be inferred reliably. Ask the user for them in one compact checkpoint before continuing.
+
+High-impact inputs vary by skill, but commonly include the goal and scope, target market or language, primary query or page, confirmed money pages or conversions, strategic priorities, and whether the user wants recommendations or applied changes.
+
+Tell the user they can skip the questions. If they decline and the workflow remains safe, continue with explicit assumptions, limitations, and appropriately lower confidence. Do not silently invent business priorities, conversion value, target markets, or permission to mutate content. If a missing input or access path is genuinely required, explain why and wait instead of pretending the workflow can succeed.
+
+## Connected property resolution
+
+For tools such as Google Search Console:
+
+1. Detect the callable MCP or connector before looking for manual exports.
+2. If connected, list accessible properties before declaring Search Console unavailable.
+3. Resolve the site's canonical domain from the current project. Normalize scheme, trailing slash, `www`, URL-prefix properties, and `sc-domain:` properties when comparing candidates.
+4. Use the single clear match automatically and state which property was selected. If several plausible properties remain, ask the user to choose from the short candidate list.
+5. Distinguish `tool unavailable`, `connected but unauthorized`, `connected but failing`, `no matching property`, and `no data for the requested period`; do not collapse them into “no data available.”
+6. Use a consistent relevant date range and record the property and range in the output or context.
+
+Manual CSV/JSON is a fallback when the skill supports it, not evidence that live MCP access is absent.
 
 ## Auth modes
 
@@ -162,7 +191,9 @@ User setup:
 
 Agent behavior:
 
-- if present, use it
+- inspect callable tools first; if a GSC MCP is present, list accessible properties and match the current project's canonical domain using the connected-property rules above
+- if one property matches clearly, use it without asking the user to find or export data
+- if several properties match plausibly, ask the user to choose
 - if missing and the skill supports exports, offer CSV/JSON export as the fallback
 - otherwise stop and ask the user to install/configure it
 

@@ -22,6 +22,12 @@ If it does:
 - reuse the saved site, market, competitor, and content-priority context
 - ask only for GEO-specific gaps that are still missing
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Inputs to collect
 
 - Brand/site:
@@ -250,7 +256,7 @@ python geo-audit-report/scripts/normalize-brightdata-geo.py \
 - Fallback: Bright Data or DataForSEO
 - If missing: stop, ask the user to set the env var locally, and continue only after they confirm it is ready
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ### Bright Data setup
 

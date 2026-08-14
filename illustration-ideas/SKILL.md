@@ -16,6 +16,12 @@ If it does:
 - reuse the saved audience and site context when relevant
 - ask only for page-specific details that are still missing
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Inputs to collect
 
 - URL
@@ -28,7 +34,7 @@ If it does:
 - Optional tools: Browser MCP or `agent-browser`
 - Fallback: if browsing is unavailable, ask the user to paste the content or a detailed outline
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ## Tools
 

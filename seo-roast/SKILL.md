@@ -16,6 +16,12 @@ If it does:
 - reuse the saved market, audience, competitor, and site context
 - ask only for URL-specific or keyword-specific gaps that are still missing
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Inputs to collect
 
 - URL(s) to roast (1–5)
@@ -30,7 +36,7 @@ If it does:
 - Fallback: if Browser access is unavailable, ask the user for the main copy and key page sections
 - Optional tools: Browser MCP, `agent-browser`, SERP API MCP
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ## Tools (adaptive)
 

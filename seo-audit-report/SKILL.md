@@ -16,19 +16,25 @@ If it does:
 - reuse the saved site, KPI, and tooling context
 - ask only for project-specific scaffold details that are still missing
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that Search Console or another connected service is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Required inputs
 - Project directory name.
-- Data source: GSC MCP export (JSON/CSV) or manual file.
+- Data source: live connected GSC data, an MCP export, or a manual JSON/CSV file.
 - Persistence target: in-browser IndexedDB via `sql.js`.
 
 ## Tooling & credentials
 
-- Auth mode: `manual-file`
-- Requires: no live credential
-- Input path: GSC MCP export or manual CSV/JSON file
+- Auth mode: `mcp` or `manual-file`
+- Requires: connected GSC access or a manual CSV/JSON file
+- Input path: live GSC data materialized to JSON/CSV, an MCP export, or a manual file
 - Fallback: manual file remains the default fallback when live MCP access is unavailable
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ## Workflow
 

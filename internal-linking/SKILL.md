@@ -20,7 +20,13 @@ Ask only for material gaps:
 - money pages not already confirmed in the context, including which pages generate the most qualified leads, revenue, or primary conversions
 - whether the user wants recommendations only or approved edits applied
 
-Infer obvious answers from the project before asking.
+Infer obvious factual answers from the project before asking, but do not infer strategic priorities merely because a page looks commercial.
+
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that Search Console or another connected service is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
+
+If the audit goal, confirmed money pages or conversions, strategic clusters, or mutation scope remains unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline, proceed recommendations-only with explicit assumptions, limitations, and lower confidence. Never silently assign business value to pages or infer permission to edit.
 
 ## Tooling and access
 
@@ -30,9 +36,9 @@ Infer obvious answers from the project before asking.
 - Optional: Browser/Chrome/Playwright MCP or `agent-browser`
 - Missing optional access must not block the baseline analysis
 
-Follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials.
+Read and follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials.
 
-When GSC is unavailable, continue without it. Briefly offer
+Only treat GSC as unavailable after inspecting callable tools and attempting to match an accessible property to the current project's canonical domain. When no live match is available, continue without it and briefly offer
 [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP)
 or a manual GSC export only when performance data would materially improve the result.
 

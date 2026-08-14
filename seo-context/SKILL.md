@@ -13,6 +13,12 @@ Article-specific writing preferences belong in `.agents/article-writing-context.
 
 Other SEO skills should read this file first, then ask only for task-specific details that are still missing.
 
+## Mandatory preflight
+
+Before substantive work, inspect relevant project evidence and the tools or MCPs actually callable in the runtime. Do not infer that Search Console or another connected service is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
+
+If high-impact business or SEO inputs remain unknown, ask one compact checkpoint before creating or updating the context. Explain that the user may skip it; if they decline, record explicit unknowns and inferred candidates rather than inventing facts. Never silently assign money-page status, conversions, target markets, or strategic priorities.
+
 ## When to use this
 
 Use this skill when:
@@ -27,7 +33,7 @@ Use this skill when:
 - Requires: no external credential
 - Fallback: none
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md` when recording downstream tool availability in the context file.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md` when recording downstream tool availability in the context file.
 
 ## Workflow
 

@@ -22,11 +22,13 @@ npx add-skill holly-and-stick/seo-skills
 
 ## Before First Run
 
-Read [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md) before using any skill that depends on an MCP, API key, or local export.
+Read [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md) for the shared context, connected-tool, property-matching, and credential contract.
 
 The repo follows one shared setup contract:
 
-- skills first check whether required access is already available
+- skills inspect project context and callable tools before making availability claims
+- connected services are searched for the property matching the current project's canonical domain before an export is requested
+- important missing inputs are asked in one compact checkpoint; the user may skip and receive an assumption-limited result when safe
 - if setup is missing, skills stop and give exact instructions
 - secrets should stay on the user's machine and never be pasted in chat
 - once the user confirms setup, the skill verifies presence only and continues
@@ -80,7 +82,7 @@ agent-browser screenshot --full full.png
 - `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
 - `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
 - `competitor-intelligence`: auth mode `none` for sitemap analysis; SERP/SEO-provider MCPs or manual exports are optional
-- `seo-audit-report`: auth mode `manual-file`, optional GSC MCP export input
+- `seo-audit-report`: auth mode `mcp` or `manual-file`, using connected GSC data or a CSV/JSON export
 - `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
 
 ### MCP types to install (what they’re for)

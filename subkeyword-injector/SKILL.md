@@ -16,6 +16,12 @@ If it does:
 - reuse the saved site, audience, market, and tooling context
 - ask only for page-specific constraints that are still missing
 
+## Mandatory preflight
+
+Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that Search Console is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
+
+If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+
 ## Inputs to collect
 
 - Page URL
@@ -32,7 +38,7 @@ If it does:
 - Optional tools: Browser MCP or `agent-browser` for reading the current page
 - If missing: stop, ask the user to install or configure a GSC MCP or provide an export, and continue only after they confirm the path forward
 
-Follow the shared setup and missing-access rules in `docs/credentials-and-tooling.md`.
+Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
 
 ## Page content access (for planning edits)
 
@@ -51,7 +57,7 @@ If extraction is blocked or incomplete, ask the user to paste the current articl
 
 This skill requires **Google Search Console data**.
 
-Use a **GSC MCP** (required) so you can query by page/URL and date range.
+Prefer a connected **GSC MCP** so you can query by page/URL and date range. List accessible properties and select the one matching the current project's canonical domain before asking for an export.
 
 If no GSC MCP is available:
 - stop and ask the user to install one, OR
