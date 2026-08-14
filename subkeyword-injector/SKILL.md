@@ -9,7 +9,7 @@ You update an existing piece of content to better capture the long-tail queries 
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+Before asking repeated discovery questions, check whether `.seo-context.md` exists.
 
 If it does:
 - read it first

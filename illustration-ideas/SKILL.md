@@ -9,7 +9,7 @@ You browse a page, understand the content, then propose illustration ideas that 
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+Before asking repeated discovery questions, check whether `.seo-context.md` exists.
 
 If it does:
 - read it first

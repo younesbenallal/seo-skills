@@ -9,9 +9,9 @@ Map what competitors publish, infer the strategy behind it, and turn the evidenc
 
 ## Start from available context
 
-1. Check for `.agents/seo-context.md`, product documentation, and prior competitor files.
+1. Check for `.seo-context.md`, product documentation, and prior competitor files. Read the context first when present.
 2. Reuse known site, market, seed topics, competitors, and tool access.
-3. Inspect available tools before asking the user what they have.
+3. Inspect available tools before asking the user what they have, then ask only for task-specific gaps.
 4. If invoked without a concrete request, explain in two sentences that this skill can discover competitors, analyze sitemap/content patterns, compare SEO datasets, and monitor changes. Then ask for:
    - the user's domain or product;
    - known competitor domains, if any;

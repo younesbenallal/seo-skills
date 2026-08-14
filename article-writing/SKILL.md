@@ -11,7 +11,7 @@ Read [references/editorial-guidelines.md](references/editorial-guidelines.md) be
 
 ## Reusable article-writing context
 
-The optional project file `.agents/article-writing-context.md` stores the user's durable preferences for article work. It is intentionally separate from `.agents/seo-context.md`: the SEO context describes the business and market, while this file describes how articles should be researched, written, formatted, illustrated, and approved.
+The optional project file `.agents/article-writing-context.md` stores the user's durable preferences for article work. It is intentionally separate from `.seo-context.md`: the SEO context describes the business and market, while this file describes how articles should be researched, written, formatted, illustrated, and approved.
 
 When the file exists:
 
@@ -53,10 +53,11 @@ Identify:
 - primary keyword
 - target country and language
 - intended reader or ICP
+- the topical cluster this article belongs to, including its hub, money page, and closest supporting content when known
 - output location or CMS format, when relevant
 - existing draft or page, if this is an update
 
-Read `.agents/seo-context.md` and `.agents/article-writing-context.md` first when present. Infer missing answers from the repo, site, and prior context before asking. Never silently default to US English. Ask only when country or language remains materially ambiguous.
+Read `.seo-context.md` and `.agents/article-writing-context.md` first when present. Reuse confirmed money pages, priority pages, audience, market, and business goals. Infer missing answers from the repo, site, and prior context before asking. Never silently default to US English. Ask only when country or language remains materially ambiguous.
 
 If `.agents/article-writing-context.md` is missing, run the reusable-context setup described above before drafting. The first interaction should contain both:
 
@@ -70,7 +71,7 @@ Do not make the user reconstruct preferences that are already visible in the sit
 Inspect the project before planning the article:
 
 - homepage and key product or service pages
-- `README`, `docs`, sales or positioning material, and `.agents/seo-context.md`
+- `README`, `docs`, sales or positioning material, and `.seo-context.md`
 - blog index, sitemap, content collections, or CMS exports
 - 3–5 articles most relevant to the keyword
 - 2–3 representative articles for voice and formatting, if different
@@ -179,8 +180,10 @@ Merge sections in outline order and edit the transitions. Remove agent seams, re
 
 Add 3–8 internal links when real opportunities exist:
 
-- prioritize relevant blog articles with search traffic potential
-- also use product, category, docs, or landing pages that serve a useful query
+- select link targets from the article's topical cluster first; use cross-cluster links only when the relationship is genuinely useful
+- link to the most relevant confirmed money page when it genuinely advances the reader's journey
+- reinforce the article's cluster with useful hub, supporting-article, tool, product, category, docs, or landing-page links
+- prefer confirmed money pages over equally relevant lower-value destinations, but never force an unrelated commercial link
 - write descriptive anchors that fit the sentence
 - avoid forcing a quota, repeating the same target, or linking unrelated pages
 

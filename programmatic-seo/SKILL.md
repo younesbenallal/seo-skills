@@ -9,7 +9,7 @@ You help the user ship pSEO that avoids thin content and actually ranks.
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+Before asking repeated discovery questions, check whether `.seo-context.md` exists.
 
 If it does:
 - read it first

@@ -9,7 +9,7 @@ Use this skill when the user wants an interactive, client-side report that impor
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+Before asking repeated discovery questions, check whether `.seo-context.md` exists.
 
 If it does:
 - read it first

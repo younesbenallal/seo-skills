@@ -106,7 +106,7 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 
 ## Skills
 
-- `seo-context`: create a reusable `.agents/seo-context.md` file so SEO skills stop re-asking for the same basics.
+- `seo-context`: create a reusable `.seo-context.md` file so SEO skills stop re-asking for the same basics, including which money pages generate the most business value.
 - `article-writing`: research and write articles using reusable preferences from `.agents/article-writing-context.md`; on first use, inspect the site and propose those preferences for confirmation.
 - `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters with contextual links.
 - `linking-opportunities`: find link opportunities on a target site using SERPs.

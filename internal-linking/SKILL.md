@@ -11,13 +11,13 @@ Treat graph scores as internal authority-flow proxies, not Google's PageRank. In
 
 ## Shared context first
 
-Before asking discovery questions, check for `.agents/seo-context.md`. Read it when present and reuse the domain, business goals, priority pages, themes, market, CMS, and available tools.
+Before asking discovery questions, check for `.seo-context.md`. Read it when present and reuse the domain, business goals, confirmed money pages, priority pages, themes, market, CMS, and available tools.
 
 Ask only for material gaps:
 
 - site or local content root
 - analysis goal: full audit, strengthen named targets, or reinforce a cluster
-- known money or priority pages
+- money pages not already confirmed in the context, including which pages generate the most qualified leads, revenue, or primary conversions
 - whether the user wants recommendations only or approved edits applied
 
 Infer obvious answers from the project before asking.
@@ -91,7 +91,9 @@ Assign one primary role:
 - `supporting`: answers a narrower or long-tail intent
 - `utility`: primarily navigational, legal, account, or operational
 
-Group SEO pages into topical clusters from their title, H1/H2s, copy, URL path, and GSC queries when available. Record ambiguous assignments instead of forcing a cluster.
+Build a topical cluster map before generating link candidates. Group SEO pages from their title, H1/H2s, copy, URL path, search intent, and GSC queries when available. For each cluster, identify its hub or primary page, confirmed money pages, supporting articles/tools/resources, high-visibility sources, and content gaps. Record ambiguous or overlapping assignments instead of forcing a cluster.
+
+Prefer source-target pairs within the same cluster because semantic and topical proximity strengthens contextual relevance for readers and search engines. Link supporting pages toward the relevant hub or money page, and use hub-to-supporting or sibling links when they improve discovery or complete a reader journey. Consider cross-cluster links only when the source passage establishes a real relationship. Do not claim that same-cluster links pass a fixed or mechanically greater amount of PageRank.
 
 Do not assume every commercial page deserves more links. Validate each proposed money or hub target first:
 
@@ -113,6 +115,7 @@ Aggregate page-level clicks, impressions, average position, and query themes. Us
 - validate the queries and cluster of each page
 - find important pages with visibility but weak internal support
 - distinguish promising targets from pages with no demonstrated demand
+- find high-visibility pages in the same cluster that can naturally support a confirmed money page
 
 Do not equate clicks with link equity. Use GSC as prioritization and relevance evidence, not as a direct PageRank input.
 
@@ -155,10 +158,12 @@ Prioritize:
 - relevant supporting or long-tail pages linking to broader, more competitive hubs
 - useful cluster hub-to-spoke and spoke-to-hub links
 - relevant sibling links that complete a reader journey
-- established pages linking to validated money pages
+- established, topically relevant pages linking to confirmed money pages in the same cluster
 - links that repair an orphan or excessive crawl depth
 
 Prefer a few strong contextual links over arbitrary quotas. Avoid forced links, unrelated targets, duplicate links with no added value, circular linking for its own sake, and template-wide placement disguised as contextual work.
+
+For each confirmed money page, measure relevant cluster coverage across articles, tools, hubs, and other supporting pages. Aim for broad support from the cluster, especially from sources with strong internal-graph authority or established organic visibility, but recommend a link only when the source contains a natural passage and the destination advances the reader journey. Treat clicks as visibility evidence, not as link equity or PageRank.
 
 Exclude `utility` pages as sources and targets unless the user explicitly includes them in scope.
 

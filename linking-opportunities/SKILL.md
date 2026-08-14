@@ -1,6 +1,6 @@
 ---
 name: linking-opportunities
-description: Find contextual backlink opportunities on a specific prospect site using SERPs (site: queries), then propose concrete outreach angles + anchors.
+description: "Find contextual backlink opportunities on a specific prospect site using SERPs (site: queries), then propose concrete outreach angles + anchors."
 ---
 
 # Linking opportunities (site-specific)
@@ -9,7 +9,7 @@ You help the user find **contextual internal-link opportunities on another websi
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.agents/seo-context.md` exists.
+Before asking repeated discovery questions, check whether `.seo-context.md` exists.
 
 If it does:
 - read it first

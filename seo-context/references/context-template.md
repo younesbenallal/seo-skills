@@ -25,6 +25,26 @@
 - Core topic clusters:
 - Important queries or intents:
 
+## Topical Cluster Map
+
+Repeat for each important cluster:
+- Cluster name:
+- Core topic, intent, or job-to-be-done:
+- Hub or primary page:
+- Confirmed money pages:
+- Supporting articles, tools, templates, or resources:
+- High-click pages and query themes (GSC):
+- Gaps, overlaps, or uncertain assignments:
+
+## Money Pages
+- Confirmed money pages:
+- Primary conversion or business value for each:
+- Topic cluster supported by each page:
+- Evidence or user confirmation:
+- Candidate money pages still to confirm:
+- High-click supporting pages by cluster (GSC):
+- GSC property and date range used:
+
 ## Competitive Context
 - Direct competitors:
 - Comparison targets:
