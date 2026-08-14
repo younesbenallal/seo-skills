@@ -1,26 +1,15 @@
 ---
 name: linking-opportunities
-description: "Find contextual backlink opportunities on a specific prospect site using SERPs (site: queries), then propose concrete outreach angles + anchors."
+description: Find contextual backlink opportunities on a specific prospect site using localized SERPs, page evidence, and outreach angles. Use when the user wants pages on another domain that could link to their content.
 ---
 
 # Linking opportunities (site-specific)
 
-You help the user find **contextual internal-link opportunities on another website** (a prospect) that could link to the user’s page(s).
+You help the user find **contextual backlink opportunities**: pages on another website (the prospect) that could link to the user's page(s). These are not internal links, because the source and target belong to different sites.
 
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.seo-context.md` exists.
-
-If it does:
-- read it first
-- reuse the saved site, target pages, competitors, and market context
-- ask only for prospect-specific gaps that are still missing
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md). Read `.seo-context.md` when present, reuse its saved site, target pages, competitors, and market context, and ask only for prospect-specific gaps.
 
 ## Inputs to collect (ask fast, 1–2 lines each)
 
@@ -41,47 +30,9 @@ If the user doesn’t know the keywords yet, extract them from:
 - Fallback: Browser MCP or `agent-browser` for validating candidate pages, but no fallback for live SERP collection
 - If missing: stop, ask the user to install or configure a SERP API MCP, and continue only after they confirm it is ready
 
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
-
-## Required tools
-
-Require:
-- A **SERP API MCP** (to fetch live Google results).
-
-For opening candidate pages and confirming context:
-- Use a **Browser MCP** if available.
-- Otherwise, use the **agent-browser CLI** (install if needed).
-
-If the SERP MCP is missing, stop and ask the user to install a SERP provider MCP (this repo intentionally does not ship an env-var fallback).
-
 ## Browser tool selection and evidence capture
 
-Use this exact workflow for each candidate URL to validate context and capture evidence. Do not use `curl`.
-
-### If Browser MCP is available
-
-1) Open the page:
-   - `Open URL: https://example.com/path`
-2) Find a relevant paragraph/section:
-   - Search the page for the keyword or topic.
-   - Identify the closest heading + paragraph that could contain a link.
-3) Capture evidence:
-   - Record the **page title**.
-   - Copy a **2–4 sentence snippet** from the paragraph that would contain the link.
-   - If the MCP supports screenshots, take one focused on the paragraph and note the file/URL.
-
-### If Browser MCP is NOT available (agent-browser CLI fallback)
-
-1) Install if missing:
-   - `npm i -g @openai/agent-browser`
-2) Open the candidate URL:
-   - `agent-browser open "https://example.com/path"`
-3) Find the relevant paragraph/section:
-   - `agent-browser find "keyword or phrase"`
-4) Capture evidence:
-   - `agent-browser title`
-   - `agent-browser extract --near "keyword or phrase" --sentences 4`
-   - If screenshots are supported: `agent-browser screenshot --selector "css-selector-for-paragraph"`
+When validating candidate pages, follow [references/browser-evidence.md](references/browser-evidence.md). Do not use `curl` or recommend a candidate from a snippet alone.
 
 ## Workflow
 
@@ -93,7 +44,7 @@ Ask which link type they want:
 - “Glossary definition”
 - “Comparison / alternatives”
 
-### 2) Generate “site:” queries (MECE)
+### 2) Generate non-redundant “site:” queries
 
 Build queries for each seed keyword:
 - `site:PROSPECT keyword`
@@ -120,12 +71,16 @@ For each candidate page, produce:
 - **Suggested anchor**: specific and truthful
 - **One outreach angle**: “quick win reason” for the editor to link
 
+Use a lightweight 1–5 score for each candidate: relevance to the target page, contextual fit of the source passage, likelihood the link is editorially plausible, and outreach value. Average the four dimensions (or explain a deliberate override); this is a prioritization aid, not a prediction of link acquisition.
+
 ### 5) Output (copy/paste friendly)
 
 Return:
 - A short top-10 list (highest impact)
 - A table of all opportunities with columns:
-  - `prospect_url`, `query_used`, `type`, `why_link_fits`, `suggested_anchor`, `outreach_angle`
+  - `prospect_url`, `query_used`, `type`, `page_title`, `evidence_snippet`, `why_link_fits`, `suggested_anchor`, `outreach_angle`, `score`
+
+Include the observed page title and a 2–4 sentence evidence snippet for every recommended opportunity. If screenshots were captured, include their path or URL. Keep observed evidence distinct from the proposed anchor and outreach copy.
 
 ## Notes
 

@@ -32,18 +32,16 @@ Repeat for each important cluster:
 - Core topic, intent, or job-to-be-done:
 - Hub or primary page:
 - Confirmed money pages:
+- Primary conversion or business value for each:
+- Money-page evidence or user confirmation:
+- Candidate money pages still to confirm:
 - Supporting articles, tools, templates, or resources:
 - High-click pages and query themes (GSC):
 - Gaps, overlaps, or uncertain assignments:
 
-## Money Pages
-- Confirmed money pages:
-- Primary conversion or business value for each:
-- Topic cluster supported by each page:
-- Evidence or user confirmation:
-- Candidate money pages still to confirm:
-- High-click supporting pages by cluster (GSC):
-- GSC property and date range used:
+## Search Console Evidence
+- Property:
+- Date range:
 
 ## Competitive Context
 - Direct competitors:

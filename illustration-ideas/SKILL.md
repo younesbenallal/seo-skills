@@ -1,26 +1,15 @@
 ---
 name: illustration-ideas
-description: Generate high-quality illustration/chart ideas for a URL, including placement + layout suggestions (HTML-like or Mermaid).
+description: Propose specific illustrations that improve comprehension of a web page. Use when the user provides a URL or article and wants visual concepts with placement and layout guidance.
 ---
 
 # Illustration ideas (from a URL)
 
 You browse a page, understand the content, then propose illustration ideas that improve comprehension and retention.
 
-## Shared context first
+## Preflight
 
-Before asking repeated discovery questions, check whether `.seo-context.md` exists.
-
-If it does:
-- read it first
-- reuse the saved audience and site context when relevant
-- ask only for page-specific details that are still missing
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+Run the shared [task preflight and tooling contract](../docs/credentials-and-tooling.md). For this skill, resolve the URL or supplied article content and the intended audience when it materially changes the visual recommendation. Do not imply that a page was reviewed when access failed.
 
 ## Inputs to collect
 
@@ -32,26 +21,20 @@ If high-impact inputs remain unknown, ask one compact checkpoint before continui
 - Auth mode: `none`
 - Requires: no external credential
 - Optional tools: Browser MCP or `agent-browser`
-- Fallback: if browsing is unavailable, ask the user to paste the content or a detailed outline
+- Fallback: user-provided content or a detailed outline, following the shared browser-selection rules
 
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
+Follow the shared browser-selection and extraction rules.
 
-## Tools
+## Workflow
 
-Implement browser tool selection:
-- Prefer Browser/Chrome/Playwright MCP if available.
-- Else use `agent-browser` CLI; check install; if missing instruct `npm install -g agent-browser`.
-- Provide exact agent-browser commands to read article content and structure (remove curl guidance):
-  - `agent-browser open <url>`
-  - `agent-browser snapshot -c -s "main" -d 5`
-  - `agent-browser snapshot -i`
-  - `agent-browser get text @eX`
-  - `agent-browser get html @eX`
-If neither is available, ask the user to paste the content or a detailed outline.
+1. Review all accessible page or article content, not only the opening section or headings. Inspect its structure, claims, comparisons, processes, and data.
+2. Identify places where a visual would reduce explanation cost or make a relationship easier to understand.
+3. Reject decorative ideas that do not clarify a specific passage.
+4. Present the strongest content-grounded visual concepts using the format below.
 
 ## Output requirements
 
-Carefully review the full content of the article/page. Then, for each strong illustration opportunity found, output a suggestion with the following details:
+For each strong illustration opportunity, output a suggestion with the following details:
 
 - **Placement**: Indicate the most helpful location for the illustration (exact section or after/before a particular paragraph).
 - **Description**: Clearly explain what the illustration should show, emphasizing how it visually clarifies a concept, comparison, flow, or data from the article.

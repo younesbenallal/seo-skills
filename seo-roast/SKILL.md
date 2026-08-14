@@ -1,26 +1,15 @@
 ---
 name: seo-roast
-description: Roast a landing page or article from an SEO perspective (technical + on-page + content/intent). Optionally generate a screenshot-rich HTML report.
+description: Roast a landing page or article for technical SEO, on-page quality, and search intent. Use when the user wants a direct page critique or an optional screenshot-based HTML report.
 ---
 
 # SEO Roast (landing page / article)
 
-You produce a blunt, actionable SEO roast using a consistent rubric, then ask whether to generate a detailed HTML report with screenshots.
+Use this skill when the user wants a direct, actionable SEO review of one to five landing pages, product pages, or articles. Start with the rubric-based roast and offer the optional HTML report afterward.
 
-## Shared context first
+## Context and preflight
 
-Before asking repeated discovery questions, check whether `.seo-context.md` exists.
-
-If it does:
-- read it first
-- reuse the saved market, audience, competitor, and site context
-- ask only for URL-specific or keyword-specific gaps that are still missing
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md) before discovery. Reuse `.seo-context.md` when it exists, then ask only for URL-, keyword-, or market-specific gaps. Record assumptions and limitations; do not invent business priorities, target markets, or edit permission.
 
 ## Inputs to collect
 
@@ -35,31 +24,15 @@ If high-impact inputs remain unknown, ask one compact checkpoint before continui
 - Requires: no external credential
 - Fallback: if Browser access is unavailable, ask the user for the main copy and key page sections
 - Optional tools: Browser MCP, `agent-browser`, SERP API MCP
-
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
-
-## Tools (adaptive)
+## Tool selection
 
 **Browser selection workflow**
 1) Detect whether a Browser/Chrome/Playwright MCP is available; if yes, use it for page access and screenshots.
-2) If no browser MCP, use `agent-browser` CLI as the primary fallback. First check if it is installed; if not, install it with `npm install -g agent-browser`.
-3) If browsing is unavailable: ask for the main copy (and key sections like title/H1/meta).
+2) If no browser MCP, check for the `agent-browser` CLI and use it when installed. Do not install global packages without the user's approval; if it is missing, use the copy-only fallback.
+3) If browsing is unavailable: ask for the main copy and key sections such as title, H1, and meta description.
 
 **SERP**
 - Use the SERP API MCP (optional but recommended) to compare against what ranks. Do not use Google via a browser.
-
-**agent-browser commands (exact)**
-- Open URL: `agent-browser open <url>`
-- Snapshot (interactive): `agent-browser snapshot -i`
-- Snapshot (compact): `agent-browser snapshot -c`
-- Snapshot (scope): `agent-browser snapshot -s "main"`
-- Snapshot (depth): `agent-browser snapshot -d 4`
-- Get title: `agent-browser get title`
-- Get URL: `agent-browser get url`
-- Get text from element: `agent-browser get text @e1`
-- Get HTML from element: `agent-browser get html @e1`
-- Screenshot (viewport): `agent-browser screenshot path.png`
-- Screenshot (full page): `agent-browser screenshot --full full.png`
 
 ## Roast rubric (use this order)
 
@@ -70,45 +43,39 @@ Read and follow the shared preflight, setup, and missing-access rules in `docs/c
 - Robots meta: not accidentally `noindex`
 
 ### 2) Search intent & information architecture
-- Does the page *answer* what the searcher wants within 10 seconds?
+- Does the page make the answer or next useful action apparent from the opening viewport?
 - Is the H1 aligned with the primary query?
 - Are key sections missing vs. top-ranking pages?
 
 ### 3) On-page quality (content)
 - Value early, above the fold
-- Readability: short paragraphs, lots of different formats (lists/tables/callouts/images/etc.)
+- Readability: paragraph length and formats that support the subject, such as lists, tables, callouts, or images where useful
 - Visual support: illustration ideas where needed
-- Avoid: “only text blocks”, “fully AI content”, misleading anchors
-- Bonus: multiple layouts, TL;DR/key takeaways, AEO/GEO-friendly phrasing
+- Flag long uninterrupted text where a list, table, example, or visual would communicate the same idea more clearly
+- Flag unsupported generic copy, repeated abstractions, and misleading anchors
+- Look for concise direct answers to definition or question queries, plus structured takeaways when they help the reader
 
 ### 4) Internal linking & topical authority
-- What should it link to (parent/child pages)? check anchor/link resemblence
+- What should it link to (parent/child pages)? Check that each proposed link is relevant and present or clearly marked as missing.
 - Are anchors truthful and specific?
 
 ### 5) Technical UX (lightweight)
 - Clear CTAs, scannability, mobile layout issues
-- Performance red flags you can infer (heavy hero, too many scripts)
+- Suspected performance risks such as oversized hero media or excessive scripts; label them as suspected unless measurement or network evidence confirms them
 
 ## Output format (first response)
+
+Tie each finding to observed page text, markup, layout, or SERP evidence. Label recommendations based on inference or unavailable access instead of presenting them as observations.
 
 1. **Top 5 fixes** (highest ROI)
 2. **Quick wins (<60 minutes)**
 3. **Missing sections** (search intent gaps)
-4. **Internal linking plan** (5–10 links)
+4. **Internal linking plan** (up to 5–10 evidence-backed links; return fewer when the site lacks suitable targets)
 5. **Snippet-ready improvements** (exact title/H1/meta suggestions)
 
 Then ask:
 > “Do you want a detailed HTML report (with screenshots)?”
 
-## If user says “yes” (HTML report)
+## Optional HTML report
 
-### Tool check
-- If a browser MCP is available: use it for screenshots.
-- Otherwise use `agent-browser` and capture at least 1 above-the-fold + 1 mid-page screenshot per URL.
-- If screenshots are impossible: generate the report with “screenshot unavailable” placeholders.
-
-### Report requirements
-- Single `report.html` output
-- Use CSS variables (no hardcoded colors)
-- Include sections matching the rubric + a prioritized backlog
-- Footer must include: `holly-and-stick.com`
+If the user says yes, follow [`references/html-report.md`](references/html-report.md). Otherwise, stop after the roast and the offer.

@@ -1,26 +1,15 @@
 ---
 name: subkeyword-injector
-description: For a given URL, pull Search Console queries it already ranks for and propose (or apply) content edits to capture more long-tail traffic.
+description: Use a page's Search Console queries to propose or apply focused long-tail content edits. Use when the user wants to refresh an existing page based on the queries it already ranks for.
 ---
 
 # Subkeyword injector (GSC-driven refresh)
 
 You update an existing piece of content to better capture the long-tail queries it already ranks for.
 
-## Shared context first
+## Preflight
 
-Before asking repeated discovery questions, check whether `.seo-context.md` exists.
-
-If it does:
-- read it first
-- reuse the saved site, audience, market, and tooling context
-- ask only for page-specific constraints that are still missing
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that Search Console is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
+Run the shared [task preflight and tooling contract](../docs/credentials-and-tooling.md). For this skill, resolve the page URL, matching GSC property, date range, content constraints, and mutation scope before querying or editing. A local path permits inspection only; it does not grant permission to modify the file.
 
 ## Inputs to collect
 
@@ -38,30 +27,11 @@ If high-impact inputs remain unknown, ask one compact checkpoint before continui
 - Optional tools: Browser MCP or `agent-browser` for reading the current page
 - If missing: stop, ask the user to install or configure a GSC MCP or provide an export, and continue only after they confirm the path forward
 
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
-
 ## Page content access (for planning edits)
 
-Use a Browser MCP if available. If not, use the `agent-browser` CLI (install if needed).
+Use the browser fallback in [references/page-access.md](references/page-access.md) when the page is not available locally or through a connected tool. If extraction is blocked or incomplete, ask the user to paste the current article content.
 
-Agent-browser commands to capture current headings/sections:
-```bash
-agent-browser open <url>
-agent-browser snapshot --json > /tmp/page.json
-jq -r '.. | objects | select(.role=="heading") | (.name // "")' /tmp/page.json
-```
-
-If extraction is blocked or incomplete, ask the user to paste the current article content.
-
-## Required tool
-
-This skill requires **Google Search Console data**.
-
-Prefer a connected **GSC MCP** so you can query by page/URL and date range. List accessible properties and select the one matching the current project's canonical domain before asking for an export.
-
-If no GSC MCP is available:
-- stop and ask the user to install one, OR
-- ask them for a manual export (CSV) and proceed with the export.
+Prefer the connected GSC path described by the shared contract. Use a manual export only when no matching live property is available or the user prefers the fallback.
 
 ## Workflow
 
@@ -89,16 +59,16 @@ Pick one per cluster:
 - Add a short paragraph in an existing section
 - Add a mini-FAQ block
 - Add a comparison subsection (“X vs Y”)
-- Add a definition snippet (AEO/GEO friendly)
+- Add a concise definition that directly answers the query
 
-Use the readability rules from `obsidian/Article writing playbook.md`.
+Preserve the page's existing readability and tone unless the user supplies different constraints; do not invent a house style.
 
 ### 4) Produce edits
 
-If you have local file access:
+If the user explicitly authorizes editing and you have local file access:
 - apply edits directly (minimal diff, no refactors)
 
-If you do NOT have access:
+Otherwise:
 - output a “patch plan” with:
   - exact headings to add
   - copy blocks to paste
@@ -106,5 +76,5 @@ If you do NOT have access:
 
 ### 5) Output
 
-- A table of chosen subkeywords + where they were integrated
+- A table containing each chosen query cluster, its GSC metrics, selection rationale, insertion location, and `proposed` or `applied` status
 - Updated title/H1/meta suggestions (only if CTR issue)

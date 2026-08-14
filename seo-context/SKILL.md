@@ -1,39 +1,27 @@
 ---
 name: seo-context
-description: Create or update a reusable SEO context file for a site, product, or content program. Use when the user wants to avoid repeating SEO fundamentals across tasks, or when they mention SEO context, site context, content context, target market, money pages, priority pages, competitors, or tooling setup. Other SEO skills should read this context first before asking for basics again.
+description: Create or update reusable SEO context for a site, product, or content program. Use when the user wants to preserve shared SEO facts across tasks, or when another SEO skill needs site, market, priority-page, competitor, or tooling context that has not been recorded yet.
 ---
 
 # SEO context
 
-You help the user create and maintain a reusable SEO context document for a project.
-
-The document lives at `.seo-context.md` in the project root.
+Create and maintain `.seo-context.md` in the project root so SEO skills can reuse durable project facts instead of repeating discovery.
 
 Article-specific writing preferences belong in `.agents/article-writing-context.md`, which is created and maintained by the `article-writing` skill. Do not force voice, image, source, or publishing preferences into this SEO context unless they are also durable business or content constraints.
 
-Other SEO skills should read this file first, then ask only for task-specific details that are still missing.
+Other SEO skills should read this file first and ask only for missing task-specific details.
 
-## Mandatory preflight
+## Preflight
 
-Before substantive work, inspect relevant project evidence and the tools or MCPs actually callable in the runtime. Do not infer that Search Console or another connected service is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
+Read and follow the shared project, connected-tool, property-resolution, missing-input, and secret-handling rules in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md).
 
-If high-impact business or SEO inputs remain unknown, ask one compact checkpoint before creating or updating the context. Explain that the user may skip it; if they decline, record explicit unknowns and inferred candidates rather than inventing facts. Never silently assign money-page status, conversions, target markets, or strategic priorities.
-
-## When to use this
-
-Use this skill when:
-- the user is starting SEO work on a new project
-- the user is tired of repeating the same SEO basics across tasks
-- multiple SEO tasks will be run against the same site
-- the user wants a reusable brief for markets, competitors, priorities, and tooling
+For this skill, confirm high-impact business facts rather than silently inferring them. If money-page status, conversions, target markets, or strategic priorities remain unknown, record them as unknown or as candidates awaiting confirmation.
 
 ## Tooling & credentials
 
 - Auth mode: `none`
 - Requires: no external credential
 - Fallback: none
-
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md` when recording downstream tool availability in the context file.
 
 ## Workflow
 
@@ -46,6 +34,9 @@ Look for:
   - `docs/`
   - strategy notes in the repo
   - product or marketing docs
+- page templates or content directories
+- existing SEO notes or exported audits
+- connected Search Console data or existing GSC exports, when available
 
 If `.seo-context.md` already exists:
 - read it
@@ -91,11 +82,9 @@ Build a compact topical cluster map rather than storing a flat page list. For ea
 - high-click pages and query themes from GSC when available
 - important gaps, overlaps, or uncertain page assignments
 
-Use the cluster map as the default framework for internal linking. Prefer links between semantically and topically close pages because the surrounding context makes the relationship clearer to readers and search engines. Within a cluster, connect supporting pages to the relevant hub or money page and add hub-to-supporting or sibling links when they improve discovery and the reader journey. Use cross-cluster links only when the relationship is genuinely useful. Do not claim that topical proximity creates a fixed or measurable multiplier of link equity.
-
 Do not infer that a page is a money page from its format alone. Use conversion, analytics, CRM, or user evidence when available. If the project materials do not identify the pages responsible for most business results, ask the user which pages generate the majority of qualified leads or revenue. Offer likely commercial and bottom-of-funnel candidates for confirmation when useful, such as product, service, comparison, alternative, and "best X" pages.
 
-When a Google Search Console connection or export is available, retrieve page-level clicks and impressions before asking the user to identify important organic pages. Record a concise list of high-click pages by relevant cluster, together with the Search Console property and date range. Use these pages as candidates for strong internal-link sources and as evidence of organic visibility. Do not treat clicks as proof that a page generates leads, revenue, or PageRank; confirm money-page status from conversion evidence or the user.
+Before asking the user to identify important organic pages, query connected Search Console data or inspect a supplied export when either is available. Record page-level clicks and impressions by relevant cluster, together with the property and date range. Treat clicks as organic-visibility evidence, not proof of conversions, business value, or PageRank.
 
 5. Competitive context
 - direct competitors
@@ -115,19 +104,7 @@ When a Google Search Console connection or export is available, retrieve page-le
 - approval constraints
 - markets or compliance concerns that affect content
 
-### 3) Reuse repo context before asking the user
-
-Before asking questions, inspect:
-- `README.md`
-- `docs/`
-- page templates or content directories
-- existing SEO notes or exported audits
-- any obvious product, ICP, or competitor references
-- connected Search Console data or existing GSC exports, when available
-
-Do not ask the user for information that is already easy to infer from the project.
-
-### 4) Create or update the context file
+### 3) Create or update the context file
 
 Use the template in `references/context-template.md`.
 
@@ -136,14 +113,13 @@ Keep the document practical:
 - easy for another SEO skill to scan quickly
 - focused on facts that affect execution
 
-### 5) Tell downstream skills how to use it
+### 4) Hand off the context
 
-When this context file exists, other SEO skills should:
+Tell downstream SEO skills to:
 - read `.seo-context.md` first
 - skip repeated discovery questions when the answers are already there
 - ask only for missing task-specific inputs
-- use its topical cluster map before selecting internal-link sources and targets
-- use confirmed money pages as priority destinations when a relevant, useful internal link supports the reader journey; never force unrelated or sitewide links
+- use its topical cluster map and confirmed money pages as evidence, not as permission to force a recommendation
 
 ## Output requirements
 

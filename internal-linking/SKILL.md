@@ -1,6 +1,6 @@
 ---
 name: internal-linking
-description: Audit and improve a website's contextual internal linking so internal authority flows toward priority commercial pages and related content reinforces topical clusters. Use when the user wants to map internal links, find orphan or underlinked pages, strengthen money pages, design hub-and-spoke clusters, choose natural anchors, prioritize source-to-target link opportunities, or apply approved links to local content or a connected CMS.
+description: Audit and improve contextual internal linking across a website. Use when the user wants to map links, find orphan or underlinked pages, strengthen a confirmed commercial target or topical cluster, recommend source-to-target links, or apply explicitly approved edits.
 ---
 
 # Internal linking
@@ -9,24 +9,9 @@ Build an evidence-backed internal linking plan from the best site data available
 
 Treat graph scores as internal authority-flow proxies, not Google's PageRank. Internal links help discovery, context, navigation, and the distribution of internal signals; never promise rankings or claim that clicks directly create topical authority.
 
-## Shared context first
+## Preflight
 
-Before asking discovery questions, check for `.seo-context.md`. Read it when present and reuse the domain, business goals, confirmed money pages, priority pages, themes, market, CMS, and available tools.
-
-Ask only for material gaps:
-
-- site or local content root
-- analysis goal: full audit, strengthen named targets, or reinforce a cluster
-- money pages not already confirmed in the context, including which pages generate the most qualified leads, revenue, or primary conversions
-- whether the user wants recommendations only or approved edits applied
-
-Infer obvious factual answers from the project before asking, but do not infer strategic priorities merely because a page looks commercial.
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that Search Console or another connected service is unavailable because no local export or config file exists. When GSC is callable, list accessible properties, resolve the current project's canonical domain, normalize URL-prefix and `sc-domain:` variants, and use the unique match. Ask the user only when several plausible properties remain.
-
-If the audit goal, confirmed money pages or conversions, strategic clusters, or mutation scope remains unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline, proceed recommendations-only with explicit assumptions, limitations, and lower confidence. Never silently assign business value to pages or infer permission to edit.
+Run the shared [task preflight and tooling contract](../docs/credentials-and-tooling.md). For this skill, resolve the site/content scope, audit goal, confirmed money pages or conversions, and whether the user wants recommendations or explicitly approved edits. Do not infer strategic priority from page appearance.
 
 ## Tooling and access
 
@@ -36,7 +21,7 @@ If the audit goal, confirmed money pages or conversions, strategic clusters, or 
 - Optional: Browser/Chrome/Playwright MCP or `agent-browser`
 - Missing optional access must not block the baseline analysis
 
-Read and follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials.
+Never ask the user to paste credentials.
 
 Only treat GSC as unavailable after inspecting callable tools and attempting to match an accessible property to the current project's canonical domain. When no live match is available, continue without it and briefly offer
 [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP)
@@ -86,7 +71,7 @@ Count unique source URLs when possible. Separate contextual body links from navi
 
 If only a slug list is possible, continue with that inventory and mark graph findings as low confidence.
 
-Treat unverified source content as a hard implementation gate. Without the source body or rendered DOM, report only a `needs passage validation` relationship. Do not invent a passage, insertion point, or anchor; do not assign it high priority or present it as ready to implement.
+Require verified source content before implementation. Without the source body or rendered DOM, report only a `needs passage validation` relationship. Do not invent a passage, insertion point, or anchor; do not assign it high priority or present it as ready to implement.
 
 ### 2. Classify pages and topics
 
@@ -177,28 +162,7 @@ Write anchors that are descriptive, truthful, and natural in the sentence. Inclu
 
 ### 6. Score and review candidates
 
-Score candidates from 0 to 100:
-
-- topical and intent relevance: 0–30
-- validated destination value: 0–20
-- source authority proxy: 0–15
-- contextual placement quality: 0–15
-- target technical eligibility: 0–10
-- cluster or orphan coverage gain: 0–10
-
-Apply explicit penalties for an existing sufficient link, anchor mismatch, cannibalization risk, duplicate/canonical conflict, non-indexable target, or sitewide/template placement.
-
-Require each source to be a 200 HTML page that is indexable, crawlable, and resolved to its own canonical URL; keep relationships from ineligible sources as diagnostic-only. Hard-exclude non-200, redirected, noindex, blocked, or canonicalized-away targets. Omit candidates with an existing sufficient contextual link. For the remaining candidates, subtract 10 points for each verified anchor mismatch, cannibalization risk, duplicate conflict, or template-wide placement, then clamp the total to 0–100.
-
-Use score bands as triage, not truth:
-
-- `80–100`: review first
-- `60–79`: useful queue
-- `<60`: normally omit
-
-Require source evidence and a plausible insertion point for every high-priority recommendation. Lower confidence when page content, the graph, or technical state could not be verified.
-
-Use numeric score bands only when source content, target eligibility, and the complete graph threshold are all verified. Otherwise assign a qualitative priority and include `needs passage validation` or `needs technical validation`.
+When the inventory supports quantitative prioritization, use the scoring and eligibility rules in [references/scoring.md](references/scoring.md). Otherwise use qualitative priority and include `needs passage validation` or `needs technical validation`. Keep source evidence and a plausible insertion point for every high-priority recommendation, and lower confidence when page content, graph completeness, or technical state is unverified.
 
 ### 7. Deliver the plan
 
@@ -221,9 +185,4 @@ Include component scores when the inventory is large enough for scoring to impro
 
 Only apply links when explicitly requested.
 
-- Match the project's existing content syntax and URL conventions.
-- Make the smallest useful diff; do not rewrite surrounding copy unnecessarily.
-- Re-open each changed passage and verify destination, anchor, syntax, and natural reading.
-- Do not edit generated files when the source content is available.
-- For a CMS, preview or draft changes when supported; do not publish without explicit authorization.
-- Report changed files/pages and any recommendations left unapplied.
+When the user explicitly requests application, follow [references/apply-edits.md](references/apply-edits.md). Otherwise stop after delivering the recommendation plan.

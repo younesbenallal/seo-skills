@@ -1,35 +1,17 @@
 ---
 name: programmatic-seo
-description: When the user wants to create SEO-driven pages at scale using templates and data. Also use when the user mentions "programmatic SEO," "template pages," "pages at scale," "directory pages," "location pages," "[keyword] + [city] pages," "comparison pages," or "integration pages." For auditing existing SEO issues, see seo-audit.
+description: Design SEO-driven pages at scale using templates and data. Use when the user wants a programmatic SEO strategy, page-family specification, or implementation for directory, location, comparison, integration, or other template-driven pages.
 ---
 
 # pSEO
 
 You help the user ship pSEO that avoids thin content and actually ranks.
 
+Produce a strategy and implementation spec by default. Edit code only when the user explicitly asks for implementation.
+
 ## Shared context first
 
-Before asking repeated discovery questions, check whether `.seo-context.md` exists.
-
-If it does:
-- read it first
-- reuse the saved site, market, competitor, and tooling context
-- ask only for pSEO-specific gaps that are still missing
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
-
-## Context Gathering First
-
-Before asking the user for inputs, proactively gather context:
-- Search the codebase for existing pSEO implementations, templates, or similar patterns
-- Check for product documentation, ICP info, or business context files
-- Look for existing data sources, APIs, or databases mentioned in the codebase
-- Review any existing SEO documentation or strategies
-- Only ask the user for information you cannot find through exploration
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md). Read `.seo-context.md` when present. Inspect the codebase for existing templates, data sources, product or ICP documentation, and prior SEO strategy before asking for pSEO-specific gaps.
 
 ## Tooling & credentials
 
@@ -38,97 +20,23 @@ Before asking the user for inputs, proactively gather context:
 - Optional tools: Browser MCP or `agent-browser`, SERP API MCP, Ahrefs/Semrush MCP
 - Fallback: continue with repo context, manual URLs, and user-provided data if external tools are unavailable
 
-Read and follow the shared preflight, setup, and missing-access rules in `docs/credentials-and-tooling.md`.
-
 ## Core Principles
 
 1. Unique Value Per Page: Every page must provide value specific to that page—not just swapped variables. Maximize unique content and avoid thin content penalties.
 
 2. Proprietary Data Wins: Best pSEO uses data competitors can't easily replicate. Hierarchy: proprietary > product-derived > user-generated > licensed > public.
 
-3. Subfolders, Not Subdomains: Always use subfolders (`yoursite.com/templates/resume/`), never subdomains. They make tracking easier and pass authority.
+3. Prefer Subfolders: Default to subfolders such as `yoursite.com/templates/resume/` for a cohesive site and simpler tracking. Use a subdomain only when product architecture, ownership, or deployment constraints justify the separation.
 
 4. Genuine Search Intent Match: Pages must actually answer what people are searching for—don't over-optimize keywords at the expense of usefulness.
 
 ## pSEO Patterns
 
-### 1. Templates
-Pattern: `[type] template` or `free [type] template`  
-Examples: "resume template", "invoice template", "pitch deck template"  
-URL: `/templates/[type]/`  
-Value: Actually usable templates, multiple variations, quality comparable to paid options
-
-### 2. Curation
-Pattern: `best [category]` or `top [number] [things]`  
-Examples: "best website builders", "top 10 crm software", "best free design tools"  
-URL: `/best/[category]/`  
-Value: Genuine evaluation criteria, real testing, regular updates
-
-### 3. Conversions
-Pattern: `[X] to [Y]` or `[amount] [unit] in [unit]`  
-Examples: "$10 USD to GBP", "100 kg to lbs", "pdf to word"  
-URL: `/convert/[from]-to-[to]/`  
-Value: Accurate, real-time data, fast functional tool
-
-### 4. Comparisons
-Pattern: `[X] vs [Y]` or `[X] alternative`  
-Examples: "webflow vs wordpress", "notion vs coda", "figma alternatives"  
-URL: `/compare/[x]-vs-[y]/`  
-Value: Honest analysis, feature comparison data, clear recommendations
-
-### 5. Examples
-Pattern: `[type] examples` or `[category] inspiration`  
-Examples: "saas landing page examples", "email subject line examples", "portfolio website examples"  
-URL: `/examples/[type]/`  
-Value: Real, high-quality examples with screenshots and analysis
-
-### 6. Locations
-Pattern: `[service/thing] in [location]`  
-Examples: "coworking spaces in san diego", "dentists in austin", "best restaurants in brooklyn"  
-URL: `/[service]/[city]/`  
-Value: Actual local data, local providers listed, location-specific insights
-
-### 7. Personas
-Pattern: `[product] for [audience]` or `[solution] for [role/industry]`  
-Examples: "payroll software for agencies", "crm for real estate", "project management for freelancers"  
-URL: `/for/[persona]/`  
-Value: Persona-specific content, relevant features, testimonials from that segment
-
-### 8. Integrations
-Pattern: `[your product] [other product] integration` or `[product] + [product]`  
-Examples: "slack asana integration", "zapier airtable", "hubspot salesforce sync"  
-URL: `/integrations/[product]/`  
-Value: Real integration details, setup instructions, use cases
-
-### 9. Glossary
-Pattern: `what is [term]` or `[term] definition`  
-Examples: "what is pSEO", "api definition", "what does crm stand for"  
-URL: `/glossary/[term]/`  
-Value: Clear definitions with examples, related terms linked
-
-### 10. Translations
-Pattern: Same content in multiple languages  
-Examples: "qué es pSEO", "was ist SEO"  
-URL: `/[lang]/[page]/`  
-Value: Quality translation (not just Google Translate), cultural localization
-
-### 11. Directory
-Pattern: `[category] tools` or `[type] software`  
-Examples: "ai copywriting tools", "email marketing software", "crm companies"  
-URL: `/directory/[category]/`  
-Value: Comprehensive coverage, useful filtering, details per listing
-
-### 12. Profiles
-Pattern: `[person/company name]` or `[entity] + [attribute]`  
-Examples: "stripe ceo", "airbnb founding story", "elon musk companies"  
-URL: `/people/[name]/`  
-Value: Accurate, sourced information, unique insights
-
-You can combine patterns: "Marketing agencies for startups in Austin" (Locations + Personas), "Best coworking spaces in San Diego" (Curation + Locations)
+Read [references/pattern-catalog.md](references/pattern-catalog.md) when selecting a pattern. Choose one primary scalable pattern with real demand. A secondary modifier (for example, a location or persona) is allowed only when it changes the page's search intent and data requirements; document both rather than treating the combination as two independent templates.
 
 ## Workflow
 
-1. Pattern Selection: Pick ONE scalable pattern with real search demand.
+1. Pattern Selection: Choose one primary pattern from the catalog, with an optional secondary modifier only when it creates meaningful page-specific value.
 
 2. Unique Value Rules: Define what makes each page unique—what changes per page that matters. Avoid thin content by ensuring genuine differentiation.
 
@@ -140,11 +48,7 @@ You can combine patterns: "Marketing agencies for startups in Austin" (Locations
 
 4. URL Structure: Use subfolders, clean slugs, consistent pattern. Example: `/templates/[type]/` or `/[service]/[city]/`
 
-5. Thin Content Gate: Checklist that every page must pass:
-   - [ ] Provides unique value (not just variable substitution)
-   - [ ] Answers search intent
-   - [ ] Has sufficient unique content
-   - [ ] Includes data/insights specific to this page
+5. Page Value Review: Explain how each page goes beyond variable substitution, answers its specific intent, and uses page-specific data or insight. Recommend consolidation, exclusion from indexing, or a smaller page set when the available data cannot support useful differentiation.
 
 6. Production Plan:
    - Data generation/acquisition

@@ -1,6 +1,6 @@
 ---
 name: competitor-intelligence
-description: Identify, analyze, compare, and monitor SEO competitors using Google SERPs, XML sitemaps, URL patterns, and optional Ahrefs, Semrush, DataForSEO, or similar data. Use when the user asks for competitor discovery, competitor analysis, competitor monitoring, sitemap analysis, content strategy reverse-engineering, SEO competitive intelligence, backlink or keyword comparisons, content gaps, commercial keyword gaps, or a deep-dive comparison between a site and one or more competitors.
+description: Analyze SEO competitors and turn SERP, sitemap, and optional provider evidence into strategy. Use when the user wants competitor discovery, a competitor profile, a site comparison, content or keyword gaps, or monitoring over time.
 ---
 
 # Competitor intelligence
@@ -9,22 +9,15 @@ Map what competitors publish, infer the strategy behind it, and turn the evidenc
 
 ## Start from available context
 
-1. Check for `.seo-context.md`, product documentation, and prior competitor files. Read the context first when present.
-2. Reuse known site, market, seed topics, competitors, and tool access.
-3. Inspect available tools before asking the user what they have, then ask only for task-specific gaps.
-4. If invoked without a concrete request, explain in two sentences that this skill can discover competitors, analyze sitemap/content patterns, compare SEO datasets, and monitor changes. Then ask for:
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md) before substantive work. Read `.seo-context.md`, product documentation, and prior competitor files when present; reuse known site, market, seed topics, competitors, and tool access. Ask only for task-specific gaps.
+
+If invoked without a concrete request, explain in two sentences that this skill can discover competitors, analyze sitemap/content patterns, compare SEO datasets, and monitor changes. Then ask for:
    - the user's domain or product;
    - known competitor domains, if any;
    - target country and language;
    - confirmation of any relevant access not already detected: SERP API, Ahrefs, Semrush, DataForSEO, or exports.
 
 Do not require the user's site when they only want a competitor profiled.
-
-## Mandatory preflight
-
-Before substantive work, inspect `.seo-context.md`, relevant project evidence, and the tools or MCPs actually callable in the runtime. Do not infer that a connected service is unavailable because no local export or config file exists. When a service exposes multiple sites or properties, resolve the current project's canonical domain and use the unique match; ask the user only when the match remains ambiguous.
-
-If high-impact inputs remain unknown, ask one compact checkpoint before continuing. Explain that the user may skip it; if they decline and the task remains safe, proceed with explicit assumptions, limitations, and lower confidence. Never silently invent business priorities, target markets, conversion value, or permission to edit.
 
 ## Tooling and credentials
 
@@ -33,7 +26,7 @@ If high-impact inputs remain unknown, ask one compact checkpoint before continui
 - Optional: SERP API MCP for discovery; Ahrefs, Semrush, DataForSEO, or equivalent MCP/export for deeper analysis
 - Fallback: user-provided domains, sitemap files, and CSV/JSON exports
 
-Read and follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials. Detect callable tools first. Do not block basic sitemap work because premium data is unavailable.
+Do not block basic sitemap work because premium data is unavailable.
 
 For live Google competitor discovery, require a configured SERP data tool. Do not scrape Google result pages through browser automation. If no SERP tool exists, continue with known/user-provided domains or ask for a SERP export.
 
@@ -45,7 +38,7 @@ For live Google competitor discovery, require a configured SERP data tool. Do no
 - **Deep SEO comparison:** add provider keyword, page, traffic, and backlink data.
 - **Monitor competitors:** save dated inventories/provider exports and compare snapshots.
 
-Read [references/analysis-playbook.md](references/analysis-playbook.md) before competitor discovery, multi-site comparison, premium-provider analysis, or monitoring. For a basic one-domain sitemap profile, read only the sitemap-analysis section.
+Read [references/analysis-playbook.md](references/analysis-playbook.md) before competitor discovery, multi-site comparison, premium-provider analysis, or monitoring. It is the single source of truth for query design, evidence handling, scoring, monitoring, and report quality. For a basic one-domain sitemap profile, read only the sitemap-analysis section.
 
 ## Discover competitors
 
@@ -86,11 +79,9 @@ Infer strategy mainly from paths and slugs. Use `lastmod` as supporting evidence
 
 ## Analyze and report
 
-Separate every conclusion into:
+Apply the report quality checks in [references/analysis-playbook.md](references/analysis-playbook.md) for collection metadata, evidence traceability, confidence, and limitations. The analysis below defines the competitor-specific content; the playbook remains the single source for cross-report quality rules.
 
-- **Observed:** URL, slug, sitemap count, date, SERP result, provider metric, or page content.
-- **Inferred:** likely keyword, intent, audience, funnel role, template, content cadence, or strategic priority.
-- **Confidence:** high, medium, or low, with the reason.
+Use the playbook's observed-versus-inferred distinction and attach confidence to strategic claims.
 
 Cover:
 
