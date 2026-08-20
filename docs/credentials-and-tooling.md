@@ -4,7 +4,7 @@ This repo now uses one shared contract for tools, MCPs, and credentials.
 
 The goal is to keep these things consistent across every skill:
 
-- skills discover relevant project context and connected tools before making availability claims
+- skills read the saved project tooling inventory before repeating tool discovery
 - important missing inputs are confirmed with the user instead of silently inferred
 - users get one clear setup path
 - skills follow the same behavior when access is present or missing
@@ -27,7 +27,7 @@ Every skill should follow these rules:
 Before substantive analysis, generation, or editing:
 
 1. Read `.seo-context.md` when present and inspect relevant project evidence.
-2. Inspect the tools and MCPs that are actually callable in the current runtime. A missing local export, env var, or repo config does not prove that a connected tool is unavailable.
+2. Read the tooling inventory in `.seo-context.md` when present. On the first SEO-context run, when the inventory is missing, or when the task needs a tool that is not listed, inspect the tools and MCPs that are actually callable in the current runtime. A missing local export, env var, or repo config does not prove that a connected tool is unavailable. Do not repeat broad tool discovery when the inventory is current.
 3. Resolve the current project identity from strong evidence such as its canonical domain, sitemap, framework metadata, deployment config, `.seo-context.md`, or README. Treat the folder name as a hint, not proof.
 4. When a connected service exposes several sites, properties, workspaces, or accounts, list or search them and select a unique match for the current project. Ask the user to choose only when the match remains ambiguous.
 5. Identify high-impact task inputs that remain unknown and cannot be inferred reliably. Ask the user for them in one compact checkpoint before continuing.
@@ -48,6 +48,19 @@ For tools such as Google Search Console:
 6. Use a consistent relevant date range and record the property and range in the output or context.
 
 Manual CSV/JSON is a fallback when the skill supports it, not evidence that live MCP access is absent.
+
+## Reusable tooling inventory
+
+`.seo-context.md` can store a project-level inventory of tools and connectors so later SEO tasks do not repeat the same broad discovery.
+
+On the first SEO-context run, or whenever the inventory is missing:
+
+1. Inspect the tools and MCPs that are callable in the current runtime.
+2. Record each relevant tool, what it helps with, the check date, and whether the status is agent-observed or user-reported.
+3. Ask the user: "I found these tools: <short list>. Are there any other tools or connectors available in your setup that I should record?"
+4. Record tools the user names as `user-reported` until the current runtime exposes them. Do not claim that the agent can use a user-reported tool.
+
+On later runs, read and reuse the inventory instead of repeating broad discovery. Re-check the specific tool when the task needs live access, the tool is missing or marked unknown, the user says the setup changed, or the inventory is more than 30 days old. Update the inventory when a check changes a tool's status.
 
 ## Auth modes
 
@@ -133,6 +146,10 @@ Share the file path for the CSV or JSON export and I will continue with that inp
 
 ### Browser access
 
+Used by:
+
+- `guest-post-outreach` for guideline research, article review, and approved form submission
+
 Preferred path:
 
 - use a Browser, Chrome, or Playwright MCP if the user already has one
@@ -173,6 +190,7 @@ Used by:
 
 - `linking-opportunities`
 - `search-intent-coverage`
+- optionally `guest-post-outreach` for AI-first prospect discovery
 - optionally `seo-roast`
 - optionally `programmatic-seo`
 - optionally `competitor-intelligence` for competitor discovery
@@ -186,6 +204,28 @@ Agent behavior:
 - if present, use it
 - if missing, stop and ask the user to install/configure it
 - do not invent an env-var fallback
+
+`guest-post-outreach` may instead use another callable web-search tool or an interactive browser under its documented discovery path. It must report the actual source and cannot describe another engine's results as Google results.
+
+### Guest-post submission tools
+
+Used by:
+
+- `guest-post-outreach`
+
+Supported paths:
+
+- an email MCP or connector for approved email pitches
+- a Browser, Chrome, Playwright, or computer-use tool for approved form submissions
+- a copy-ready draft when neither submission path is available
+
+Agent behavior:
+
+- research and drafting do not authorize sending
+- show the final destination, message, attachments, identity, links, and any fee before requesting approval
+- pause for the user on CAPTCHAs, one-time codes, or other human challenges
+- verify submission from a sent-message result, confirmation page, identifier, or screenshot
+- do not retry an uncertain submission automatically
 
 ### Google Search Console MCP
 
@@ -214,6 +254,7 @@ Used optionally by:
 
 - `competitor-intelligence`
 - `programmatic-seo`
+- `guest-post-outreach` for optional prospect qualification
 
 Supported sources include Ahrefs, Semrush, DataForSEO, or an equivalent provider.
 

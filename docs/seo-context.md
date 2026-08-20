@@ -19,8 +19,9 @@ The goal is simple: other SEO skills should stop re-asking for the same site, ma
 1. Check whether `.seo-context.md` already exists.
 2. If it exists, read and update only the missing or stale sections.
 3. If it does not exist, inspect repo materials like `README.md`, `docs/`, product or strategy files, and connected Search Console data before asking the user repeated questions.
-4. Save a concise shared context file that downstream SEO skills can read first.
-5. Ask follow-up questions only for task-specific gaps after the shared context has been reused.
+4. On the first run, inspect callable tools, save the reusable tooling inventory, and ask the user whether other tools or connectors should be recorded.
+5. Save a concise shared context file that downstream SEO skills can read first.
+6. Ask follow-up questions only for task-specific gaps after the shared context has been reused.
 
 ## Shared fields
 
@@ -29,8 +30,11 @@ The context file is designed to capture:
 - site basics
 - SEO goals and conversions
 - audience and market targets
+- a money-page keyword table mapping each page slug or title to its target keyword or keywords
 - a topical cluster map connecting hubs, money pages, supporting content, gaps, and high-click organic pages from Search Console when available
+- a reusable tooling inventory with check dates and agent-observed or user-reported statuses
 - competitive context
+- separate direct/business competitors from SEO competitors, with the latter backed by recurring top-10 Google results for a small keyword set
 - tooling and data access
 - technical and content constraints
 
@@ -43,6 +47,7 @@ These skills now explicitly check `.seo-context.md` first:
 - `subkeyword-injector`
 - `seo-roast`
 - `linking-opportunities`
+- `guest-post-outreach`
 - `illustration-ideas`
 - `seo-audit-report`
 - `geo-audit-report`

@@ -1,0 +1,3 @@
+interface:
+  display_name: "PostHog SEO/GEO Tracking"
+  short_description: "Track SEO and LLM traffic through revenue"

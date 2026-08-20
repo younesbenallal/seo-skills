@@ -5,7 +5,7 @@ description: Analyze SEO competitors and turn SERP, sitemap, and optional provid
 
 # Competitor intelligence
 
-Map what competitors publish, infer the strategy behind it, and turn the evidence into prioritized opportunities. Distinguish direct business competitors from audience competitors that rank for the same topics without selling the same product.
+Map what competitors publish, infer the strategy behind it, and turn the evidence into prioritized opportunities. Distinguish direct business competitors from SEO competitors that rank for the same queries without needing to sell the same product.
 
 ## Start from available context
 
@@ -42,18 +42,18 @@ Read [references/analysis-playbook.md](references/analysis-playbook.md) before c
 
 ## Discover competitors
 
-1. Build a small query set across:
+1. Start with 2 to 5 of the most relevant non-branded keywords from `.seo-context.md`, especially money-page targets and important query themes. If the context has no suitable seed set, ask the user to choose a couple. For a full competitor study, expand the set across:
    - product/category and high-intent use cases;
    - alternatives, comparisons, pricing, templates, and jobs-to-be-done;
    - educational topics central to the buyer.
-2. Fetch localized top results for each query with the SERP tool.
-3. Exclude marketplaces, social networks, generic publishers, and aggregators only when they are irrelevant to the requested analysis.
-4. Count domain recurrence by query cluster, not only across the full set.
-5. Classify each candidate:
+2. Fetch the localized top 10 organic results for each keyword with the SERP tool.
+3. Exclude the user's own domain. Keep marketplaces, social networks, generic publishers, aggregators, and other non-business sites when they recur, because they can still be SEO competitors.
+4. Normalize domains and count recurrence across the full seed set. Use query-cluster recurrence as an additional view for larger studies. The domains that appear most often are the first SEO-competitor candidates.
+5. Check the candidate's site only when business or audience context helps interpret the result. Classify each candidate separately:
    - **Direct:** sells a substantially similar product or service to a similar buyer.
-   - **Audience:** repeatedly reaches the same audience/topics but has a different offer or business model.
-   - **SERP incumbent:** ranks often but is neither a meaningful business nor audience competitor.
-6. Report the evidence: representative queries, recurrence, positioning, and why the classification fits.
+   - **SEO/audience:** repeatedly reaches the same audience or topics with a different offer or business model.
+   - **SEO incumbent:** ranks often but is neither a meaningful direct nor audience competitor.
+6. Report the evidence: keyword set, locale, date, recurrence, representative URLs, and any business-context check. Keep SERP recurrence as the primary SEO-competitor signal.
 
 Treat SERP overlap as discovery evidence, not proof that two businesses compete.
 

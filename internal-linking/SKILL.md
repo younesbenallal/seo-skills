@@ -82,7 +82,7 @@ Assign one primary role:
 - `supporting`: answers a narrower or long-tail intent
 - `utility`: primarily navigational, legal, account, or operational
 
-Build a topical cluster map before generating link candidates. Group SEO pages from their title, H1/H2s, copy, URL path, search intent, and GSC queries when available. For each cluster, identify its hub or primary page, confirmed money pages, supporting articles/tools/resources, high-visibility sources, and content gaps. Record ambiguous or overlapping assignments instead of forcing a cluster.
+Build a topical cluster map before generating link candidates. Group SEO pages from their title, H1/H2s, copy, URL path, search intent, and GSC queries when available. For each cluster, identify its hub or primary page, confirmed money pages and their target keyword(s) from `.seo-context.md`, supporting articles/tools/resources, high-visibility sources, and content gaps. Record ambiguous or overlapping assignments instead of forcing a cluster.
 
 Prefer source-target pairs within the same cluster because semantic and topical proximity strengthens contextual relevance for readers and search engines. Link supporting pages toward the relevant hub or money page, and use hub-to-supporting or sibling links when they improve discovery or complete a reader journey. Consider cross-cluster links only when the source passage establishes a real relationship. Do not claim that same-cluster links pass a fixed or mechanically greater amount of PageRank.
 
@@ -158,7 +158,7 @@ For each confirmed money page, measure relevant cluster coverage across articles
 
 Exclude `utility` pages as sources and targets unless the user explicitly includes them in scope.
 
-Write anchors that are descriptive, truthful, and natural in the sentence. Include the target's topic or a close semantic variant when useful, but vary phrasing and avoid exact-match stuffing.
+Write anchors that are descriptive, truthful, and natural in the sentence. When `.seo-context.md` provides a money page's target keyword(s), use them as relevance cues and sources for close semantic anchor ideas. Vary phrasing and avoid exact-match stuffing.
 
 ### 6. Score and review candidates
 

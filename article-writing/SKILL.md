@@ -48,11 +48,11 @@ Identify:
 - primary keyword
 - target country and language
 - intended reader or ICP
-- the topical cluster this article belongs to, including its hub, money page, and closest supporting content when known
+- the topical cluster this article belongs to, including its hub, money page, target keyword(s), and closest supporting content when known
 - output location or CMS format, when relevant
 - existing draft or page, if this is an update
 
-Read `.seo-context.md` and `.agents/article-writing-context.md` first when present. Reuse confirmed money pages, priority pages, audience, market, and business goals. Infer missing answers from the repo, site, and prior context before asking. Never silently default to US English. Ask only when country or language remains materially ambiguous.
+Read `.seo-context.md` and `.agents/article-writing-context.md` first when present. Reuse confirmed money pages, their target keyword(s), priority pages, audience, market, and business goals. Infer missing answers from the repo, site, and prior context before asking. Never silently default to US English. Ask only when country or language remains materially ambiguous.
 
 If `.agents/article-writing-context.md` is missing, run the reusable-context setup described above before drafting. The first interaction should contain both:
 
@@ -164,6 +164,7 @@ Add 3–8 internal links when real opportunities exist:
 
 - select link targets from the article's topical cluster first; use cross-cluster links only when the relationship is genuinely useful
 - link to the most relevant confirmed money page when it genuinely advances the reader's journey
+- use the money-page keyword map as a relevance cue for target selection and descriptive anchor ideas, not as a reason to force an exact-match anchor
 - reinforce the article's cluster with useful hub, supporting-article, tool, product, category, docs, or landing-page links
 - prefer confirmed money pages over equally relevant lower-value destinations, but never force an unrelated commercial link
 - write descriptive anchors that fit the sentence

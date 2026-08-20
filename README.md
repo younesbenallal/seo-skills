@@ -26,7 +26,7 @@ Read [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md) for the 
 
 The repo follows one shared setup contract:
 
-- skills inspect project context and callable tools before making availability claims
+- skills read the saved project tooling inventory before repeating tool discovery, then verify specific tools when a task needs live access or the inventory is stale
 - connected services are searched for the property matching the current project's canonical domain before an export is requested
 - important missing inputs are asked in one compact checkpoint; the user may skip and receive an assumption-limited result when safe
 - if setup is missing, skills stop and give exact instructions
@@ -79,25 +79,28 @@ agent-browser screenshot --full full.png
 - `subkeyword-injector`: auth mode `mcp`, requires GSC MCP, Browser optional
 - `internal-linking`: auth mode `none`, optional GSC MCP/export and Browser
 - `linking-opportunities`: auth mode `mcp`, requires SERP API MCP, Browser optional
+- `guest-post-outreach`: auth mode `mcp` or `none`; AI-first discovery needs live search, research needs Browser access, and submission needs an email or interactive browser tool
 - `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
 - `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
 - `competitor-intelligence`: auth mode `none` for sitemap analysis; SERP/SEO-provider MCPs or manual exports are optional
 - `seo-audit-report`: auth mode `mcp` or `manual-file`, using connected GSC data or a CSV/JSON export
 - `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
+- `posthog-seo-geo-tracking`: auth mode `mcp` or `manual-file`, using a connected PostHog project or the implementation/dashboard prompts
 
 ### MCP types to install (what they’re for)
 
-- **Browser MCP** or **agent-browser CLI** (recommended: agent-browser): read content, navigate, copy text, capture screenshots.
-- **SERP API MCP**: fetch live Google SERPs (don’t rely on Google via browser automation).
+- **Browser MCP** or **agent-browser CLI** (recommended: agent-browser): read content, navigate, copy text, capture screenshots, and complete approved guest-post forms.
+- **SERP API MCP**: fetch structured live Google SERPs; preferred for batch discovery and required when a skill says so.
+- **Email MCP/connector (optional)**: send guest-post pitches after the user approves the final recipient and message.
 - **Google Search Console MCP**: pull query/page metrics to drive content updates.
-- **Ahrefs/Semrush/DataForSEO MCP (optional)**: keyword, page, traffic, and backlink data for `programmatic-seo` and `competitor-intelligence`.
+- **Ahrefs/Semrush/DataForSEO MCP (optional)**: keyword, page, traffic, authority, and backlink data for `programmatic-seo`, `competitor-intelligence`, and optional guest-post qualification.
 - **Bright Data API key** or **DataForSEO login/password**: local env vars for `geo-audit-report`.
 
 ### Option B — manual symlink
 
 ```bash
 mkdir -p ~/.agents/skills
-for d in seo-context article-writing internal-linking linking-opportunities seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report; do
+for d in seo-context article-writing internal-linking linking-opportunities guest-post-outreach seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report posthog-seo-geo-tracking; do
   ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
 done
 ```
@@ -112,14 +115,16 @@ If using `add-skill`, skip manual syncing: it installs skills into the right pla
 - `article-writing`: research and write articles using reusable preferences from `.agents/article-writing-context.md`; on first use, inspect the site and propose those preferences for confirmation.
 - `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters with contextual links.
 - `linking-opportunities`: find link opportunities on a target site using SERPs.
+- `guest-post-outreach`: find and qualify guest-post sites, develop evidence-backed article ideas, draft tailored pitches, and submit approved applications.
 - `seo-roast`: SEO-focused roast of a landing page/article; optionally generates a screenshot-heavy HTML report.
 - `subkeyword-injector`: pull page-level queries from GSC and propose/perform content updates to capture more long-tail.
 - `seo-audit-report`: scaffold a small interactive audit report web app (Vite + in-browser SQLite).
 - `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
 - `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
 - `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
-- `competitor-intelligence`: discover direct and audience competitors, reverse-engineer sitemap/content patterns, run SEO gap analysis, and monitor changes.
+- `competitor-intelligence`: discover SEO competitors separately from direct competitors, reverse-engineer sitemap/content patterns, run SEO gap analysis, and monitor changes.
 - `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data or DataForSEO; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
+- `posthog-seo-geo-tracking`: implement first-touch SEO/LLM-referral tracking through signup, subscription, and revenue, then create or hand off a PostHog dashboard.
 
 ## Included helper scripts
 
@@ -143,7 +148,8 @@ Example flow:
 5. `subkeyword-injector` for refreshes
 6. `internal-linking` for on-site authority flow and topical clusters
 7. `linking-opportunities` for external link prospecting
-8. `seo-roast` or `geo-audit-report` for audits and diagnostics
+8. `guest-post-outreach` for guest-contributor prospecting and approved applications
+9. `seo-roast` or `geo-audit-report` for audits and diagnostics
 
 ## Skill creation process (reference)
 
