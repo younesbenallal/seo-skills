@@ -148,7 +148,7 @@ Share the file path for the CSV or JSON export and I will continue with that inp
 
 Used by:
 
-- `guest-post-outreach` for guideline research, article review, and approved form submission
+- `backlink-outreach` for guideline research, article review, niche-edit page review, and approved form submission
 
 Available paths:
 
@@ -190,7 +190,7 @@ Used by:
 
 - `linking-opportunities`
 - `search-intent-coverage`
-- optionally `guest-post-outreach` for AI-first prospect discovery
+- optionally `backlink-outreach` for AI-first guest-post prospect discovery
 - optionally `seo-roast`
 - optionally `programmatic-seo`
 - optionally `competitor-intelligence` for competitor discovery
@@ -207,13 +207,13 @@ Agent behavior:
 - if it is unavailable, use a Browser, Chrome, Playwright, or computer-use tool to inspect the results when the skill allows it
 - if neither path is available, use the skill's documented page or export fallback and label the limitation
 
-`guest-post-outreach` may instead use another callable web-search tool or an interactive browser under its documented discovery path. It must report the actual source and cannot describe another engine's results as Google results.
+`backlink-outreach` may instead use another callable web-search tool or an interactive browser under its documented discovery path. It must report the actual source and cannot describe another engine's results as Google results.
 
-### Guest-post submission tools
+### Backlink outreach submission tools
 
 Used by:
 
-- `guest-post-outreach`
+- `backlink-outreach`
 
 Supported paths:
 
@@ -257,7 +257,7 @@ Used optionally by:
 
 - `competitor-intelligence`
 - `programmatic-seo`
-- `guest-post-outreach` for optional prospect qualification
+- `backlink-outreach` for optional prospect qualification
 
 Supported sources include Ahrefs, Semrush, DataForSEO, or an equivalent provider.
 

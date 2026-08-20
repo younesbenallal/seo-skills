@@ -1,6 +1,6 @@
-# Approved outreach and submission
+# Approved backlink outreach and submission
 
-Read this reference only when the user wants the agent to contact a publication or submit an application.
+Read this reference only when the user wants the agent to contact a publication or page owner, or submit an application.
 
 ## Authorization gate
 
@@ -12,7 +12,7 @@ If the site changes a material term during submission, such as a fee, rights tra
 
 ## Choose one published route
 
-Follow the route required by the guidelines. Avoid contacting the same publication by form and email unless it asks for both.
+Follow the route provided by the site or platform. Avoid contacting the same recipient by form and email unless it asks for both.
 
 When email is published for submissions:
 
@@ -41,6 +41,6 @@ After submission, capture one of:
 - the form's confirmation page or confirmation identifier;
 - a screenshot showing the successful submission state.
 
-Record the timestamp, destination, method, topic pitched, and evidence. If the UI gives no confirmation, report `submission uncertain` and preserve the observed state. Do not retry automatically because a duplicate pitch can harm the relationship.
+Update the website's section in the campaign Markdown after submission. Add the send date and set the status to `contacted` only when the email connector or form gives a sent/submission result. If the UI gives no confirmation, write `Status: submission uncertain`, describe the observed state in the notes, and stop. Do not retry automatically because a duplicate pitch can harm the relationship. On resume, an uncertain submission requires an explicit user decision before any retry.
 
 Any follow-up message is a new external action. Draft it when requested and obtain approval before sending.

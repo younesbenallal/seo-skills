@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backlink Outreach"
+  short_description: "Find, pitch, and apply for editorial links"
+  default_prompt: "Use $backlink-outreach to find guest-post or niche-edit opportunities, prepare tailored outreach, and help me submit approved requests."

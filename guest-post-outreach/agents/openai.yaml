@@ -1,4 +1,0 @@
-interface:
-  display_name: "Guest Post Outreach"
-  short_description: "Find, pitch, and apply for guest posts"
-  default_prompt: "Use $guest-post-outreach to find suitable guest-post sites, prepare tailored pitches, and help me submit approved applications."

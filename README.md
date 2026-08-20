@@ -48,7 +48,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 - `article-writing`: research and write articles using the site's content, search results, and confirmed editorial preferences.
 - `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters.
 - `linking-opportunities`: find contextual backlink opportunities on a target site using SERP and page evidence.
-- `guest-post-outreach`: find and qualify guest-post sites, develop article ideas, draft tailored pitches, and submit approved applications.
+- `backlink-outreach`: find and qualify guest-post or niche-edit opportunities, match them to existing content, draft tailored outreach, maintain a flexible Markdown campaign log, and submit approved requests.
 - `seo-roast`: review a landing page or article for technical SEO, on-page quality, and search intent.
 - `subkeyword-injector`: use Search Console queries to propose or apply content updates for long-tail coverage.
 - `seo-audit-report`: build a small interactive audit report from Search Console data.

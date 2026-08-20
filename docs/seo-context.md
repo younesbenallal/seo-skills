@@ -47,7 +47,7 @@ These skills now explicitly check `.seo-context.md` first:
 - `subkeyword-injector`
 - `seo-roast`
 - `linking-opportunities`
-- `guest-post-outreach`
+- `backlink-outreach`
 - `illustration-ideas`
 - `seo-audit-report`
 - `geo-audit-report`
