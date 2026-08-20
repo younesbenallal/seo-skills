@@ -1,6 +1,6 @@
 ---
 name: backlink-outreach
-description: Find and qualify guest-post or niche-edit opportunities, match them to the user's content, draft tailored outreach, maintain a flexible campaign log, and submit approved requests. Use when the user wants to contact a publisher or page owner for an editorial backlink. Use linking-opportunities for page-only opportunity mapping without outreach.
+description: Find and qualify guest-post, niche-edit, or link-exchange opportunities, match them to the user's content, draft tailored outreach, maintain a flexible campaign log, and submit approved requests. Use when the user wants to contact a publisher or page owner for an editorial backlink. Use linking-opportunities for page-only opportunity mapping without outreach.
 ---
 
 # Backlink outreach
@@ -11,6 +11,7 @@ Build a small, qualified editorial-link pipeline from the user's real content. R
 
 - **Guest post:** find or review a publication, understand its guidelines and archive, propose an article, and apply to contribute.
 - **Niche edit:** start from a page URL supplied by the user, inspect the page and its contact route, choose the user's most relevant existing content, and ask for a useful contextual link. Read [references/niche-edits.md](references/niche-edits.md) for this mode.
+- **Link exchange:** start from a target website supplied by the user, inventory its pages, match existing target and user pages, and prepare a reciprocal-link proposal. Read [references/link-exchange.md](references/link-exchange.md) for this mode.
 
 Keep the mode explicit in the campaign log. Do not turn a niche-edit request into guest-post prospecting unless the user asks for new prospects.
 
@@ -20,10 +21,11 @@ Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/crede
 
 Resolve these task-specific inputs before research:
 
-- outreach type: guest post or niche edit;
-- prospect source: **human-first** with prospect domains or URLs, or **AI-first** guest-post discovery; niche edits start from the user's page URL unless they ask for discovery;
+- outreach type: guest post, niche edit, or link exchange;
+- prospect source: **human-first** with prospect domains or URLs, or **AI-first** guest-post discovery; niche edits start from the user's page URL, and link exchanges start from the user's target website unless they ask for discovery;
 - user's site and blog, unless strong project evidence identifies them;
 - for a niche edit, the target page URL supplied by the user;
+- for a link exchange, the target website supplied by the user;
 - target language and country;
 - intended outcome: backlink, authority, referral traffic, or a mix;
 - author identity and truthful credentials for the pitch;
@@ -53,7 +55,7 @@ After discovery, qualification, contact, response, price, content, or publicatio
 
 ## Build the source-topic map
 
-For AI-first guest-post discovery, and for any niche-edit work where the best target page is unclear:
+For AI-first guest-post discovery, and for niche-edit or link-exchange work where the best user page is unclear:
 
 1. Locate the user's blog index or sitemap and collect its article URLs.
 2. Group URL slugs into recurring themes. Slugs are keyword hints, not proof of page content.
@@ -67,12 +69,13 @@ Completion criterion: every selected topic names the supporting URLs and separat
 - **Human-first:** normalize and deduplicate the user's domains or guideline URLs, then continue to qualification.
 - **AI-first:** read [references/discovery.md](references/discovery.md), run the discovery queries for the verified focus topics, and build a qualified shortlist.
 - **Niche edit:** use the user-supplied page as the prospect. Inspect the page and its site contact route, then read [references/niche-edits.md](references/niche-edits.md). Do not search for "write for us" pages for this mode.
+- **Link exchange:** use the user-supplied website as the prospect. Inspect its sitemap, blog, and relevant pages, then read [references/link-exchange.md](references/link-exchange.md). Do not treat a domain-level metric or a competitor backlink alone as a page-level fit.
 
 One good prospect is enough to continue. Do not wait for an arbitrary list size.
 
 ## Qualify each site
 
-For a niche edit, skip the guest-post qualification checklist and use the page-fit checks in [references/niche-edits.md](references/niche-edits.md).
+For a niche edit, skip the guest-post qualification checklist and use the page-fit checks in [references/niche-edits.md](references/niche-edits.md). For a link exchange, use the site and page-fit checks in [references/link-exchange.md](references/link-exchange.md). Continue with the rest of this section only for guest posts.
 
 Find the current guest-author guidelines from search results, site navigation, or an internal site search. Confirm that the page actually accepts relevant contributions. Record its URL and access date.
 
@@ -91,9 +94,13 @@ Label a prospect `qualified`, `uncertain`, or `reject`, with observed evidence. 
 
 Completion criterion: each qualified prospect has a live guidelines page, a recorded submission route, an evidence-backed audience/topic fit, and no unresolved rule that would invalidate the pitch.
 
+## Develop link-exchange options
+
+Use this section for link exchanges. Read [references/link-exchange.md](references/link-exchange.md), inventory the target site and the user's content, and propose the strongest target-page to user-page pairings before drafting the request. Present those options first. At the end, ask whether the user also wants a reciprocal placement on the user's site. Do not assume the reverse direction is approved or wanted.
+
 ## Develop one to three article ideas
 
-Use this section for guest posts. For niche edits, read [references/niche-edits.md](references/niche-edits.md) and recommend the best existing page and link placement instead.
+Use this section for guest posts. For niche edits, read [references/niche-edits.md](references/niche-edits.md) and recommend the best existing page and link placement instead. For link exchanges, use the dedicated section above. Continue with the following steps only for guest posts.
 
 For each qualified prospect:
 
@@ -110,31 +117,31 @@ Completion criterion: each idea contains every requested field, cites its verifi
 
 ## Draft the outreach
 
-For guest posts, follow the site's requested format exactly. For niche edits, follow [references/niche-edits.md](references/niche-edits.md). In both cases, draft a concise subject line and message that:
+For guest posts, follow the site's requested format exactly. For niche edits, follow [references/niche-edits.md](references/niche-edits.md). For link exchanges, follow [references/link-exchange.md](references/link-exchange.md). In all cases, draft a concise subject line and message that:
 
 - identifies the concrete fit with the publication or existing page;
-- offers the strongest compliant article ideas or link recommendation;
+- offers the strongest compliant article ideas, link recommendation, or reciprocal-link pair;
 - cites only verified experience, credentials, examples, and data;
 - answers the editor's requested questions;
 - has one clear next step.
 
 Match the recipient's language and level of formality. Skip generic praise, biography-first openings, SEO jargon, and promises about traffic or rankings. If the publication asks for a draft or outline, prepare it only to the requested depth.
 
-Present the guideline or page-fit summary, proposed ideas or link recommendation, submission route, and exact message to the user for review. Call out any claim, bio detail, target URL, attachment, fee, or policy choice that needs confirmation.
+Present the guideline or page-fit summary, proposed ideas, link recommendation, or reciprocal-link pair, along with the submission route and exact message, for user review. Call out any claim, bio detail, target URL, attachment, fee, or policy choice that needs confirmation.
 
 Completion criterion: the application or link request follows the site's requested route, and every factual claim, identity detail, link, attachment, and fee is verified or visibly flagged for confirmation.
 
 ## Submit only after approval
 
-When the user asks to apply or contact the site, read [references/submission.md](references/submission.md). This applies to guest-post applications and niche-edit requests. A request to apply or automate authorizes preparation, not sending. Obtain explicit approval for the final recipient, message, attachments, and any fee before the external action. Approval for one prospect does not authorize the rest of a batch.
+When the user asks to apply or contact the site, read [references/submission.md](references/submission.md). This applies to guest-post applications, niche-edit requests, and link-exchange proposals. A request to apply or automate authorizes preparation, not sending. Obtain explicit approval for the final recipient, message, attachments, and any fee before the external action. Approval for one prospect does not authorize the rest of a batch.
 
 ## Return a traceable result
 
 For each prospect report:
 
-- domain and guidelines URL;
+- domain and relevant page or guidelines URL;
 - qualification and supporting evidence;
-- article ideas and source assets, or the recommended existing target page and link placement;
+- article ideas and source assets, the recommended existing target page and link placement, or the proposed reciprocal-link pair;
 - contact method and destination;
 - draft or approved message;
 - status and any relevant notes from the tracker;

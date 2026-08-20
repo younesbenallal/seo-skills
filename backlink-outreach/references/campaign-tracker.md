@@ -48,6 +48,21 @@ A niche-edit section can be just as loose:
 - Notes: Contact route is the editor's form. Waiting for approval.
 ```
 
+A link-exchange section can record both sides without becoming an event log:
+
+```md
+## Campaign: Partner link exchanges
+
+### example.net
+
+- Status: drafted
+- Target page: https://example.net/guide
+- User page: https://my-site.example/research
+- Anchor options: onboarding benchmark, practical onboarding data
+- Reverse direction: not requested
+- Notes: Contact route is email. Awaiting approval.
+```
+
 The labels are suggestions, not a schema. Keep only the fields that matter for the website. You can add free-form notes, links, checklists, or a short paragraph when that is clearer than more labels.
 
 ## Minimum rules
@@ -70,7 +85,8 @@ Update a website section when:
 2. a pitch is drafted or sent;
 3. an editor replies;
 4. the editor shares a price or changes the terms;
-5. the article moves from idea to draft, submission, revision, or publication.
+5. the article moves from idea to draft, submission, revision, or publication;
+6. a link-exchange pairing, reverse-direction suggestion, or reciprocal term changes.
 
 A draft does not count as contact. Add the contact date only after the email connector or form gives a sent/submission result. If no confirmation exists, write `Status: submission uncertain`, describe what happened, and pause before retrying. A retry needs an explicit user decision.
 

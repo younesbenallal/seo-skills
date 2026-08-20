@@ -148,7 +148,7 @@ Share the file path for the CSV or JSON export and I will continue with that inp
 
 Used by:
 
-- `backlink-outreach` for guideline research, article review, niche-edit page review, and approved form submission
+- `backlink-outreach` for guideline research, article review, niche-edit and link-exchange page review, and approved form submission
 
 Available paths:
 
@@ -190,7 +190,7 @@ Used by:
 
 - `linking-opportunities`
 - `search-intent-coverage`
-- optionally `backlink-outreach` for AI-first guest-post prospect discovery
+- optionally `backlink-outreach` for AI-first guest-post prospect discovery and link-exchange page discovery
 - optionally `seo-roast`
 - optionally `programmatic-seo`
 - optionally `competitor-intelligence` for competitor discovery
@@ -257,7 +257,7 @@ Used optionally by:
 
 - `competitor-intelligence`
 - `programmatic-seo`
-- `backlink-outreach` for optional prospect qualification
+- `backlink-outreach` for optional prospect qualification and link-exchange prioritization
 
 Supported sources include Ahrefs, Semrush, DataForSEO, or an equivalent provider.
 
