@@ -15,17 +15,17 @@ Run the shared [task preflight and tooling contract](../docs/credentials-and-too
 
 ## Tooling and access
 
-- Auth mode: `none`
+- Auth mode: `mcp`
 - Baseline inputs: local site content, a sitemap, a connected CMS, or public pages
-- Optional: Google Search Console MCP or a local GSC CSV/JSON export
+- Requires: Google Search Console MCP
 - Optional: Browser/Chrome/Playwright MCP or `agent-browser`
-- Missing optional access must not block the baseline analysis
+- If the GSC MCP is missing, stop and ask the user to connect it before continuing.
 
 Never ask the user to paste credentials.
 
-Only treat GSC as unavailable after inspecting callable tools and attempting to match an accessible property to the current project's canonical domain. When no live match is available, continue without it and briefly offer
+Inspect callable tools and attempt to match an accessible property to the current project's canonical domain. If no live match is available, stop and ask the user to connect
 [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP)
-or a manual GSC export only when performance data would materially improve the result.
+or another GSC MCP.
 
 ## Keep the run efficient
 
@@ -96,7 +96,7 @@ Do not assume every commercial page deserves more links. Validate each proposed 
 
 If a target is weak, recommend fixing or consolidating it before sending more internal authority to it.
 
-### 3. Add optional GSC evidence
+### 3. Add GSC evidence
 
 When GSC is connected or an export is supplied, use a consistent recent period, defaulting to the last 90 complete days unless the user specifies otherwise.
 

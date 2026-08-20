@@ -25,10 +25,10 @@ If the user doesn’t know the keywords yet, extract them from:
 
 ## Tooling & credentials
 
-- Auth mode: `mcp`
-- Requires: SERP API MCP
-- Fallback: Browser MCP or `agent-browser` for validating candidate pages, but no fallback for live SERP collection
-- If missing: stop, ask the user to install or configure a SERP API MCP, and continue only after they confirm it is ready
+- Auth mode: `none` or `mcp`, depending on the SERP source
+- Requires: live SERP access through a structured provider API, SERP MCP, or browser tool
+- Fallback: use Browser, Chrome, Playwright, or computer-use access to inspect live SERPs when structured SERP data is unavailable
+- If no live SERP path is available: stop and ask the user to connect one or provide a SERP export
 
 ## Browser tool selection and evidence capture
 
@@ -84,4 +84,4 @@ Include the observed page title and a 2–4 sentence evidence snippet for every 
 
 ## Notes
 
-This repo intentionally does not ship an env-var SERP fallback. Use a SERP API MCP.
+Use whichever live SERP source is available and record it in the output. Structured providers such as DataForSEO, Serper.dev, SerpApi, and Bright Data are useful for repeatable data, while browser inspection is a valid fallback for smaller runs.

@@ -9,19 +9,19 @@ Use this skill when the user wants an interactive, client-side report for inspec
 
 ## Context and preflight
 
-Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md) before discovery or implementation. Reuse `.seo-context.md` when it exists. For live GSC, resolve the project's canonical property from accessible URL-prefix and `sc-domain:` variants; use a manual export when live access is unavailable or the user prefers it. Record unresolved assumptions rather than inventing business priorities or edit permission.
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md) before discovery or implementation. Reuse `.seo-context.md` when it exists. Resolve the project's canonical GSC property from accessible URL-prefix and `sc-domain:` variants. Record unresolved assumptions rather than inventing business priorities or edit permission.
 
 ## Required inputs
 - Project directory name.
-- Data source: live connected GSC data, an MCP export, or a manual JSON/CSV file.
+- Data source: live connected GSC data or an export created from the connected MCP.
 - Persistence target: a serialized `sql.js` database persisted in the browser's IndexedDB.
 
 ## Tooling & credentials
 
-- Auth mode: `mcp` or `manual-file`
-- Requires: connected GSC access or a manual CSV/JSON file
-- Input path: live GSC data materialized to JSON/CSV, an MCP export, or a manual file
-- Fallback: use a manual file when live access is unavailable
+- Auth mode: `mcp`
+- Requires: connected GSC access through the required MCP
+- Input path: live GSC data or an MCP export materialized to JSON/CSV
+- Fallback: none
 
 ## Workflow
 

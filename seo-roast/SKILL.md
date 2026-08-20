@@ -23,7 +23,7 @@ Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/crede
 - Auth mode: `none`
 - Requires: no external credential
 - Fallback: if Browser access is unavailable, ask the user for the main copy and key page sections
-- Optional tools: Browser MCP, `agent-browser`, SERP API MCP
+- Optional tools: Browser MCP, `agent-browser`, or structured SERP access
 ## Tool selection
 
 **Browser selection workflow**
@@ -32,7 +32,7 @@ Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/crede
 3) If browsing is unavailable: ask for the main copy and key sections such as title, H1, and meta description.
 
 **SERP**
-- Use the SERP API MCP (optional but recommended) to compare against what ranks. Do not use Google via a browser.
+- Use structured SERP data when available to compare against what ranks. If it is unavailable, inspect Google results with the available browser path and label the source clearly.
 
 ## Roast rubric (use this order)
 

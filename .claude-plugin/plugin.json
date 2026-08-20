@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "seo-skills",
+  "version": "1.0.0",
+  "description": "Reusable SEO workflows for Claude Code, including content research, technical audits, SERP analysis, Google Search Console, internal linking, competitor research, and GEO reporting.",
+  "author": {
+    "name": "Younes Benallal"
+  },
+  "homepage": "https://github.com/younesbenallal/seo-skills",
+  "repository": "https://github.com/younesbenallal/seo-skills",
+  "license": "MIT",
+  "keywords": [
+    "seo",
+    "seo-automation",
+    "content-marketing",
+    "technical-seo",
+    "google-search-console",
+    "serp",
+    "geo-seo"
+  ]
+}

@@ -23,12 +23,12 @@ Do not require the user's site when they only want a competitor profiled.
 
 - Auth mode: `none` for sitemap analysis; `mcp` or `manual-file` for SERP and SEO-provider data
 - Requires: competitor domain or sitemap for profiling
-- Optional: SERP API MCP for discovery; Ahrefs, Semrush, DataForSEO, or equivalent MCP/export for deeper analysis
+- Optional: structured SERP data from DataForSEO, Serper.dev, SerpApi, Bright Data, or an equivalent API/MCP; Ahrefs, Semrush, or equivalent MCP/export for deeper analysis
 - Fallback: user-provided domains, sitemap files, and CSV/JSON exports
 
 Do not block basic sitemap work because premium data is unavailable.
 
-For live Google competitor discovery, require a configured SERP data tool. Do not scrape Google result pages through browser automation. If no SERP tool exists, continue with known/user-provided domains or ask for a SERP export.
+For live Google competitor discovery, use a structured SERP data source when available. If none exists, inspect the results with an available browser tool for smaller runs. If no live search path exists, continue with known/user-provided domains or ask for a SERP export.
 
 ## Choose the workflow
 

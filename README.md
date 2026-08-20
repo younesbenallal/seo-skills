@@ -1,162 +1,83 @@
-# SEO Skills (Codex CLI)
+# SEO skills for AI coding agents
 
-Holly&Stick helps B2B SaaS teams go from SEO 0 → 1. We set the strategy and run content end-to-end so you start getting consistent traffic and leads. Learn more at https://holly-and-stick.com and follow along on [LinkedIn](https://linkedin.com/in/younès-benallal) or [Twitter](x.com/youarenes).
+Reusable SEO skills for Claude Code, Codex, Cursor, and other AI coding agents. The workflows cover content research, technical audits, SERP analysis, Google Search Console, internal linking, competitor research, and GEO reporting.
 
-This repo was inspired by https://github.com/coreyhaines31/marketingskills/
-
-## What are Skills?
-
-Skills are modular, declarative packages that teach any coding agent how to execute repeatable SEO workflows with the right tools, prompts, and resources. Thanks to this repo, Claude, Codex, Cursor, and every other major coding agent can share the same procedural knowledge without re-inventing the wheel.
-
-## Skills ecosystem
-
-Skills are now a shared convention across most coding agents. The easiest way to install them is `add-skill` (https://github.com/vercel-labs/add-skill), which supports Codex, Claude Code, Cursor, OpenCode, Gemini CLI, and more.
+Holly&Stick builds these skills for practical SEO work on B2B SaaS websites. Learn more at [holly-and-stick.com](https://holly-and-stick.com), or follow [Younes Benallal on LinkedIn](https://linkedin.com/in/younès-benallal) and [X](https://x.com/youarenes).
 
 ## Install
 
-### Option A — use `add-skill`
+Install the whole collection with the open Agent Skills CLI:
 
 ```bash
-npx add-skill holly-and-stick/seo-skills
+npx skills add younesbenallal/seo-skills
 ```
 
-## Before First Run
+Install one skill when you only need a specific workflow:
 
-Read [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md) for the shared context, connected-tool, property-matching, and credential contract.
+```bash
+npx skills add younesbenallal/seo-skills --skill seo-context
+```
 
-The repo follows one shared setup contract:
+The same skills can be used by Claude Code, Codex, Cursor, and other supported agents.
 
-- skills read the saved project tooling inventory before repeating tool discovery, then verify specific tools when a task needs live access or the inventory is stale
-- connected services are searched for the property matching the current project's canonical domain before an export is requested
-- important missing inputs are asked in one compact checkpoint; the user may skip and receive an assumption-limited result when safe
-- if setup is missing, skills stop and give exact instructions
-- secrets should stay on the user's machine and never be pasted in chat
-- once the user confirms setup, the skill verifies presence only and continues
+## Setup
 
-### Typical user flow
+Start with [docs/credentials-and-tooling.md](docs/credentials-and-tooling.md). It explains how the skills discover project context, connected properties, credentials, and fallbacks.
 
-1. Install the skill repo with `add-skill`.
-2. Check the skill's `Tooling & credentials` section.
-3. Follow the matching setup instructions in `docs/credentials-and-tooling.md`.
-4. Return to the agent and confirm when the tool or credential is ready.
-
-## Tooling (MCPs and credentials)
-
-Depending on the skill you want to use, your agent may need an MCP server, a local environment variable, or a manual export file.
+Google Search Console MCP is the required shared integration. Connect it in your agent before using the collection so skills can resolve the right property and use query and page performance data. Individual workflows may also need browser access, structured SERP data, email access, or provider credentials.
 
 ### Browser access
 
-For any skill that needs to read a page or take screenshots:
+Use any available Browser, Chrome, Playwright, or computer-use tool to read pages, navigate sites, and capture screenshots. If no browser connector is available, `agent-browser` can be used as a CLI fallback when it is already installed.
 
-1. If a Browser/Chrome/Playwright MCP is already installed in your agent, AI will use it.
-2. Otherwise, it will use the `agent-browser` CLI. Test it first:
+### SERP data
 
-```bash
-agent-browser --help
-```
+When a workflow needs live SERPs, use structured SERP data when possible. This can come from a provider API or an MCP integration. Examples include [DataForSEO](https://dataforseo.com/), [Serper.dev](https://serper.dev/), [SerpApi](https://serpapi.com/), and [Bright Data](https://brightdata.com/). There are many valid providers, so the skills do not require one specific product or call both an API and an MCP.
 
-If it’s not installed:
+If structured SERP access is unavailable, use a browser to inspect the results directly when the workflow allows it. Record the source and market, and do not describe browser observations as an API dataset.
 
-```bash
-npm install -g agent-browser
-```
+### Other access
 
-Core workflow (open → snapshot → interact/extract → screenshot):
-
-```bash
-agent-browser open https://example.com
-agent-browser snapshot -c -s "main" -d 5
-agent-browser snapshot -i
-agent-browser screenshot --full full.png
-```
-
-### Skills → access requirements
-
-- `seo-context`: auth mode `none`
-- `article-writing`: auth mode `env`, requires `DATA_FOR_SEO_LOGIN` and `DATA_FOR_SEO_PASSWORD`
-- `seo-roast`: auth mode `none`, optional Browser and optional SERP API MCP
-- `illustration-ideas`: auth mode `none`, Browser preferred
-- `subkeyword-injector`: auth mode `mcp`, requires GSC MCP, Browser optional
-- `internal-linking`: auth mode `none`, optional GSC MCP/export and Browser
-- `linking-opportunities`: auth mode `mcp`, requires SERP API MCP, Browser optional
-- `guest-post-outreach`: auth mode `mcp` or `none`; AI-first discovery needs live search, research needs Browser access, and submission needs an email or interactive browser tool
-- `search-intent-coverage`: auth mode `mcp`, requires SERP API MCP, Browser optional
-- `programmatic-seo`: auth mode `none`, Browser recommended, SERP API MCP optional, Ahrefs/Semrush optional
-- `competitor-intelligence`: auth mode `none` for sitemap analysis; SERP/SEO-provider MCPs or manual exports are optional
-- `seo-audit-report`: auth mode `mcp` or `manual-file`, using connected GSC data or a CSV/JSON export
-- `geo-audit-report`: auth mode `env`, requires `BRIGHTDATA_API_KEY` or `DATA_FOR_SEO_LOGIN` + `DATA_FOR_SEO_PASSWORD`
-- `posthog-seo-geo-tracking`: auth mode `mcp` or `manual-file`, using a connected PostHog project or the implementation/dashboard prompts
-
-### MCP types to install (what they’re for)
-
-- **Browser MCP** or **agent-browser CLI** (recommended: agent-browser): read content, navigate, copy text, capture screenshots, and complete approved guest-post forms.
-- **SERP API MCP**: fetch structured live Google SERPs; preferred for batch discovery and required when a skill says so.
-- **Email MCP/connector (optional)**: send guest-post pitches after the user approves the final recipient and message.
-- **Google Search Console MCP**: pull query/page metrics to drive content updates.
-- **Ahrefs/Semrush/DataForSEO MCP (optional)**: keyword, page, traffic, authority, and backlink data for `programmatic-seo`, `competitor-intelligence`, and optional guest-post qualification.
-- **Bright Data API key** or **DataForSEO login/password**: local env vars for `geo-audit-report`.
-
-### Option B — manual symlink
-
-```bash
-mkdir -p ~/.agents/skills
-for d in seo-context article-writing internal-linking linking-opportunities guest-post-outreach seo-roast subkeyword-injector seo-audit-report illustration-ideas search-intent-coverage programmatic-seo competitor-intelligence geo-audit-report posthog-seo-geo-tracking; do
-  ln -s "$PWD/$d" "$HOME/.agents/skills/$d"
-done
-```
-
-If using the repo inside another project (e.g., copied under `seo-skills/`), `cd seo-skills` before running the commands.
-
-If using `add-skill`, skip manual syncing: it installs skills into the right place for your agent(s).
+- Guest-post outreach may need an email connector or an interactive browser tool for approved submissions.
+- Ahrefs, Semrush, DataForSEO, or another SEO data provider can add keyword, traffic, authority, or backlink data where a workflow supports it.
+- GEO audits need either a Bright Data API key or DataForSEO credentials.
 
 ## Skills
 
-- `seo-context`: create a reusable `.seo-context.md` file so SEO skills stop re-asking for the same basics, including which money pages generate the most business value.
-- `article-writing`: research and write articles using reusable preferences from `.agents/article-writing-context.md`; on first use, inspect the site and propose those preferences for confirmation.
-- `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters with contextual links.
-- `linking-opportunities`: find link opportunities on a target site using SERPs.
-- `guest-post-outreach`: find and qualify guest-post sites, develop evidence-backed article ideas, draft tailored pitches, and submit approved applications.
-- `seo-roast`: SEO-focused roast of a landing page/article; optionally generates a screenshot-heavy HTML report.
-- `subkeyword-injector`: pull page-level queries from GSC and propose/perform content updates to capture more long-tail.
-- `seo-audit-report`: scaffold a small interactive audit report web app (Vite + in-browser SQLite).
-- `illustration-ideas`: generate illustration/chart ideas from a URL’s content (with placement + layout suggestions).
-- `search-intent-coverage`: analyze the SERP and produce a MECE outline that matches search intent.
-- `programmatic-seo`: a shorter, execution-first pSEO workflow with tooling hooks.
-- `competitor-intelligence`: discover SEO competitors separately from direct competitors, reverse-engineer sitemap/content patterns, run SEO gap analysis, and monitor changes.
-- `geo-audit-report`: track LLM visibility (mentions/citations/fan-out) using Bright Data or DataForSEO; outputs a dashboard-ready audit JSON, a static HTML report, and a Next.js static dashboard template.
-- `posthog-seo-geo-tracking`: implement first-touch SEO/LLM-referral tracking through signup, subscription, and revenue, then create or hand off a PostHog dashboard.
+- `seo-context`: create reusable project context so SEO workflows stop asking for the same site, market, competitor, and tooling basics.
+- `article-writing`: research and write articles using the site's content, search results, and confirmed editorial preferences.
+- `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters.
+- `linking-opportunities`: find contextual backlink opportunities on a target site using SERP and page evidence.
+- `guest-post-outreach`: find and qualify guest-post sites, develop article ideas, draft tailored pitches, and submit approved applications.
+- `seo-roast`: review a landing page or article for technical SEO, on-page quality, and search intent.
+- `subkeyword-injector`: use Search Console queries to propose or apply content updates for long-tail coverage.
+- `seo-audit-report`: build a small interactive audit report from Search Console data.
+- `illustration-ideas`: generate illustration and chart ideas from a page's content, with placement and layout suggestions.
+- `search-intent-coverage`: analyze search results and produce a non-overlapping content outline.
+- `programmatic-seo`: run a focused workflow for SEO pages at scale.
+- `competitor-intelligence`: discover SEO competitors, map sitemap and content patterns, and identify gaps.
+- `geo-audit-report`: measure LLM visibility, mentions, citations, and search fan-out with a dashboard-ready report.
+- `posthog-seo-geo-tracking`: implement first-touch SEO and LLM-referral tracking through signup, subscription, and revenue.
 
-## Included helper scripts
+## Suggested workflow
 
-- Roast HTML rendering (optional): `seo-roast/scripts/render-report.mjs`
-- GEO collection: `geo-audit-report/scripts/brightdata-geo.py`
-- GEO collection fallback: `geo-audit-report/scripts/dataforseo-geo.py`
-- GEO static HTML export: `geo-audit-report/scripts/render-report.mjs`
-- Competitor sitemap inventory: `competitor-intelligence/scripts/sitemap_inventory.py`
-- Competitor sitemap snapshot comparison: `competitor-intelligence/scripts/compare_inventories.py`
+1. Install the collection with `npx skills add`.
+2. Connect Google Search Console MCP and read the shared tooling contract.
+3. Run `seo-context` once to save the site's goals, market, competitors, money pages, and available tools.
+4. Use the task-specific skill for the work at hand.
 
-## Suggested usage flow
+For a common content workflow, start with `competitor-intelligence`, use `search-intent-coverage` for the brief, draft with `article-writing`, then use `subkeyword-injector` and `internal-linking` for refreshes and distribution.
 
-For most projects, start with `seo-context` once, then use the task-specific skills. On the first article-writing task, the skill will inspect the site's existing content and invite the user to create `.agents/article-writing-context.md` with confirmed writing, source, media, formatting, and approval preferences.
+## Claude Code plugin
 
-Example flow:
+This repository also includes Claude Code plugin metadata. Add the marketplace with:
 
-1. `seo-context` to capture the site, goals, market, competitors, and tooling
-2. `competitor-intelligence` to discover competitors and map strategic gaps
-3. `search-intent-coverage` for content briefs
-4. `article-writing` to research and draft articles, including first-run editorial context setup
-5. `subkeyword-injector` for refreshes
-6. `internal-linking` for on-site authority flow and topical clusters
-7. `linking-opportunities` for external link prospecting
-8. `guest-post-outreach` for guest-contributor prospecting and approved applications
-9. `seo-roast` or `geo-audit-report` for audits and diagnostics
+```text
+/plugin marketplace add younesbenallal/seo-skills
+```
 
-## Skill creation process (reference)
+Then install the plugin from the `seo-skills` marketplace:
 
-1. **Understand real use cases**: list concrete examples, ask clarifying questions, and document what the skill must solve before touching files.
-2. **Plan reusable resources**: decide which workflows need scripts, references, or assets, and keep the details in those files rather than bloating `SKILL.md`.
-3. **Initialize with `scripts/init_skill.py`** (when available) to scaffold `SKILL.md` + sample resource folders, then delete unused samples.
-4. **Implement commands, instructions, and resources** in imperative form; keep `SKILL.md` lean and reference the bundled assets only when they are necessary.
-5. **Package with `scripts/package_skill.py`** once validation passes, then iterate after real usage feedback.
-
-Use tools like `exa`/`mcp` searches when you need up-to-date scaffolding commands or boilerplate guidance.
+```text
+/plugin install seo-skills@seo-skills
+```

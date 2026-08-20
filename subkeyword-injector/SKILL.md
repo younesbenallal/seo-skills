@@ -23,7 +23,7 @@ Run the shared [task preflight and tooling contract](../docs/credentials-and-too
 
 - Auth mode: `mcp`
 - Requires: Google Search Console MCP
-- Fallback: manual CSV export from Search Console, if the user does not have MCP access
+- Fallback: none
 - Optional tools: Browser MCP or `agent-browser` for reading the current page
 - If missing: stop, ask the user to install or configure a GSC MCP or provide an export, and continue only after they confirm the path forward
 
@@ -31,7 +31,7 @@ Run the shared [task preflight and tooling contract](../docs/credentials-and-too
 
 Use the browser fallback in [references/page-access.md](references/page-access.md) when the page is not available locally or through a connected tool. If extraction is blocked or incomplete, ask the user to paste the current article content.
 
-Prefer the connected GSC path described by the shared contract. Use a manual export only when no matching live property is available or the user prefers the fallback.
+Use the connected GSC path described by the shared contract. Do not substitute a manual export for the required MCP.
 
 ## Workflow
 

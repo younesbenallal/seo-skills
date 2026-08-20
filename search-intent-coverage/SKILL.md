@@ -21,12 +21,12 @@ Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/crede
 
 ## Tooling & credentials
 
-- Auth mode: `mcp` for live SERP analysis; `none` for user-provided competitor pages or outlines
-- Requires: SERP API MCP for live localized results
-- Fallback: analyze user-provided competitor URLs or outlines and label the result `competitor-only`, without claiming current SERP coverage
-- Browser fallback: Browser MCP or `agent-browser` for reading supplied competitor pages; pasted outlines when browsing is unavailable
+- Auth mode: `none` or `mcp`, depending on the SERP source
+- Requires: live SERP access through a structured provider API, SERP MCP, or browser tool
+- Fallback: use a browser to inspect live results, or analyze user-provided competitor URLs or outlines and label the result `competitor-only`
+- If no live SERP path is available: use the documented `competitor-only` branch without claiming current SERP coverage
 
-Live SERP analysis requires the SERP MCP. If it is unavailable, either ask the user to configure one or continue with the documented `competitor-only` branch when they provide suitable pages or outlines.
+Live SERP analysis needs a live SERP source. Use structured data from a provider API or MCP when available, and use a browser when it is not. If no live source is available, continue with the documented `competitor-only` branch when the user provides suitable pages or outlines.
 
 ## Workflow
 

@@ -17,7 +17,7 @@ Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/crede
 
 - Auth mode: `none`
 - Requires: no external credential
-- Optional tools: Browser MCP or `agent-browser`, SERP API MCP, Ahrefs/Semrush MCP
+- Optional tools: Browser MCP or `agent-browser`, structured SERP access, Ahrefs/Semrush MCP
 - Fallback: continue with repo context, manual URLs, and user-provided data if external tools are unavailable
 
 ## Core Principles
