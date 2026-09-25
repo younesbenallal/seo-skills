@@ -86,10 +86,8 @@ GEMINI_OUTPUT_FIELDS = [
     "url",
     "prompt",
     "answer_text_markdown",
-    "sources",
     "citations",
     "index",
-    "web_search_query",
 ]
 
 KNOWN_PROVIDER_FIELDS = set(

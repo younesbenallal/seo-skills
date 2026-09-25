@@ -18,6 +18,8 @@ Gemini     gd_mbz66arm2mf9cu856y
 
 Use synchronous `/datasets/v3/scrape` for 1–20 prompts. Use asynchronous `/datasets/v3/trigger` for more than 20, explicit batch runs, or `--collection-mode async`. Let the collector follow a returned `snapshot_id`, preserve the raw response, poll pending snapshots together, and write `results.partial.json` during progress.
 
+Keep `custom_output_fields` aligned with each dataset's current output schema. The Gemini dataset rejected `sources` in September 2026; the collector requests only its supported core fields and reports unavailable search traces as missing.
+
 ```bash
 python3 geo-audit-report/scripts/brightdata-geo.py \
   --check-url "https://example.com" --prompts-file prompts.txt \
