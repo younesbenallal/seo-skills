@@ -814,7 +814,21 @@ def main() -> None:
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     resume_from = str(args.resume_from).strip()
     base_out_dir = str(args.out_dir).strip()
-    out_dir = resume_from if resume_from else os.path.join(base_out_dir, date_str)
+    if resume_from:
+        out_dir = resume_from
+        os.makedirs(out_dir, exist_ok=True)
+    else:
+        os.makedirs(base_out_dir, exist_ok=True)
+        timed_name = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H%M%S")
+        attempt = 0
+        while True:
+            candidate = date_str if attempt == 0 else timed_name if attempt == 1 else f"{timed_name}-{attempt}"
+            out_dir = os.path.join(base_out_dir, candidate)
+            try:
+                os.mkdir(out_dir)
+                break
+            except FileExistsError:
+                attempt += 1
     raw_dir = os.path.join(out_dir, "raw")
     os.makedirs(raw_dir, exist_ok=True)
 
@@ -898,8 +912,8 @@ def main() -> None:
     results_path = os.path.join(out_dir, "results.json")
     print(f"Wrote results to {results_path}")
     print(
-        "Next: render the standalone HTML report with "
-        f"'node geo-audit-report/scripts/render-report.mjs --in {results_path}'"
+        "Next: publish the shared dashboard with "
+        f"'node geo-audit-report/scripts/publish-dashboard.mjs {base_out_dir}'"
     )
 
 

@@ -2,7 +2,7 @@
 
 ## What changed
 
-`geo-audit-report` now writes `geo-audit-v3`. The contract preserves each evidence layer instead of treating every provider citation candidate as an actual citation. The Next.js dashboard and standalone renderer consume the same semantics.
+`geo-audit-report` writes `geo-audit-v3`. The contract preserves each evidence layer instead of treating every provider citation candidate as an actual citation. A single Next.js template publishes one stable page per client, with all completed runs available inside it.
 
 The skill now supports two collection providers:
 - Bright Data as the primary, higher-fidelity option
@@ -15,11 +15,10 @@ The skill now supports two collection providers:
 | `geo-audit-report/scripts/brightdata-geo.py` | Collects Bright Data synchronously for up to 20 prompts with snapshot fallback, then writes v3 evidence. |
 | `geo-audit-report/scripts/normalize-brightdata-geo.py` | Rebuilds v3 results from an existing raw Bright Data export without a paid rerun. |
 | `geo-audit-report/scripts/dataforseo-geo.py` | Collects DataForSEO AI Optimization results and normalizes them into the same audit schema used by the Bright Data collector. |
-| `geo-audit-report/scripts/render-report.mjs` | Renders `results.json` into a standalone `report.html`, duplicates it into the current working directory, and prints the generated file paths. |
-| `geo-audit-report/SKILL.md` | Defines audit phases, required artifacts, static export expectations, and tracked-prompts companion-file rules. |
+| `geo-audit-report/scripts/publish-dashboard.mjs` | Builds the shared template from every completed run and updates the stable client report path. |
+| `geo-audit-report/SKILL.md` | Defines audit phases, dated evidence, publication, and presentation rules. |
 | `geo-audit-report/template/src/lib/audit-data.ts` | Normalizes v3 evidence and keeps a compatibility fallback for older results. |
 | `geo-audit-report/template/src/components/audit-dashboard.tsx` | Renders the prospect-facing funnel, prompt matrix, competitive/local views, and evidence viewer. |
-| `geo-audit-report/templates/report.html` | Base static HTML shell used by the GEO report renderer. |
 
 ## Query fan-out notes
 
@@ -78,25 +77,23 @@ The run-level `collection_diagnostics` object contains normalized/rejected count
 
 - `results.json` is the immutable run output.
 - `results.partial.json` is the in-progress checkpoint written as chatbot snapshots finish processing.
-- `tracked-prompts.json` is the long-lived history file used across multiple runs.
-- `report.html` is the companion static deliverable written beside the dated run.
-- `geo-audit-report-{date}.html` is the convenience duplicate written to the current working directory.
-- The Next.js template under `geo-audit-report/template` is the default dashboard deliverable for normal runs.
+- Optional root-level `tracked-prompts.json` holds prompt notes and status.
+- Root-level `report-analysis.json` holds one reviewed synthesis and 3–6 recommendations across all completed runs.
+- Dated `results.json` files provide the measured history.
+- `{out-dir}/report/index.html` is the sole client-facing HTML path, updated after each completed run.
 
-## Static export flow
+## Publication flow
 
 After the collector finishes:
 
-1. Read the dated `results.json`.
-2. Run `geo-audit-report/scripts/render-report.mjs --in <results.json>`.
-3. Use the emitted absolute file path for the final chat response so the user can click the generated HTML page directly.
-4. The renderer writes:
-   - `<run-dir>/report.html`
-   - `<cwd>/geo-audit-report-<run-folder>.html`
+1. Verify the dated `results.json` and raw provider data.
+2. Review old and new results together and update `report-analysis.json` through the latest run.
+3. Run `node geo-audit-report/scripts/publish-dashboard.mjs <out-dir>` from the skill repository.
+4. Inspect the emitted `{out-dir}/report/index.html`, including the cross-run summary and the run detail selector, then share that path.
 
 ## Markdown rendering
 
-The static exporter turns each `answer_text_markdown` field into HTML before writing the final page. This keeps the deliverable readable when either provider returns headings, lists, links, code fences, or paragraph breaks in Markdown form.
+The dashboard renders each `answer_text_markdown` field with Markdown support, including headings, lists, links, code fences, and paragraph breaks.
 
 ## Compatibility
 

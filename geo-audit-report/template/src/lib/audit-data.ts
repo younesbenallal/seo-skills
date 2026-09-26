@@ -81,6 +81,19 @@ type ManualRecommendation = {
   owner?: string
 }
 
+export type ReportAnalysis = {
+  through_run_at: string
+  overview: string
+  comparison_note: string
+  findings: string[]
+  recommendations: Array<{
+    title: string
+    summary: string
+    priority: string
+    evidence: string
+  }>
+}
+
 export type AuditFileRecord = {
   schema_version?: string
   provider?: string
@@ -125,7 +138,9 @@ export type TrackedPromptsRecord = {
 type SuccessfulLoad = {
   ok: true
   audit: AuditFileRecord
+  runs: AuditFileRecord[]
   trackedPrompts: TrackedPromptsRecord
+  analysis: ReportAnalysis | null
 }
 
 export type DashboardLoadResult =
@@ -242,7 +257,8 @@ function normalizeResponse(response: AuditResponse) {
         "attached_links",
         response.attached_links !== undefined ? "supported" : "missing"
       ),
-      maps: state("maps", response.map_results !== undefined ? "supported" : "missing"),
+    maps: state("maps", response.map_results !== undefined ? "supported" : "missing"),
+    fanOutQueries: state("fan_out_queries", response.fan_out_queries !== undefined ? "supported" : "missing"),
     },
     normalizationWarnings: safeArray(response.normalization?.warnings),
   }
@@ -298,9 +314,13 @@ export function buildAuditViewModel(
 
   const promptGroups = prompts.map((prompt) => {
     const matches = responses.filter((response) => response.prompt === prompt)
+    const fanOutResponses = matches.filter((response) => isAvailable(response.evidenceStatus.fanOutQueries))
     return {
       prompt,
       responses: matches,
+      fanOutQueryCount: fanOutResponses.length
+        ? fanOutResponses.reduce((count, response) => count + response.fanOutQueries.length, 0)
+        : null,
       searched: matches.some((response) =>
         isAvailable(response.evidenceStatus.webSearch)
       )
@@ -452,7 +472,6 @@ export function buildAuditViewModel(
       mapPlacements: mapResults.length,
       availability,
     },
-    recommendations: safeArray(audit.manual_recommendations),
     hasLongitudinalHistory: historyDates.size > 1,
     diagnostics: audit.collection_diagnostics,
   }
@@ -460,7 +479,9 @@ export function buildAuditViewModel(
 
 export function createDashboardLoadSuccess(
   audit: AuditFileRecord,
-  trackedPrompts: TrackedPromptsRecord
+  trackedPrompts: TrackedPromptsRecord,
+  runs: AuditFileRecord[] = [audit],
+  analysis: ReportAnalysis | null = null
 ): DashboardLoadResult {
-  return { ok: true, audit, trackedPrompts }
+  return { ok: true, audit, runs, trackedPrompts, analysis }
 }

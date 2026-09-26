@@ -1,6 +1,8 @@
-# GEO Audit Dashboard Template
+# GEO audit dashboard template
 
-Static-first Next.js dashboard for Bright Data GEO audits.
+Shared Next.js template for Bright Data and DataForSEO GEO audits. Publish it into a client's audit directory with `node ../scripts/publish-dashboard.mjs <audit-out-dir>`. That command reads every completed dated run, then updates the same `report/index.html` page and its assets.
+
+Publication also reads `report-analysis.json` at the audit root. Update it after reviewing all runs; `through_run_at` must match the newest run and it must contain 3–6 evidenced recommendations. The page shows this single plan above the complete history. Its run selector sits with the run-specific evidence below.
 
 ## Quick start
 
@@ -22,7 +24,7 @@ That launches the app with the bundled demo files and reads them on the server:
 python3 ../scripts/brightdata-geo.py ...
 ```
 
-2. Copy the generated `results.json` into `public/data/<your-run>/results.json`
+2. For a local preview of one run, copy `results.json` into `public/data/<your-run>/results.json`.
 3. Update `.env.local`:
 
 ```bash
@@ -40,14 +42,14 @@ Because the page loads JSON during the Next build, you can export a static site 
 npm run build
 ```
 
-That writes a static bundle to `out/`.
+That writes a static bundle to `out/`. For a client audit, use the publication command instead. It sets `AUDIT_RUNS_DIR` for the build, copies only the client page and required assets, and preserves the previous published page if the build fails.
 
 The template is configured to emit relative asset paths, so opening `out/index.html` directly from disk should still load the exported CSS and JS instead of pointing at absolute `/_next/...` URLs.
 
-## Manual recommendations
+## Analysis
 
-After reviewing the audit, add recommendations directly in the `manual_recommendations` array inside the audit JSON. The overview tab renders them automatically.
+The required root-level `report-analysis.json` contains the cross-run overview, findings, comparison note, and current recommendations. See `../references/artifacts-dashboard.md` for its fields. Historical `manual_recommendations` inside dated results are retained as context and are not rendered as separate action plans.
 
 ## Prompt tracking over time
 
-`tracked-prompts.json` is intentionally separate from the Bright Data results file. It lets you keep a long-lived prompt history even when each audit run has its own dated `results.json`.
+The dashboard reads every dated `results.json` for measured history. An optional `tracked-prompts.json` at the audit root holds notes and prompt status; it is not needed to reconstruct the runs.

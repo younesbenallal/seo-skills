@@ -49,18 +49,19 @@ Keep the raw payloads, write the dated run folder, and stop clearly if collectio
 
 Treat `results.json` as a `geo-audit-v3` contract, not a loose provider export. Preserve final-answer mentions, actual citations, citation candidates, search sources, attached links, map placements, competitor entities, provider metadata, and collection diagnostics. Normalize defensively: missing arrays become empty with a `missing` state; safe coercions are recorded; unknown provider fields remain under `provider_metadata.unknown_fields`; malformed records may be rejected individually; never infer an actual citation without a reliable `cited` flag.
 
-Use [references/artifacts-dashboard.md](references/artifacts-dashboard.md) for the evidence states, artifact layout, required fields, tracked-prompts companion file, static renderer, default Next.js wiring, dashboard contract, and verification checks. In normal usage, all of these are deliverables:
+Use [references/artifacts-dashboard.md](references/artifacts-dashboard.md) for the evidence states, artifact layout, tracked prompts, the dashboard template, presentation rules, and verification checks. The audit package has two layers:
 
-- dated `results.json` and raw provider payload(s)
-- dated `report.html` rendered from that JSON
-- the duplicate `geo-audit-report-{run-folder}.html` in the current working directory
-- the Next.js template wired to the dated run
+- immutable dated `results.json` and raw provider payloads for every run
+- one root-level `report-analysis.json` covering all completed runs
+- one client-facing page at `{out-dir}/report/index.html`, rebuilt from all completed runs by `scripts/publish-dashboard.mjs`
 
-Skip the template only when the user explicitly requests it or a concrete operational failure makes it unusable (for example missing dependencies, broken build tooling, or unusable artifacts). Explain the exception.
+Keep the page path stable across runs. Add new sections within the shared template when the evidence calls for them; retain its layout, visual tokens, and evidence meanings. If a client already has a customized dashboard, inspect its source and preserve useful content before publishing the common template. A failed build leaves the last published page intact; explain the failure.
+
+Before every publication, read the old and new answers together and update `report-analysis.json`. Keep one current plan with 3–6 recommendations. Reassess old actions against the latest evidence, retire stale ones, and cite the runs or prompts that support each surviving action. The dashboard refuses a synthesis that does not cover the latest run. Keep the dated JSON as the historical record; per-run `manual_recommendations` are legacy context, not separate plans on the page.
 
 ## Phase 4: analysis
 
-Read the dated `results.json` after collection. Lead with a concise, prospect-facing action plan, then support it with the evidence. Cover:
+Read every completed dated `results.json` after collection. Write a cross-run conclusion and the single current action plan in `report-analysis.json`, then support it with the evidence. Cover:
 
 - the searched → retrieved → mapped → mentioned → cited funnel
 - visibility by chatbot and prompt
@@ -69,9 +70,9 @@ Read the dated `results.json` after collection. Lead with a concise, prospect-fa
 - fan-out queries, including an aggregated query summary
 - source-type patterns (including UGC and YouTube where present)
 - answer, citation, search, and map competitors as separate channels
-- optional manual recommendations
+- reviewed recommendations grounded in the captured evidence
 
-Use [references/analysis.md](references/analysis.md) for channel interpretation, fan-out fields, disclosure of missing or malformed evidence, and the GEO Playbook guidance. Give the user the exact absolute HTML path and the template access path. Clearly disclose any unusable JSON contract, static report, or required default template instead of presenting the full package as delivered.
+Use [references/analysis.md](references/analysis.md) for channel interpretation, fan-out fields, disclosure of missing or malformed evidence, and the GEO Playbook guidance. Give the user the exact absolute path to `{out-dir}/report/index.html`. Clearly disclose any unusable JSON contract or dashboard build instead of presenting the full package as delivered.
 
 ## Operational defaults
 
