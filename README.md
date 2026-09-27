@@ -50,6 +50,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 - `linking-opportunities`: find contextual backlink opportunities on a target site using SERP and page evidence.
 - `backlink-outreach`: find and qualify guest-post, niche-edit, or link-exchange opportunities, match them to existing content, draft tailored outreach, maintain a flexible Markdown campaign log, and submit approved requests.
 - `seo-roast`: review a landing page or article for technical SEO, on-page quality, and search intent.
+- `gsc-analysis`: diagnose Search Console performance (drops, decay, quick wins, CTR gaps, cannibalization, intent splits) and turn it into prioritized actions, with a helper script for large exports.
 - `subkeyword-injector`: use Search Console queries to propose or apply content updates for long-tail coverage.
 - `seo-audit-report`: build a small interactive audit report from Search Console data.
 - `illustration-ideas`: generate illustration and chart ideas from a page's content, with placement and layout suggestions.
