@@ -1,0 +1,4 @@
+interface:
+  display_name: "GSC Analysis"
+  short_description: "Diagnose Search Console performance and prioritize SEO actions"
+  default_prompt: "Use $gsc-analysis to check my Search Console data and tell me what to work on first."

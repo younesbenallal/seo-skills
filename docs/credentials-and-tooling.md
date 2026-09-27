@@ -234,14 +234,15 @@ Agent behavior:
 Required shared integration for this collection. Used by:
 
 - `seo-context` when it records project tooling and Search Console context
+- `gsc-analysis`
 - `subkeyword-injector`
 - `internal-linking`
 - `seo-audit-report`
 
 User setup:
 
-- install and configure a GSC MCP in the agent; one supported option is
-  [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP)
+- install and configure a GSC MCP in the agent. Prefer one that accepts the property, explicit start and end dates, and paging on every call, such as
+  [`AminForou/mcp-gsc`](https://github.com/AminForou/mcp-gsc). [`Suganthan-Mohanadasan/Suganthans-GSC-MCP`](https://github.com/Suganthan-Mohanadasan/Suganthans-GSC-MCP) also works, but most of its tools only read the configured default property and relative date windows
 
 Agent behavior:
 
