@@ -50,7 +50,6 @@ CHATGPT_OUTPUT_FIELDS = [
     "prompt",
     "links_attached",
     "citations",
-    "recommendations",
     "country",
     "is_map",
     "references",
@@ -63,8 +62,6 @@ CHATGPT_OUTPUT_FIELDS = [
     "additional_answer_text",
     "map",
     "search_sources",
-    "model",
-    "web_search_query",
     "prompt_sent_at",
 ]
 
@@ -94,7 +91,7 @@ KNOWN_PROVIDER_FIELDS = set(
     CHATGPT_OUTPUT_FIELDS
     + PERPLEXITY_OUTPUT_FIELDS
     + GEMINI_OUTPUT_FIELDS
-    + ["answer_text", "source_html", "response_raw", "answer_html", "web_search"]
+    + ["answer_text", "source_html", "response_raw", "answer_html", "web_search", "model", "recommendations"]
 )
 
 

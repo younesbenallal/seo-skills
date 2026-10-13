@@ -88,6 +88,35 @@ class BrightDataNormalizationTests(unittest.TestCase):
         self.assertEqual(result.citations_count, 1)
         self.assertEqual(result.sources, result.actual_citations)
 
+    def test_retired_chatgpt_fields_are_not_requested(self):
+        for field in ["search_sources_more", "model", "web_search_query", "recommendations"]:
+            self.assertNotIn(field, collector.CHATGPT_OUTPUT_FIELDS)
+        for field in ["citations", "search_sources", "web_search_triggered"]:
+            self.assertIn(field, collector.CHATGPT_OUTPUT_FIELDS)
+        self.assertIn("web_search_query", collector.PERPLEXITY_OUTPUT_FIELDS)
+
+    def test_retired_fields_do_not_break_current_or_historical_exports(self):
+        historical = self.analyze()
+        self.assertEqual(historical.model, "gpt-test")
+        self.assertEqual(historical.fan_out_queries, ["video agency paris"])
+        self.assertNotIn("model", historical.provider_metadata["unknown_fields"])
+
+        for state in ["null", "absent"]:
+            with self.subTest(state=state):
+                for field in ["model", "web_search_query", "search_sources_more"]:
+                    if state == "null":
+                        self.record[field] = None
+                    else:
+                        self.record.pop(field, None)
+                result = self.analyze()
+                self.assertIsNone(result.model)
+                self.assertEqual(result.fan_out_queries, [])
+                self.assertEqual(result.fan_out_details, [])
+                self.assertEqual(result.evidence_status["fan_out_queries"]["state"], "missing")
+                self.assertTrue(result.used_web_search)
+                self.assertEqual(result.citations_count, 1)
+                self.assertEqual(result.search_sources[0]["domain"], "search.example")
+
     def test_derives_canonical_domain_from_url(self):
         result = self.analyze()
         citation = result.citation_candidates[0]
