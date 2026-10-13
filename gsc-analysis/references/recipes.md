@@ -42,6 +42,7 @@ Tool calls are written generically as `analytics(dimensions, start, end, filters
 - Pull `query` (or `query,page` to know the target URL) for the last 28 days.
 - `S opportunities quick-wins q.json` : positions 4-15, ≥ 100 impressions.
 - `potential_extra_clicks` = impressions × (expected CTR at position 3 − current CTR).
+- Business-first view: pull `query,page` and add `--by query,page --include '<business topics regex>'` to keep only ICP or commercial queries and see the ranking URL. Anchor short terms with `\b` (`\bcession` does not match "succession").
 - Action: strengthen the page that already ranks (answer depth, subqueries as sections, internal links from related pages, title), not a new page.
 
 ## CTR gap
