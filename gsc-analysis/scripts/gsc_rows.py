@@ -88,6 +88,8 @@ def find_rows(payload):
         if isinstance(payload.get("rows"), list):
             return payload["rows"], dimensions
         for value in payload.values():
+            if isinstance(value, str) and value.lstrip()[:1] in ("{", "["):
+                value = parse_json_text(value)  # e.g. {"result": "<JSON string>"} tool wrappers
             if isinstance(value, (dict, list)):
                 rows, nested_dimensions = find_rows(value)
                 if rows:
@@ -335,7 +337,11 @@ def cmd_opportunities(args):
             setattr(args, name, value)
     keys = args.by.split(",")
     records = []
-    for group_key, s in aggregate(load(args.files, args.dims), keys).items():
+    rows = load(args.files, args.dims)
+    if args.include:
+        pattern = re.compile(args.include, re.IGNORECASE)
+        rows = [r for r in rows if any(pattern.search(str(r.get(k, ""))) for k in keys)]
+    for group_key, s in aggregate(rows, keys).items():
         if s["impressions"] < args.min_impressions:
             continue
         position = s["position"]
@@ -458,6 +464,7 @@ def main():
     p.add_argument("--max-position", type=float, help="quick-wins upper bound (15); ctr-gap upper bound (20)")
     p.add_argument("--target-position", type=float, default=3)
     p.add_argument("--min-gap", type=float, default=0.01, help="ctr-gap: minimum CTR gap vs curve")
+    p.add_argument("--include", help="Keep only rows whose grouped dimension matches this regex (e.g. business topics)")
     p.set_defaults(func=cmd_opportunities)
 
     p = sub.add_parser("cannibalization", parents=[common], help="Queries split across several pages")

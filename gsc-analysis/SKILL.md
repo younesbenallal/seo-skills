@@ -41,6 +41,7 @@ Apply these before reading any number:
 
 - Pull only the dimensions the question needs. `date` alone for trends; `page` or `query` for rankings; `query,page` only for cannibalization or page-level query mapping.
 - Large results are often saved to a file by the agent runtime. Do not read them into context: run the script on the file.
+- Results small enough to fit come back inline and fill the context (a 300-page list is ~30k tokens). Set `row_limit` to what the step needs, filter to the pages or queries under study, and batch several small pulls rather than one broad inline pull.
 - Save each pull to a scratch file (JSON as returned) when it will be reused, and name it by property, dimensions, and date range.
 
 ## Workflow
