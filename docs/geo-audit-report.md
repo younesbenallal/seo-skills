@@ -4,14 +4,17 @@
 
 `geo-audit-report` writes `geo-audit-v3`. The contract preserves each evidence layer instead of treating every provider citation candidate as an actual citation. A single Next.js template publishes one stable page per client, with all completed runs available inside it.
 
-The skill now supports two collection providers:
-- Bright Data as the primary, higher-fidelity option
+The skill supports three collection methods:
+- ChatGPT browser collection, the default for ChatGPT: Playwright drives chatgpt.com over CDP in a dedicated Chrome profile and exports the Fanout Fox captures (model, fan-out queries, retrieved sources). Actual citation status is not captured yet.
+- Bright Data, for Perplexity and Gemini, and for actual citations and maps
 - DataForSEO as a fallback when Bright Data is not available
 
 ## Main files
 
 | File | Responsibility |
 | --- | --- |
+| `geo-audit-report/scripts/chatgpt-browser/run.ts` | Runs prompts on chatgpt.com in parallel tabs and writes `raw/answers.json` plus the matching Fanout Fox captures in `raw/fanoutfox.json`. |
+| `geo-audit-report/scripts/normalize-chatgpt-browser.py` | Maps a browser run to collector records and reuses the Bright Data normalization to write v3 results. |
 | `geo-audit-report/scripts/brightdata-geo.py` | Collects Bright Data synchronously for up to 20 prompts with snapshot fallback, then writes v3 evidence. |
 | `geo-audit-report/scripts/normalize-brightdata-geo.py` | Rebuilds v3 results from an existing raw Bright Data export without a paid rerun. |
 | `geo-audit-report/scripts/dataforseo-geo.py` | Collects DataForSEO AI Optimization results and normalizes them into the same audit schema used by the Bright Data collector. |

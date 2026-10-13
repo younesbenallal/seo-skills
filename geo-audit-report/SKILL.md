@@ -20,9 +20,9 @@ Collect:
 
 ## Tooling & credentials
 
-- Auth mode: `env`
-- Requires: `BRIGHTDATA_API_KEY`, or both `DATA_FOR_SEO_LOGIN` and `DATA_FOR_SEO_PASSWORD`
-- Provider fallback: Bright Data or DataForSEO; do not silently switch between them
+- Default for ChatGPT: browser collection, with Chrome, `bun`, a ChatGPT login, and the Fanout Fox extension in the dedicated profile. No API key needed.
+- API providers, for Perplexity, Gemini, or on request: auth mode `env`, with `BRIGHTDATA_API_KEY`, or both `DATA_FOR_SEO_LOGIN` and `DATA_FOR_SEO_PASSWORD`
+- Do not silently switch between collection methods
 - If missing: follow the shared setup rules and wait for the user to confirm access before collection
 
 Provider-specific setup and collection behavior live in [references/provider-collection.md](references/provider-collection.md).
@@ -35,10 +35,12 @@ Do not begin collection until the prompt list and its path are confirmed. Prompt
 
 ## Phase 2: audit run
 
-Choose the provider before collecting. Prefer Bright Data when available; use DataForSEO only when it is the available provider or the user explicitly requests it. State the choice and its fidelity tradeoff. Do not silently switch providers.
+Choose the collection method before collecting. For ChatGPT, use the browser collector by default: it runs the prompts in a real chatgpt.com session and exports Fanout Fox captures, which give the model, fan-out queries, and every retrieved source. Use Bright Data for Perplexity or Gemini, or when the browser setup is unavailable; use DataForSEO only when it is the available provider or the user explicitly requests it. State the choice and its fidelity tradeoff: the browser method does not yet capture actual citation status. Do not silently switch methods.
 
-Follow [references/provider-collection.md](references/provider-collection.md) for provider setup, chatbot selection, credentials, command examples, timing, raw preservation, resumability, and provider limitations. Use:
+Follow [references/provider-collection.md](references/provider-collection.md) for setup, chatbot selection, credentials, command examples, timing, raw preservation, resumability, and limitations. Use:
 
+- `geo-audit-report/scripts/chatgpt-browser/run.ts` to collect ChatGPT answers and Fanout Fox captures into `{run-dir}/raw/`. Always start by listing the Fanout Fox workspaces and checking that the client has its own; create it or move misfiled captures when needed, then pass `--workspace` to the run
+- `geo-audit-report/scripts/normalize-chatgpt-browser.py` to build the run's `results.json` from those raw files
 - `geo-audit-report/scripts/brightdata-geo.py`
 - `geo-audit-report/scripts/dataforseo-geo.py`
 - `geo-audit-report/scripts/normalize-brightdata-geo.py` to rebuild a run from an existing raw Bright Data export
@@ -77,7 +79,8 @@ Use [references/analysis.md](references/analysis.md) for channel interpretation,
 ## Operational defaults
 
 - Do not force ChatGPT web search on or off; report whether it triggered.
-- Bright Data is richer for search-trigger, citation, search-result, and map traces. DataForSEO supports ChatGPT and Gemini but has weaker trace fidelity and no Bright Data snapshot workflow.
+- The ChatGPT browser method gives the model, fan-out queries, and full retrieved sources, but citation status stays unavailable. Bright Data no longer returns ChatGPT models or fan-out queries since October 2026, but keeps actual citations and maps. DataForSEO supports ChatGPT and Gemini with weaker trace fidelity.
+- Name browser run folders `YYYY-MM-DD` (or `YYYY-MM-DD-HHMMSS`) so the dashboard picks them up.
 - Preserve `results.partial.json` when the collector supports it and disclose partial runs, warnings, rejected records, and unavailable channels through `collection_diagnostics`.
 - Keep secrets on the user's machine; never print or request them in chat.
 - Use relative asset paths for a dashboard export that works when opened from `file://`.

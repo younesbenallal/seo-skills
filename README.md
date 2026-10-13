@@ -40,7 +40,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 
 - Guest-post outreach may need an email connector or an interactive browser tool for approved submissions.
 - Ahrefs, Semrush, DataForSEO, or another SEO data provider can add keyword, traffic, authority, or backlink data where a workflow supports it.
-- GEO audits need either a Bright Data API key or DataForSEO credentials.
+- GEO audits collect ChatGPT through a logged-in Chrome profile with the Fanout Fox extension by default. Perplexity and Gemini need a Bright Data API key or DataForSEO credentials.
 
 ## Skills
 
