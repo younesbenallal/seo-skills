@@ -5,6 +5,7 @@
 //   bun run.ts <prompts.txt> <run-dir> --workspace <name>    # writes <run-dir>/raw/answers.json + fanoutfox.json
 //              [--concurrency 3]
 //   bun run.ts fanoutfox <run-dir>                           # re-exports the Fanout Fox captures of a run
+//   bun run.ts citations <run-dir>                           # TEMPORARY: re-resolves cited pages of a run
 //   bun run.ts workspaces                                    # lists Fanout Fox workspaces, the active one first
 //   bun run.ts workspace <name>                              # makes a workspace active
 //   bun run.ts workspace-create <name> [--domains a.com,b]   # creates a workspace (and makes it active)
@@ -139,6 +140,37 @@ async function exportFanoutFox(runDir: string, urls: string[]) {
   console.log(`Fanout Fox: ${own.length}/${ids.size} captures → ${join(runDir, "raw", "fanoutfox.json")}`)
 }
 
+// TEMPORARY workaround: remove once Fanout Fox resolves citations again.
+// Fanout Fox marks a source as cited only through `content_references`, which current ChatGPT
+// conversations leave empty: citations are inline `<Cite refs={["turn…search…"]}/>` markers instead.
+// Until Fanout Fox handles that, map each marker to the search result carrying the same `ref_id`
+// in the conversation JSON the page loads. Unresolved markers keep `url: null`.
+type Citation = { code: string; url: string | null; title: string | null }
+async function resolveCitations(page: Page, url: string) {
+  const id = url.split("/").pop()
+  const response = page.waitForResponse(
+    (r) => r.url().includes(`/backend-api/conversations/${id}`) && r.request().method() === "GET",
+    { timeout: 30_000 },
+  )
+  await page.goto(url, { waitUntil: "domcontentloaded" })
+  const raw = await (await response).text()
+  const results = new Map<string, { url: string; title: string | null }>()
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (!node || typeof node !== "object") return
+    const { ref_id: ref, url, title } = node as Record<string, unknown>
+    if (ref && typeof ref === "object" && typeof url === "string") {
+      const { turn_index, ref_type, ref_index } = ref as Record<string, unknown>
+      results.set(`turn${turn_index}${ref_type}${ref_index}`, { url, title: typeof title === "string" ? title : null })
+    }
+    Object.values(node).forEach(walk)
+  }
+  walk(JSON.parse(raw))
+  const markers = [...raw.matchAll(/<Cite refs=\{\[(.*?)\]\}/g)].map((m) => m[1] ?? "")
+  const codes = [...new Set(markers.flatMap((m) => m.match(/turn\d+[a-z_]+\d+/g) ?? []))]
+  return codes.map((code): Citation => ({ code, url: results.get(code)?.url ?? null, title: results.get(code)?.title ?? null }))
+}
+
 const [command = "", ...rest] = positionals
 
 if (command === "workspaces") {
@@ -164,8 +196,19 @@ if (command === "workspaces") {
   console.log(`Moved ${await moveCaptures(target.id, filter)} captures to ${target.name}`)
 } else if (command === "fanoutfox") {
   await exportFanoutFox(rest[0] ?? "", runUrls(rest[0] ?? ""))
+} else if (command === "citations") {
+  const file = join(rest[0] ?? "", "raw", "answers.json")
+  const previous: { url?: string; citations?: Citation[] | null }[] = JSON.parse(readFileSync(file, "utf8"))
+  const page = await backgroundPage()
+  for (const answer of previous) {
+    if (!answer.url) continue
+    answer.citations = await resolveCitations(page, answer.url).catch(() => null)
+    console.log(`${answer.url} → ${answer.citations ? `${answer.citations.length} citations` : "unavailable"}`)
+  }
+  await page.close()
+  writeFileSync(file, JSON.stringify(previous, null, 2))
 }
-if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox"].includes(command)) {
+if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox", "citations"].includes(command)) {
   await browser.close()
   process.exit(0)
 }
@@ -211,7 +254,8 @@ async function ask(page: Page, prompt: string) {
   const links = await answer.locator("a[href]").evaluateAll((as) =>
     as.map((a) => ({ text: a.textContent?.trim() ?? "", href: (a as HTMLAnchorElement).href })),
   )
-  return { url: page.url(), text, links }
+  const citations = await resolveCitations(page, page.url()).catch(() => null)
+  return { url: page.url(), text, links, citations }
 }
 
 mkdirSync(join(runDir, "raw"), { recursive: true })
@@ -230,7 +274,7 @@ async function worker() {
     try {
       const res = await ask(page, prompt)
       answers[i] = { prompt, ...res, at: new Date().toISOString() }
-      console.log(`[${++done}/${prompts.length}] ${prompt}\n  → ${res.text.length} chars, ${res.links.length} links`)
+      console.log(`[${++done}/${prompts.length}] ${prompt}\n  → ${res.text.length} chars, ${res.citations?.length ?? "?"} citations`)
     } catch (error) {
       answers[i] = { prompt, error: String(error), at: new Date().toISOString() }
       console.error(`[${++done}/${prompts.length}] ${prompt}\n  ✗ ${error}`)

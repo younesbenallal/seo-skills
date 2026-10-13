@@ -35,7 +35,7 @@ Do not begin collection until the prompt list and its path are confirmed. Prompt
 
 ## Phase 2: audit run
 
-Choose the collection method before collecting. For ChatGPT, use the browser collector by default: it runs the prompts in a real chatgpt.com session and exports Fanout Fox captures, which give the model, fan-out queries, and every retrieved source. Use Bright Data for Perplexity or Gemini, or when the browser setup is unavailable; use DataForSEO only when it is the available provider or the user explicitly requests it. State the choice and its fidelity tradeoff: the browser method does not yet capture actual citation status. Do not silently switch methods.
+Choose the collection method before collecting. For ChatGPT, use the browser collector by default: it runs the prompts in a real chatgpt.com session and exports Fanout Fox captures, which give the model, fan-out queries, and every retrieved source. Use Bright Data for Perplexity or Gemini, or when the browser setup is unavailable; use DataForSEO only when it is the available provider or the user explicitly requests it. State the choice and its fidelity tradeoff: the browser method resolves actual citations through a temporary workaround described in the provider reference. Do not silently switch methods.
 
 Follow [references/provider-collection.md](references/provider-collection.md) for setup, chatbot selection, credentials, command examples, timing, raw preservation, resumability, and limitations. Use:
 
@@ -79,7 +79,7 @@ Use [references/analysis.md](references/analysis.md) for channel interpretation,
 ## Operational defaults
 
 - Do not force ChatGPT web search on or off; report whether it triggered.
-- The ChatGPT browser method gives the model, fan-out queries, and full retrieved sources, but citation status stays unavailable. Bright Data no longer returns ChatGPT models or fan-out queries since October 2026, but keeps actual citations and maps. DataForSEO supports ChatGPT and Gemini with weaker trace fidelity.
+- The ChatGPT browser method gives the model, fan-out queries, and full retrieved sources. Its actual citations come from a temporary workaround until Fanout Fox flags cited sources again. Bright Data no longer returns ChatGPT models or fan-out queries since October 2026, but keeps actual citations and maps. DataForSEO supports ChatGPT and Gemini with weaker trace fidelity.
 - Name browser run folders `YYYY-MM-DD` (or `YYYY-MM-DD-HHMMSS`) so the dashboard picks them up.
 - Preserve `results.partial.json` when the collector supports it and disclose partial runs, warnings, rejected records, and unavailable channels through `collection_diagnostics`.
 - Keep secrets on the user's machine; never print or request them in chat.

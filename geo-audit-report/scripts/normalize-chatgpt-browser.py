@@ -12,7 +12,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse
 
 
 def load_collector():
@@ -55,6 +55,30 @@ def entities(text):
     return list(dict.fromkeys(name for name in names if name))
 
 
+def url_key(url):
+    parsed = urlparse(url or "")
+    host = (parsed.hostname or "").removeprefix("www.")
+    query = urlencode([(k, v) for k, v in parse_qsl(parsed.query) if not k.startswith("utm_")])
+    return f"{host}{parsed.path.rstrip('/')}?{query}"
+
+
+# TEMPORARY, see resolveCitations in chatgpt-browser/run.ts: remove once Fanout Fox flags cited
+# sources again. Cited pages come first, in answer order, so first_citation_rank follows the answer.
+def citation_records(citations, sources):
+    cited = [c for c in citations if c.get("url")]
+    cited_keys = {url_key(c["url"]) for c in cited}
+    by_key = {url_key(s["url"]): s for s in sources}
+    records = []
+    for citation in cited:
+        key = url_key(citation["url"])
+        if any(url_key(r["url"]) == key for r in records):
+            continue
+        source = by_key.get(key, {"url": citation["url"], "title": citation.get("title")})
+        records.append({**source, "cited": True})
+    records += [{**s, "cited": False} for s in sources if url_key(s["url"]) not in cited_keys]
+    return records
+
+
 def to_record(index, answer, capture):
     links = [
         {"text": link.get("text"), "url": link.get("href"), "position": position}
@@ -72,6 +96,8 @@ def to_record(index, answer, capture):
         "answer_text_markdown": re.sub(r"^ChatGPT said:\s*", "", answer.get("text", "")),
     }
     if not capture:
+        if answer.get("citations") is not None:
+            record["citations"] = citation_records(answer["citations"], [])
         return record
     record["answer_text_markdown"] = clean_answer(capture["raw"]["answerText"])
     record["recommendations"] = entities(capture["raw"]["answerText"])
@@ -95,8 +121,9 @@ def to_record(index, answer, capture):
             }
         )
     record["search_sources"] = sources
-    # Fanout Fox cannot tie <Cite/> markers to URLs on this payload, so "citations" stays absent
-    # and the contract reports actual citations as missing rather than inventing them.
+    # Without resolved citations the contract reports actual citations as missing, never zero.
+    if answer.get("citations") is not None:
+        record["citations"] = citation_records(answer["citations"], sources)
     return record
 
 

@@ -5,7 +5,7 @@
 `geo-audit-report` writes `geo-audit-v3`. The contract preserves each evidence layer instead of treating every provider citation candidate as an actual citation. A single Next.js template publishes one stable page per client, with all completed runs available inside it.
 
 The skill supports three collection methods:
-- ChatGPT browser collection, the default for ChatGPT: Playwright drives chatgpt.com over CDP in a dedicated Chrome profile and exports the Fanout Fox captures (model, fan-out queries, retrieved sources). Actual citation status is not captured yet.
+- ChatGPT browser collection, the default for ChatGPT: Playwright drives chatgpt.com over CDP in a dedicated Chrome profile and exports the Fanout Fox captures (model, fan-out queries, retrieved sources). Actual citations come from a temporary workaround that resolves ChatGPT's inline citation markers, until Fanout Fox flags cited sources again.
 - Bright Data, for Perplexity and Gemini, and for actual citations and maps
 - DataForSEO as a fallback when Bright Data is not available
 

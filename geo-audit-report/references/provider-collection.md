@@ -61,7 +61,15 @@ The normalizer reuses the Bright Data collector's analysis, so mentions, fan-out
 | `used_web_search`, `fan_out_queries` | Fanout Fox `searchedWeb` and `fanout` |
 | `search_sources` | Fanout Fox `sources`, deduplicated by URL |
 | `attached_links` | Links rendered in the answer, excluding chatgpt.com |
-| `actual_citations` | Missing. Fanout Fox's `cited` flag is always false on the current payload and inline `<Cite>` markers carry no URL, so citation status is reported as unavailable, never as zero |
+| `actual_citations` | **Temporary workaround.** `raw/answers.json` → `citations`, resolved by the collector (see below). Missing when that field is absent or `null`, never reported as zero |
+
+### Citations: temporary workaround
+
+Fanout Fox marks a source as cited only through the conversation's `content_references`. Current ChatGPT conversations leave that list empty and put citations inline in the answer as `<Cite refs={["turn130531search1"]}/>`, so every Fanout Fox source reads `cited: false`, and its own dashboard shows "0 cited".
+
+Until Fanout Fox handles this format, the collector resolves the markers itself: after each answer it reloads the conversation, reads the `/backend-api/conversations/<id>` response the page loads, and maps each marker to the search result with the same `ref_id` (`turn_index`, `ref_type`, `ref_index`). The result is stored per answer as `citations: [{code, url, title}]`, where an unresolved marker keeps `url: null`. `bun geo-audit-report/scripts/chatgpt-browser/run.ts citations <run-dir>` does the same for an existing run whose conversations are still in the account. Logged-out conversations (`/uc/` URLs) cannot be reopened.
+
+This is our own reading of ChatGPT's internal format, kept deliberately small. It is meant to be removed once Fanout Fox flags cited sources again: check a recent capture for `cited: true` sources, then delete `resolveCitations` and the `citations` command in `run.ts`, and `citation_records` in the normalizer. Do not extend this parser; prefer Fanout Fox for any other interpretation of ChatGPT.
 
 Fanout Fox's own dashboard and Monday brief aggregate the whole workspace, including test prompts, so use the exported captures rather than the brief's counts as audit evidence.
 
