@@ -89,6 +89,8 @@ Keep `custom_output_fields` aligned with each dataset's current output schema. T
 
 Bright Data's ChatGPT schema notice received on 2026-10-06 removes `search_sources_more` and its nested fields, `model`, and `web_search_query`; these now return `null`. The collector excludes them from ChatGPT output requests. `search_sources_more` was never consumed. Report the model and fan-out queries as unavailable when missing, while continuing to use `web_search_triggered`, `search_sources`, and actual citations. Preserve model/query evidence in older exports and other providers. The legacy `recommendations` field, rejected by this dataset on 2026-09-30, is also excluded from requests.
 
+Bright Data's ChatGPT schema notice received on 2026-10-16 adds follow-up prompt fields (`additional_answer_text_markdown`, `citations_additional_prompt`, `shopping_additional_prompt`) and `questionnaire`. The collector always sends an empty `additional_prompt`, so it requests none of them and no longer requests `additional_prompt` or `additional_answer_text`. A test run on 2026-10-16 returned page chrome in `additional_answer_text_markdown` with no follow-up prompt and no `questionnaire` key. If an older or manual export contains these fields, they are recognized but never read: follow-up citations do not count toward the tracked prompt.
+
 ```bash
 python3 geo-audit-report/scripts/brightdata-geo.py \
   --check-url "https://example.com" --prompts-file prompts.txt \
