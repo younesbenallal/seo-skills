@@ -27,7 +27,7 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts workspace-create "Client" --
 Create the client's workspace only when none matches its name or domain, and confirm the name with the user first. These commands call Fanout Fox's own store module from an extension page, so no UI is needed. Then collect into the dated run folder:
 
 ```bash
-bun geo-audit-report/scripts/chatgpt-browser/run.ts prompts.txt <out-dir>/YYYY-MM-DD --workspace "Client" --concurrency 4
+bun geo-audit-report/scripts/chatgpt-browser/run.ts prompts.txt <out-dir>/YYYY-MM-DD --workspace "Client"
 ```
 
 `--workspace` is required. The collector activates that workspace before sending anything, stops if it does not exist, and after the run moves back any of the run's captures that were filed elsewhere (for example after a switch in the UI). The active workspace is global to the profile: tell the user not to run their own ChatGPT prompts in that profile during a collection, or their captures will land in the client's workspace.
@@ -41,7 +41,7 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts move "Client" --match "promp
 
 Moving a capture never deletes it. Report what moved, and ask before moving captures the current run did not create.
 
-Each prompt opens a new chat in its own tab. Four tabs run about 17 prompts in two minutes; lower `--concurrency` if ChatGPT starts rate-limiting. The collector writes `raw/answers.json` (prompt, conversation URL, rendered text, rendered links, timestamp, or an `error`) and `raw/fanoutfox.json` (the matching Fanout Fox captures read from the extension storage). A failed prompt gets `raw/error-N.png`. The collector refuses to send a prompt when the composer holds other text, because ChatGPT restores unsent drafts across tabs, and it checks the sent message against the prompt. To re-read captures for an existing run, use `bun geo-audit-report/scripts/chatgpt-browser/run.ts fanoutfox <run-dir>`.
+Each prompt opens a new chat in its own tab, two tabs at a time by default (`--concurrency`); lower it to 1 if ChatGPT starts rate-limiting. Only one collection runs at a time: a second one waits for the first to finish (it prints who holds `~/.chatgpt-runner-profile.lock`), because parallel runs share the same Chrome, ChatGPT account and active Fanout Fox workspace. Run clients one after the other instead of starting collections from several sessions. The collector writes `raw/answers.json` (prompt, conversation URL, rendered text, rendered links, timestamp, or an `error`) and `raw/fanoutfox.json` (the matching Fanout Fox captures read from the extension storage). A failed prompt gets `raw/error-N.png`. The collector refuses to send a prompt when the composer holds other text, because ChatGPT restores unsent drafts across tabs, and it checks the sent message against the prompt. To re-read captures for an existing run, use `bun geo-audit-report/scripts/chatgpt-browser/run.ts fanoutfox <run-dir>`.
 
 Then build the v3 file:
 

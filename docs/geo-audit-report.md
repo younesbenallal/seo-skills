@@ -13,7 +13,7 @@ The skill supports three collection methods:
 
 | File | Responsibility |
 | --- | --- |
-| `geo-audit-report/scripts/chatgpt-browser/run.ts` | Runs prompts on chatgpt.com in parallel tabs and writes `raw/answers.json` plus the matching Fanout Fox captures in `raw/fanoutfox.json`. |
+| `geo-audit-report/scripts/chatgpt-browser/run.ts` | Runs prompts on chatgpt.com in parallel tabs (one collection at a time, enforced by a lock file) and writes `raw/answers.json` plus the matching Fanout Fox captures in `raw/fanoutfox.json`. |
 | `geo-audit-report/scripts/normalize-chatgpt-browser.py` | Maps a browser run to collector records and reuses the Bright Data normalization to write v3 results. |
 | `geo-audit-report/scripts/brightdata-geo.py` | Collects Bright Data synchronously for up to 20 prompts with snapshot fallback, then writes v3 evidence. |
 | `geo-audit-report/scripts/normalize-brightdata-geo.py` | Rebuilds v3 results from an existing raw Bright Data export without a paid rerun. |

@@ -3,7 +3,7 @@
 //
 //   bun run.ts launch                                        # opens the dedicated Chrome profile
 //   bun run.ts <prompts.txt> <run-dir> --workspace <name>    # writes <run-dir>/raw/answers.json + fanoutfox.json
-//              [--concurrency 3]
+//              [--concurrency 2]                             # waits while another collection runs
 //   bun run.ts fanoutfox <run-dir>                           # re-exports the Fanout Fox captures of a run
 //   bun run.ts citations <run-dir>                           # TEMPORARY: re-resolves cited pages of a run
 //   bun run.ts workspaces                                    # lists Fanout Fox workspaces, the active one first
@@ -13,21 +13,23 @@
 //   bun run.ts move <workspace> --match "<prompt text>"      # moves captures whose prompt contains the text
 import { chromium, type Page } from "playwright-core"
 import { spawn } from "node:child_process"
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
+import { setTimeout as sleep } from "node:timers/promises"
 import { parseArgs } from "node:util"
 
 const PORT = 9333
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 const PROFILE = join(homedir(), ".chatgpt-runner-profile")
+const LOCK = `${PROFILE}.lock`
 const ANSWER_TIMEOUT = 5 * 60_000
 const FANOUTFOX = "chrome-extension://efgemipiccaljhahdacjbbkcemelojlj/dashboard-v2/dist/index.html"
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
-    concurrency: { type: "string", default: "3" },
+    concurrency: { type: "string", default: "2" },
     workspace: { type: "string" },
     domains: { type: "string", default: "" },
     match: { type: "string" },
@@ -215,9 +217,52 @@ if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox", "citati
 
 const [promptsFile = "", runDir = ""] = positionals
 if (!promptsFile || !runDir || !values.workspace) {
-  console.error("Usage: bun run.ts <prompts.txt> <run-dir> --workspace <name> [--concurrency 3]. See the header of run.ts for other commands.")
+  console.error("Usage: bun run.ts <prompts.txt> <run-dir> --workspace <name> [--concurrency 2]. See the header of run.ts for other commands.")
   process.exit(1)
 }
+
+// One collection at a time: parallel runs share this Chrome, its ChatGPT account and the active
+// Fanout Fox workspace, so they overload the machine, time out and file captures in the wrong place.
+type LockHolder = { pid: number; runDir: string; startedAt: string }
+const lockHolder = (): LockHolder | null => {
+  try {
+    return JSON.parse(readFileSync(LOCK, "utf8"))
+  } catch {
+    return null
+  }
+}
+const isAlive = (pid: number) => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+let waiting = false
+while (true) {
+  try {
+    writeFileSync(LOCK, JSON.stringify({ pid: process.pid, runDir, startedAt: new Date().toISOString() }), { flag: "wx" })
+    break
+  } catch {}
+  const holder = lockHolder()
+  // A lock whose process is gone was left by a crashed or killed run.
+  if (holder && !isAlive(holder.pid)) {
+    rmSync(LOCK, { force: true })
+    continue
+  }
+  if (holder && !waiting) {
+    console.log(`Another collection is running (pid ${holder.pid}, ${holder.runDir}, since ${holder.startedAt}). Waiting for it to finish…`)
+    waiting = true
+  }
+  await sleep(holder ? 15_000 : 500)
+}
+process.on("exit", () => {
+  if (lockHolder()?.pid === process.pid) rmSync(LOCK, { force: true })
+})
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, () => process.exit(1))
+
 // Every capture is filed under the active workspace, so pin it before sending anything.
 const workspace = await activateWorkspace(values.workspace)
 
