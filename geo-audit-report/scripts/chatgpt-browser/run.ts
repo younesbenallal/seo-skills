@@ -6,6 +6,7 @@
 //              [--concurrency 2]                             # waits while another collection runs
 //   bun run.ts fanoutfox <run-dir>                           # re-exports the Fanout Fox captures of a run
 //   bun run.ts citations <run-dir>                           # TEMPORARY: re-resolves cited pages of a run
+//   bun run.ts conversations <run-dir>                       # re-saves raw/conversations/<id>.json of a run
 //   bun run.ts workspaces                                    # lists Fanout Fox workspaces, the active one first
 //   bun run.ts workspace <name>                              # makes a workspace active
 //   bun run.ts workspace-create <name> [--domains a.com,b]   # creates a workspace (and makes it active)
@@ -148,14 +149,7 @@ async function exportFanoutFox(runDir: string, urls: string[]) {
 // Until Fanout Fox handles that, map each marker to the search result carrying the same `ref_id`
 // in the conversation JSON the page loads. Unresolved markers keep `url: null`.
 type Citation = { code: string; url: string | null; title: string | null }
-async function resolveCitations(page: Page, url: string) {
-  const id = url.split("/").pop()
-  const response = page.waitForResponse(
-    (r) => r.url().includes(`/backend-api/conversations/${id}`) && r.request().method() === "GET",
-    { timeout: 30_000 },
-  )
-  await page.goto(url, { waitUntil: "domcontentloaded" })
-  const raw = await (await response).text()
+function citationsIn(raw: string) {
   const results = new Map<string, { url: string; title: string | null }>()
   const walk = (node: unknown) => {
     if (Array.isArray(node)) return node.forEach(walk)
@@ -171,6 +165,34 @@ async function resolveCitations(page: Page, url: string) {
   const markers = [...raw.matchAll(/<Cite refs=\{\[(.*?)\]\}/g)].map((m) => m[1] ?? "")
   const codes = [...new Set(markers.flatMap((m) => m.match(/turn\d+[a-z_]+\d+/g) ?? []))]
   return codes.map((code): Citation => ({ code, url: results.get(code)?.url ?? null, title: results.get(code)?.title ?? null }))
+}
+
+// ChatGPT's own JSON of a conversation, as the page loads it. It holds what Fanout Fox often misses
+// (it skips most background tabs): the queries sent to search, every retrieved result and the model.
+// Saved as raw/conversations/<id>.json; normalize-chatgpt-browser.py reads it when a capture is missing.
+// Logged-out conversations (/uc/) cannot be reopened, so they have none.
+async function saveConversation(page: Page, url: string, runDir: string) {
+  const id = url.split("?")[0]!.replace(/\/$/, "").split("/").pop()!
+  if (!url.includes("/c/")) throw new Error("not a saved conversation")
+  let raw = ""
+  for (let attempt = 1; attempt <= 3 && !raw; attempt++) {
+    const response = page.waitForResponse(
+      (r) => r.url().includes(`/backend-api/conversation/${id}`) || r.url().includes(`/backend-api/conversations/${id}`),
+      { timeout: 30_000 },
+    )
+    await page.goto(url, { waitUntil: "domcontentloaded" })
+    const text = await response.then((r) => (r.ok() ? r.text() : "")).catch(() => "")
+    try {
+      JSON.parse(text)
+      raw = text
+    } catch {
+      if (attempt < 3) await page.waitForTimeout(5_000 * attempt)
+    }
+  }
+  if (!raw) throw new Error("conversation JSON unavailable")
+  mkdirSync(join(runDir, "raw", "conversations"), { recursive: true })
+  writeFileSync(join(runDir, "raw", "conversations", `${id}.json`), raw)
+  return raw
 }
 
 const [command = "", ...rest] = positionals
@@ -198,19 +220,24 @@ if (command === "workspaces") {
   console.log(`Moved ${await moveCaptures(target.id, filter)} captures to ${target.name}`)
 } else if (command === "fanoutfox") {
   await exportFanoutFox(rest[0] ?? "", runUrls(rest[0] ?? ""))
-} else if (command === "citations") {
-  const file = join(rest[0] ?? "", "raw", "answers.json")
+} else if (command === "citations" || command === "conversations") {
+  const dir = rest[0] ?? ""
+  const file = join(dir, "raw", "answers.json")
   const previous: { url?: string; citations?: Citation[] | null }[] = JSON.parse(readFileSync(file, "utf8"))
   const page = await backgroundPage()
   for (const answer of previous) {
     if (!answer.url) continue
-    answer.citations = await resolveCitations(page, answer.url).catch(() => null)
-    console.log(`${answer.url} → ${answer.citations ? `${answer.citations.length} citations` : "unavailable"}`)
+    const raw = await saveConversation(page, answer.url, dir).catch((error) => {
+      console.error(`${answer.url} → ${error.message}`)
+      return null
+    })
+    if (command === "citations") answer.citations = raw === null ? null : citationsIn(raw)
+    if (raw !== null) console.log(`${answer.url} → ${command === "citations" ? `${answer.citations?.length} citations` : "saved"}`)
   }
   await page.close()
-  writeFileSync(file, JSON.stringify(previous, null, 2))
+  if (command === "citations") writeFileSync(file, JSON.stringify(previous, null, 2))
 }
-if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox", "citations"].includes(command)) {
+if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox", "citations", "conversations"].includes(command)) {
   await browser.close()
   process.exit(0)
 }
@@ -299,7 +326,8 @@ async function ask(page: Page, prompt: string) {
   const links = await answer.locator("a[href]").evaluateAll((as) =>
     as.map((a) => ({ text: a.textContent?.trim() ?? "", href: (a as HTMLAnchorElement).href })),
   )
-  const citations = await resolveCitations(page, page.url()).catch(() => null)
+  const raw = await saveConversation(page, page.url(), runDir).catch(() => null)
+  const citations = raw === null ? null : citationsIn(raw)
   return { url: page.url(), text, links, citations }
 }
 

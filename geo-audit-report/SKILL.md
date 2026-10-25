@@ -79,7 +79,7 @@ Use [references/analysis.md](references/analysis.md) for channel interpretation,
 ## Operational defaults
 
 - Do not force ChatGPT web search on or off; report whether it triggered.
-- The ChatGPT browser method gives the model, fan-out queries, and full retrieved sources. Its actual citations come from a temporary workaround until Fanout Fox flags cited sources again. Bright Data no longer returns ChatGPT models or fan-out queries since October 2026, but keeps actual citations and maps. DataForSEO supports ChatGPT and Gemini with weaker trace fidelity.
+- The ChatGPT browser method gives the model, fan-out queries, and full retrieved sources, from Fanout Fox or, when it misses a conversation, from the saved conversation JSON. Its actual citations come from a temporary workaround until Fanout Fox flags cited sources again. Bright Data no longer returns ChatGPT models or fan-out queries since October 2026, but keeps actual citations and maps. DataForSEO supports ChatGPT and Gemini with weaker trace fidelity.
 - Name browser run folders `YYYY-MM-DD` (or `YYYY-MM-DD-HHMMSS`) so the dashboard picks them up.
 - Preserve `results.partial.json` when the collector supports it and disclose partial runs, warnings, rejected records, and unavailable channels through `collection_diagnostics`.
 - Keep secrets on the user's machine; never print or request them in chat.

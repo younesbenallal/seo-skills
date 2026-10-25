@@ -32,6 +32,14 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts prompts.txt <out-dir>/YYYY-M
 
 `--workspace` is required. The collector activates that workspace before sending anything, stops if it does not exist, and after the run moves back any of the run's captures that were filed elsewhere (for example after a switch in the UI). The active workspace is global to the profile: tell the user not to run their own ChatGPT prompts in that profile during a collection, or their captures will land in the client's workspace.
 
+Fanout Fox misses most conversations run in background tabs (1 capture out of 5 on 2026-10-25, sequential or parallel). The collector therefore also saves ChatGPT's own conversation JSON as `raw/conversations/<id>.json` for every answer, from the same page load it already uses for citations. When a capture is missing or incomplete, the normalizer reads the fan-out queries (`search_model_queries`, or the model's search call), retrieved results (`search_result_groups`), model and entity-card brands from that file; a capture always wins where it has the data. Both the current flat `messages` format and the older `mapping` tree are read; an unreadable file is ignored and the channel stays missing. For a run collected before this change, or after a failed save:
+
+```bash
+bun geo-audit-report/scripts/chatgpt-browser/run.ts conversations <run-dir>    # re-saves raw/conversations/<id>.json
+```
+
+Logged-out conversations (`/uc/` URLs) cannot be reopened, so they have no conversation file.
+
 To fix misfiled captures:
 
 ```bash
@@ -69,7 +77,7 @@ Fanout Fox marks a source as cited only through the conversation's `content_refe
 
 Until Fanout Fox handles this format, the collector resolves the markers itself: after each answer it reloads the conversation, reads the `/backend-api/conversations/<id>` response the page loads, and maps each marker to the search result with the same `ref_id` (`turn_index`, `ref_type`, `ref_index`). The result is stored per answer as `citations: [{code, url, title}]`, where an unresolved marker keeps `url: null`. `bun geo-audit-report/scripts/chatgpt-browser/run.ts citations <run-dir>` does the same for an existing run whose conversations are still in the account. Logged-out conversations (`/uc/` URLs) cannot be reopened.
 
-This is our own reading of ChatGPT's internal format, kept deliberately small. It is meant to be removed once Fanout Fox flags cited sources again: check a recent capture for `cited: true` sources, then delete `resolveCitations` and the `citations` command in `run.ts`, and `citation_records` in the normalizer. Do not extend this parser; prefer Fanout Fox for any other interpretation of ChatGPT.
+This is our own reading of ChatGPT's internal format, kept deliberately small. It is meant to be removed once Fanout Fox flags cited sources again: check a recent capture for `cited: true` sources, then delete `citationsIn` and the `citations` command in `run.ts`, and `citation_records` in the normalizer. Do not extend this parser; prefer Fanout Fox for any other interpretation of ChatGPT.
 
 Fanout Fox's own dashboard and Monday brief aggregate the whole workspace, including test prompts, so use the exported captures rather than the brief's counts as audit evidence.
 

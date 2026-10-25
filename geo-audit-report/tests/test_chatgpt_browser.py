@@ -56,10 +56,52 @@ CAPTURE = {
 }
 
 
-def normalize(answers, captures):
+# ChatGPT's conversation JSON, current format (a flat message list)
+CONVERSATION = {
+    "default_model_slug": "auto",
+    "messages": [
+        {"author": {"role": "user"}, "content": {"parts": ["Meilleur logiciel ?"]}, "metadata": {}},
+        {"author": {"role": "assistant"}, "recipient": "web.run", "content": {"parts": [""]}, "metadata": {"resolved_model_slug": "gpt-conv"}},
+        {"author": {"role": "tool"}, "metadata": {"search_model_queries": {"queries": ["logiciel tresorerie", "logiciel tresorerie"]}}},
+        {
+            "author": {"role": "tool"},
+            "metadata": {
+                "search_result_groups": [
+                    {"domain": "target.example", "entries": [
+                        {"url": "https://www.target.example/page", "title": "Target", "snippet": ""},
+                        {"url": "https://www.target.example/page?utm_source=chatgpt.com", "title": "Target"},
+                    ]},
+                    {"domain": "rival.example", "entries": [{"url": "https://rival.example/", "title": "Rival"}]},
+                ]
+            },
+        },
+        {
+            "author": {"role": "assistant"},
+            "metadata": {"model_dil_v2": {"appData": {"opGenui": {"componentResults": {"x": {"state": {"action_payload": {"query": "Target Brand"}}}}}}}},
+        },
+    ],
+}
+
+# Older format: a tree of nodes, with the search call in the assistant's message
+LEGACY_CONVERSATION = {
+    "mapping": {
+        "a": {"message": {"create_time": 1, "author": {"role": "assistant"}, "recipient": "web.run",
+                          "content": {"parts": ['{"search_query": [{"q": "tresorerie pme"}]}']}, "metadata": {"model_slug": "gpt-old"}}},
+        "b": {"message": {"create_time": 2, "author": {"role": "tool"}, "metadata": {
+            "search_result_groups": [{"entries": [{"url": "https://rival.example/", "title": "Rival"}]}]}}},
+        "root": {"message": None},
+    }
+}
+
+
+def normalize(answers, captures, conversations=None):
     with tempfile.TemporaryDirectory() as directory:
         run_dir = Path(directory)
         (run_dir / "raw").mkdir()
+        if conversations:
+            (run_dir / "raw" / "conversations").mkdir()
+            for conversation_id, conversation in conversations.items():
+                (run_dir / "raw" / "conversations" / f"{conversation_id}.json").write_text(conversation, encoding="utf-8")
         (run_dir / "raw" / "answers.json").write_text(json.dumps(answers), encoding="utf-8")
         (run_dir / "raw" / "fanoutfox.json").write_text(json.dumps(captures), encoding="utf-8")
         subprocess.run(
@@ -118,6 +160,32 @@ class ChatGPTBrowserNormalizationTests(unittest.TestCase):
         self.assertTrue(response["cited"])
         self.assertEqual(response["first_citation_rank"], 2)
         self.assertEqual(response["uncited_citation_candidates"], [])
+
+
+    def test_conversation_json_replaces_a_missing_capture(self):
+        (response,) = normalize([answer()], [], {"abc-123": json.dumps(CONVERSATION)})["responses"]
+
+        self.assertEqual(response["model"], "gpt-conv")
+        self.assertEqual(response["fan_out_queries"], ["logiciel tresorerie"])
+        self.assertTrue(response["used_web_search"])
+        self.assertEqual([s["domain"] for s in response["search_sources"]], ["target.example", "rival.example"])
+        self.assertTrue(response["target_found_in_search"])
+        self.assertEqual(response["evidence_status"]["fan_out_queries"]["state"], "supported")
+
+    def test_legacy_conversation_and_capture_gaps(self):
+        (response,) = normalize([answer()], [], {"abc-123": json.dumps(LEGACY_CONVERSATION)})["responses"]
+        self.assertEqual(response["model"], "gpt-old")
+        self.assertEqual(response["fan_out_queries"], ["tresorerie pme"])
+
+        partial = {**CAPTURE, "capture": {**CAPTURE["capture"], "fanout": [], "model": {}}}
+        (response,) = normalize([answer()], [partial], {"abc-123": json.dumps(CONVERSATION)})["responses"]
+        self.assertEqual(response["fan_out_queries"], ["logiciel tresorerie"])
+        self.assertEqual(response["model"], "gpt-conv")
+        self.assertIn("### 1. Target Brand", response["answer_text_markdown"])
+
+    def test_unreadable_conversation_is_ignored(self):
+        (response,) = normalize([answer()], [], {"abc-123": "<html>login</html>"})["responses"]
+        self.assertEqual(response["evidence_status"]["fan_out_queries"]["state"], "missing")
 
 
 if __name__ == "__main__":
