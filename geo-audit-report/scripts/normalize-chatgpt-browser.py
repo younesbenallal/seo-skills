@@ -192,7 +192,10 @@ def to_record(index, answer, capture):
             record["citations"] = citation_records(answer["citations"], [])
         return record
     if (capture.get("raw") or {}).get("answerText"):
-        record["answer_text_markdown"] = clean_answer(capture["raw"]["answerText"])
+        captured = clean_answer(capture["raw"]["answerText"])
+        # Fanout Fox sometimes stores an answer cut mid-stream: keep the rendered text when the capture is much shorter.
+        if len(captured) >= 0.8 * len(record["answer_text_markdown"]):
+            record["answer_text_markdown"] = captured
         record["recommendations"] = entities(capture["raw"]["answerText"])
     else:
         record["recommendations"] = capture.get("brands") or []

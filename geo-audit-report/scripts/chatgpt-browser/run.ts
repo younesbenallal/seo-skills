@@ -231,7 +231,9 @@ if (command === "workspaces") {
       console.error(`${answer.url} → ${error.message}`)
       return null
     })
-    if (command === "citations") answer.citations = raw === null ? null : citationsIn(raw)
+    // A reload can come back empty (rate limit, expired session): a retry only adds citations, never replaces them.
+    const resolved = raw === null ? null : citationsIn(raw)
+    if (command === "citations" && resolved?.length && resolved.length >= (answer.citations?.length ?? 0)) answer.citations = resolved
     if (raw !== null) console.log(`${answer.url} → ${command === "citations" ? `${answer.citations?.length} citations` : "saved"}`)
   }
   await page.close()
