@@ -10,6 +10,7 @@ This skill works with marketplaces through their REST API, with a key in a local
 | --- | --- | --- | --- | --- |
 | Linkavista | `LINKAVISTA_API_KEY` | yes | yes | [linkavista.md](linkavista.md), tested with live orders |
 | Collaborator.pro | `COLLABORATOR_API_KEY` | yes, once support enables it | no: the user orders in the web app, the API tracks the deal | [collaborator.md](collaborator.md), from the OpenAPI schema |
+| Serpzilla | `SERPZILLA_LOGIN`, `SERPZILLA_API_TOKEN` | yes | yes: guest posts and link insertions, with content approval | [serpzilla.md](serpzilla.md), from the OpenAPI schema and guides |
 
 ### API available, not documented yet
 
@@ -17,7 +18,6 @@ Read the platform's API docs, test read calls, then write a reference file like 
 
 | Platform | API | Docs | Notes |
 | --- | --- | --- | --- |
-| Serpzilla | REST, OpenAPI | public: serpzilla.com/api | Projects, blacklist, guest posts, permanent and rental niche edits, automatic buying modes. |
 | Rixot | REST `/v1`, personal key | public: rixot.com and github.com/mkrupkin/rixot-mcp | Basket, then publish from the prepaid balance. Links from $1: vet hard. |
 | BuyLinksForSEO | REST, personal key | public: buylinksforseo.com | Same tools as Rixot, likely the same inventory. |
 | Placement API | REST, typed client `placementapi` on npm | public: placementapi.com | Several suppliers deduplicated, domain price comparison. Ordering needs a key scope separate from read-only. |
