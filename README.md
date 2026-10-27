@@ -38,7 +38,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 
 ### Other access
 
-- Backlink buying needs at least one link marketplace with an API or MCP (Linkavista, Serpzilla, getreach, and others listed in `backlink-buying/references/platforms.md`) and an SEO data provider to vet sites.
+- Backlink buying needs an API key for at least one link marketplace (Linkavista, Collaborator, and others listed in `backlink-buying/references/platforms.md`) and an SEO data provider to vet sites.
 - Guest-post outreach may need an email connector or an interactive browser tool for approved submissions.
 - Ahrefs, Semrush, DataForSEO, or another SEO data provider can add keyword, traffic, authority, or backlink data where a workflow supports it.
 - GEO audits collect ChatGPT through a logged-in Chrome profile with the Fanout Fox extension by default. Perplexity and Gemini need a Bright Data API key or DataForSEO credentials.
@@ -49,7 +49,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 - `article-writing`: research and write articles using the site's content, search results, and confirmed editorial preferences.
 - `internal-linking`: map internal authority flow, strengthen priority pages, and reinforce topical clusters.
 - `linking-opportunities`: find contextual backlink opportunities on a target site using SERP and page evidence.
-- `backlink-buying`: choose which pages need links and how many, search link-marketplace catalogs through their API or MCP, vet publisher sites with SEO data, compare prices across marketplaces, and place approved Tier 1 or Tier 2 orders.
+- `backlink-buying`: choose which pages need links and how many, search link-marketplace catalogs through their REST API, vet publisher sites with SEO data, compare prices across marketplaces, and place approved Tier 1 or Tier 2 orders.
 - `backlink-outreach`: find and qualify guest-post, niche-edit, or link-exchange opportunities, match them to existing content, draft tailored outreach, maintain a flexible Markdown campaign log, and submit approved requests.
 - `seo-roast`: review a landing page or article for technical SEO, on-page quality, and search intent.
 - `gsc-analysis`: diagnose Search Console performance (drops, decay, quick wins, CTR gaps, cannibalization, intent splits) and turn it into prioritized actions, with a helper script for large exports.

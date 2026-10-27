@@ -278,22 +278,20 @@ Used by:
 
 - `backlink-buying`
 
-Supported paths:
+Supported path: the marketplace's REST API, with a key in a local env var. The skill does not use marketplace MCPs.
 
-- a marketplace MCP connected in the agent (Serpzilla, getreach, Placement API, and others)
-- a marketplace REST API with a key in a local env var, for example `LINKAVISTA_API_KEY`
-
-User setup:
+User setup, for each marketplace used:
 
 ```bash
 export LINKAVISTA_API_KEY="your-secret-here"
+export COLLABORATOR_API_KEY="your-secret-here"
 ```
 
-For an MCP, connect it in the agent with the URL and key from the marketplace's dashboard. `backlink-buying/references/platforms.md` lists what each marketplace exposes.
+`backlink-buying/references/platforms.md` lists the marketplaces with an API and which ones are documented in the skill.
 
 Agent behavior:
 
-- verify only whether the key is set or the MCP tools are callable, then check access with a read call such as the balance
+- verify only whether the key is set, then check access with a read call such as the balance
 - never print a key
 - research and baskets do not authorize spending: show each order (site, total price, target URL, anchor) and wait for explicit approval
 - ask for a budget cap at the start of each session and stay under it
