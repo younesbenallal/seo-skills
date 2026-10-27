@@ -190,6 +190,7 @@ Used by:
 
 - `linking-opportunities`
 - `search-intent-coverage`
+- optionally `backlink-buying` to size the link need from the top 10
 - optionally `backlink-outreach` for AI-first guest-post prospect discovery and link-exchange page discovery
 - optionally `seo-roast`
 - optionally `programmatic-seo`
@@ -259,6 +260,7 @@ Used optionally by:
 - `competitor-intelligence`
 - `programmatic-seo`
 - `backlink-outreach` for optional prospect qualification and link-exchange prioritization
+- `backlink-buying` for publisher-site vetting and sizing the link need on a SERP (required, with a browser-only fallback)
 
 Supported sources include Ahrefs, Semrush, DataForSEO, or an equivalent provider.
 
@@ -269,6 +271,33 @@ Agent behavior:
 - keep country, date, device, database, and domain scope consistent across compared sites
 - never ask the user to paste provider credentials in chat
 - continue with sitemap analysis when provider access is unavailable
+
+### Link marketplaces
+
+Used by:
+
+- `backlink-buying`
+
+Supported paths:
+
+- a marketplace MCP connected in the agent (Serpzilla, getreach, Placement API, and others)
+- a marketplace REST API with a key in a local env var, for example `LINKAVISTA_API_KEY`
+
+User setup:
+
+```bash
+export LINKAVISTA_API_KEY="your-secret-here"
+```
+
+For an MCP, connect it in the agent with the URL and key from the marketplace's dashboard. `backlink-buying/references/platforms.md` lists what each marketplace exposes.
+
+Agent behavior:
+
+- verify only whether the key is set or the MCP tools are callable, then check access with a read call such as the balance
+- never print a key
+- research and baskets do not authorize spending: show each order (site, total price, target URL, anchor) and wait for explicit approval
+- ask for a budget cap at the start of each session and stay under it
+- if no marketplace is reachable, continue with a domain list or catalog export supplied by the user and leave ordering to them
 
 ### Bright Data API
 

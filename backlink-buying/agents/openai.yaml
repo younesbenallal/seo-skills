@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backlink Buying"
+  short_description: "Find, vet, and buy links on marketplaces"
+  default_prompt: "Use $backlink-buying to find which of my pages need links, vet publisher sites on the marketplaces I can access, compare prices, and prepare a basket for my approval."
