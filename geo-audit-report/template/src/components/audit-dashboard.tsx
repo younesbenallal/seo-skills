@@ -438,7 +438,11 @@ export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {analysis.recommendations.map((item) => <Card key={item.title} className="shadow-none"><CardHeader>
-              <Badge variant="secondary" className="w-fit">{item.priority}</Badge>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">{item.priority}</Badge>
+                {item.diagnosis && <Badge variant="outline">{item.diagnosis.replace("_", " ")}</Badge>}
+                {item.source_action && <Badge variant="outline">{item.source_action}</Badge>}
+              </div>
               <CardTitle className="text-base">{item.title}</CardTitle>
               <CardDescription className="leading-6">{item.summary}</CardDescription>
               <p className="pt-2 text-xs leading-5 text-zinc-500">Evidence: {item.evidence}</p>

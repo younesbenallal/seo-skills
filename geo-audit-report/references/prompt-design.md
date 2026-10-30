@@ -1,5 +1,7 @@
 # Prompt design
 
+Start from buyer decisions, not keywords: map the questions a buyer asks before choosing a solution in the category (what to use, which option fits their constraint, how alternatives compare, whether it is worth switching). Write each decision as an AI prompt and pair it with its closest Google keyword in the prompt summary you confirm with the user, so the same decisions can be measured in both channels. Keep the prompt file itself to one prompt per line.
+
 Inspect the homepage, product or service pages, use-case and industry pages, comparisons, blog and resource clusters, FAQs, templates, tools, lead magnets, integrations, navigation, sitemap, headings, CTAs, and repeated claims. Translate those themes into natural questions a buyer or user might ask.
 
 Favor a mix of category discovery and best-tool/ranking prompts; alternatives and comparisons; workflow or problem-solving questions; buyer-evaluation prompts; prompts tied to the organization's strengths; and privacy, compliance, localization, no-code, or regional constraints when relevant. Prompt clusters can use “best/top/compare,” “alternatives/versus,” “how to/setup/automate,” and relevant constraints. Start with 2–10 prompts, but coverage matters more than a round number.
