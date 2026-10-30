@@ -51,6 +51,7 @@ If structured SERP access is unavailable, use a browser to inspect the results d
 - `linking-opportunities`: find contextual backlink opportunities on a target site using SERP and page evidence.
 - `backlink-buying`: choose which pages need links and how many, search link-marketplace catalogs through their REST API, vet publisher sites with SEO data, compare prices across marketplaces, and place approved Tier 1 or Tier 2 orders.
 - `backlink-outreach`: find and qualify guest-post, niche-edit, or link-exchange opportunities, match them to existing content, draft tailored outreach, maintain a flexible Markdown campaign log, and submit approved requests.
+- `technical-audit`: audit only what affects SEO, GEO, and CRO (index and AI-crawler access, Bing and Brave presence, canonicals, JS rendering, keyword targeting, internal linking) and deliver a prioritized HTML report, with no-install crawl scripts.
 - `seo-roast`: review a landing page or article for technical SEO, on-page quality, and search intent.
 - `gsc-analysis`: diagnose Search Console performance (drops, decay, quick wins, CTR gaps, cannibalization, intent splits) and turn it into prioritized actions, with a helper script for large exports.
 - `subkeyword-injector`: use Search Console queries to propose or apply content updates for long-tail coverage.
