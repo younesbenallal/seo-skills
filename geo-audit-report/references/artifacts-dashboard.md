@@ -17,12 +17,12 @@ Keep one `{out-dir}/report-analysis.json` for the current interpretation of the 
   "comparison_note": "Explain changes in prompts, chatbots, provider, or evidence quality.",
   "findings": ["A specific trend backed by the runs."],
   "recommendations": [
-    {"priority": "High", "title": "Action", "summary": "What to do and why.", "evidence": "Run dates, prompts, and measured signals."}
+    {"priority": "High", "title": "Action", "summary": "What to do and why.", "evidence": "Run dates, prompts, and measured signals.", "diagnosis": "weak_page", "source_action": "own"}
   ]
 }
 ```
 
-The example shows field meanings; a publishable file needs 3–6 distinct, evidenced recommendations. Do not carry forward an old recommendation just because it appeared in a previous run.
+The example shows field meanings; a publishable file needs 3–6 distinct, evidenced recommendations. `diagnosis` (`missing_page`, `weak_page`, `technical`, `third_party`) and `source_action` (`own`, `claim`, `earn`, `contest`) are optional and follow [analysis.md](analysis.md); the dashboard shows them as tags on the recommendation. Do not carry forward an old recommendation just because it appeared in a previous run.
 
 Publish from the skill repository with:
 

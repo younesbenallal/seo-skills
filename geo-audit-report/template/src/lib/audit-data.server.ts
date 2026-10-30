@@ -121,7 +121,9 @@ function isReportAnalysis(value: unknown): value is ReportAnalysis {
     typeof item.title === "string" && item.title.trim() &&
     typeof item.summary === "string" && item.summary.trim() &&
     typeof item.priority === "string" && item.priority.trim() &&
-    typeof item.evidence === "string" && item.evidence.trim()
+    typeof item.evidence === "string" && item.evidence.trim() &&
+    (!("diagnosis" in item) || ["missing_page", "weak_page", "technical", "third_party"].includes(String(item.diagnosis))) &&
+    (!("source_action" in item) || ["own", "claim", "earn", "contest"].includes(String(item.source_action)))
   )
 }
 

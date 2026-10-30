@@ -91,6 +91,8 @@ export type ReportAnalysis = {
     summary: string
     priority: string
     evidence: string
+    diagnosis?: "missing_page" | "weak_page" | "technical" | "third_party"
+    source_action?: "own" | "claim" | "earn" | "contest"
   }>
 }
 

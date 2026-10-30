@@ -29,7 +29,7 @@ Provider-specific setup and collection behavior live in [references/provider-col
 
 ## Phase 1: prompt set
 
-Check for an existing prompt file before generating one. Prefer a user-provided path, `prompts.txt`, `geo-audit-report/test-prompts.txt`, and prior GEO tracking files. Summarize a found file and ask whether to run, refine, or replace it. If no useful list exists, build prompts from the site's positioning, jobs-to-be-done, audience, alternatives, important pages, and geography. Use the prompt guidance in [references/prompt-design.md](references/prompt-design.md).
+Check for an existing prompt file before generating one. Prefer a user-provided path, `prompts.txt`, `geo-audit-report/test-prompts.txt`, and prior GEO tracking files. Summarize a found file and ask whether to run, refine, or replace it. If no useful list exists, build prompts from the buyer decisions in the category, the site's positioning, jobs-to-be-done, audience, alternatives, important pages, and geography. Use the prompt guidance in [references/prompt-design.md](references/prompt-design.md).
 
 Do not begin collection until the prompt list and its path are confirmed. Prompts should represent real user intent rather than taglines, cover useful angles, and connect to existing or desired content.
 
@@ -72,9 +72,11 @@ Read every completed dated `results.json` after collection. Write a cross-run co
 - fan-out queries, including an aggregated query summary
 - source-type patterns (including UGC and YouTube where present)
 - answer, citation, search, and map competitors as separate channels
-- reviewed recommendations grounded in the captured evidence
+- a diagnosis of each important lost prompt: missing page, weak page, technical issue, or third-party sources
+- for third-party sources, whether each one needs an own, claim, earn, or contest action
+- reviewed recommendations grounded in the captured evidence, each one a change to test on named prompts in the next run
 
-Use [references/analysis.md](references/analysis.md) for channel interpretation, fan-out fields, disclosure of missing or malformed evidence, and the GEO Playbook guidance. Give the user the exact absolute path to `{out-dir}/report/index.html`. Clearly disclose any unusable JSON contract or dashboard build instead of presenting the full package as delivered.
+Use [references/analysis.md](references/analysis.md) for channel interpretation, fan-out fields, the lost-prompt diagnosis, source actions, the rerun loop, disclosure of missing or malformed evidence, and the GEO Playbook guidance. Give the user the exact absolute path to `{out-dir}/report/index.html`. Clearly disclose any unusable JSON contract or dashboard build instead of presenting the full package as delivered.
 
 ## Operational defaults
 
