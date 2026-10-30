@@ -1,0 +1,4 @@
+interface:
+  display_name: "Technical Audit"
+  short_description: "Audit what blocks SEO, AI visibility, and conversions, with a prioritized HTML report"
+  default_prompt: "Use $technical-audit to audit my site and give me a prioritized report."

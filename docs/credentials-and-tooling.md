@@ -149,6 +149,7 @@ Share the file path for the CSV or JSON export and I will continue with that inp
 Used by:
 
 - `backlink-outreach` for guideline research, article review, niche-edit and link-exchange page review, and approved form submission
+- `technical-audit` for Bing, Brave, and DuckDuckGo presence checks, mobile CRO checks, and the report preview
 
 Available paths:
 
@@ -239,6 +240,7 @@ Required shared integration for this collection. Used by:
 - `subkeyword-injector`
 - `internal-linking`
 - `seo-audit-report`
+- `technical-audit` (recommended; the audit runs without it and lists index coverage and cannibalization as limits)
 
 User setup:
 
