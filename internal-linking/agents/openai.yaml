@@ -1,0 +1,4 @@
+interface:
+  display_name: "Internal Linking"
+  short_description: "Plan and improve internal authority flow"
+  default_prompt: "Use $internal-linking to audit my site and prioritize contextual internal links."

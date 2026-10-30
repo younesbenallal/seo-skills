@@ -1,891 +1,672 @@
 "use client"
 
-import { useDeferredValue, useState } from "react"
 import {
   ArrowUpRight,
-  Bot,
+  Check,
+  ChevronDown,
+  CircleAlert,
   ExternalLink,
-  Globe,
-  Link2,
+  MapPin,
   Search,
+  X,
 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { Fragment, useState } from "react"
 
-import { Gemini } from "@/src/components/ui/svgs/gemini"
-import { Openai } from "@/src/components/ui/svgs/openai"
-import { Perplexity } from "@/src/components/ui/svgs/perplexity"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/src/components/ui/accordion"
-import { Badge } from "@/src/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card"
-import { Input } from "@/src/components/ui/input"
-import { Separator } from "@/src/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import {
   buildAuditViewModel,
-  formatDate,
-  formatPercent,
-  pluralize,
-  sortByCountDesc,
+  type AuditFileRecord,
   type DashboardLoadResult,
-  type DomainGroup,
-  type FanOutSummaryRecord,
-  type PromptGroup,
+  type ResponseRecord,
+  type SourceRecord,
 } from "@/src/lib/audit-data"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/src/components/ui/accordion"
+import { Badge } from "@/src/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 
-function ChatbotLogo({
-  chatbot,
-  className,
-}: {
-  chatbot: string
-  className?: string
-}) {
-  const normalized = chatbot.toLowerCase()
+const percent = (value: number, total: number) =>
+  `${Math.round((value / Math.max(total, 1)) * 100)}%`
 
-  if (
-    normalized.includes("gpt") ||
-    normalized.includes("openai") ||
-    normalized.includes("chatgpt")
-  ) {
-    return <Openai className={className} />
-  }
-
-  if (normalized.includes("perplex")) {
-    return <Perplexity className={className} />
-  }
-
-  if (normalized.includes("gemini")) {
-    return <Gemini className={className} />
-  }
-
-  return <Bot className={className} />
+const formatDate = (value: string) => {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(date)
 }
 
-function MetricCard({
-  title,
+function Signal({ value, label }: { value: boolean | null; label: string }) {
+  if (value === null) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <CircleAlert className="size-3.5" />
+        Not provided
+      </span>
+    )
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+        value ? "text-emerald-700" : "text-rose-700"
+      }`}
+    >
+      {value ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+      {label}
+    </span>
+  )
+}
+
+function Metric({
+  label,
   value,
   detail,
 }: {
-  title: string
+  label: string
   value: string
   detail: string
 }) {
   return (
-    <Card className="border-border/80 shadow-none">
-      <CardHeader className="pb-3">
-        <CardDescription className="text-xs text-muted-foreground">
-          {title}
-        </CardDescription>
-        <CardTitle className="text-3xl font-semibold tracking-tight">
-          {value}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 text-sm text-muted-foreground">
-        {detail}
+    <Card className="border-border bg-card shadow-none">
+      <CardContent className="p-5">
+        <p className="text-xs font-medium text-zinc-500">{label}</p>
+        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-700">{value}</p>
+        <p className="mt-2 text-xs font-medium leading-5 text-zinc-500">{detail}</p>
       </CardContent>
     </Card>
   )
 }
 
-function MeterRow({
+function FunnelStep({
   label,
-  value,
-  meta,
+  count,
+  total,
 }: {
   label: string
-  value: number
-  meta: string
+  count: number
+  total: number
 }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <div className="min-w-0">
-          <p className="truncate font-medium text-foreground">{label}</p>
-          <p className="truncate text-xs text-muted-foreground">{meta}</p>
+  if (total === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border/75 bg-muted/20 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium">{label}</p>
+          <span className="text-muted-foreground">n/a</span>
         </div>
-        <span className="shrink-0 font-medium text-foreground">
-          {formatPercent(value)}
+        <p className="mt-3 text-xs text-muted-foreground">Evidence not provided</p>
+      </div>
+    )
+  }
+  const healthy = count === total
+  return (
+    <div className="relative rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-zinc-600">{label}</p>
+        <span className={`font-semibold ${healthy ? "text-emerald-700" : count ? "text-amber-700" : "text-rose-700"}`}>
+          {count}/{total}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-muted">
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-foreground/80 transition-[width]"
-          style={{ width: `${Math.max(value, 4)}%` }}
+          className={healthy ? "h-full bg-emerald-500" : count ? "h-full bg-amber-500" : "h-full bg-rose-500"}
+          style={{ width: percent(count, total) }}
         />
       </div>
     </div>
   )
 }
 
-function ChatbotSummary({
-  label,
-  visibility,
-  citationCount,
-  averageRank,
+function SourceList({
+  title,
+  sources,
+  empty,
 }: {
-  label: string
-  visibility: number
-  citationCount: number
-  averageRank: number | null
+  title: string
+  sources: SourceRecord[]
+  empty: string
 }) {
   return (
-    <div className="rounded-xl border border-border/80 bg-card p-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-md bg-muted/70">
-            <ChatbotLogo
-              chatbot={label}
-              className="size-4 fill-current text-foreground"
-            />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-foreground">{label}</p>
-            <p className="text-xs text-muted-foreground">
-              {citationCount} {pluralize(citationCount, "citation", "citations")}
-            </p>
-          </div>
-        </div>
-        <Badge variant="secondary" className="rounded-md px-2.5 py-1">
-          {averageRank === null ? "no rank" : `avg rank #${averageRank}`}
-        </Badge>
+    <section className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <Badge variant="secondary">{sources.length}</Badge>
       </div>
-      <div className="mt-4 h-2 rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-foreground"
-          style={{ width: `${Math.max(visibility, 6)}%` }}
-        />
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        visibility across tracked prompt responses
-      </p>
-    </div>
-  )
-}
-
-function PromptPanel({ promptGroup }: { promptGroup: PromptGroup }) {
-  return (
-    <AccordionItem
-      value={promptGroup.prompt}
-      className="overflow-hidden rounded-xl border border-border/80 bg-background px-5"
-    >
-      <AccordionTrigger className="py-5 hover:no-underline">
-        <div className="flex min-w-0 flex-1 flex-col gap-3 text-left">
-          <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <p className="truncate text-base font-medium text-foreground">
-                {promptGroup.prompt}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {promptGroup.responses.length}{" "}
-                {pluralize(promptGroup.responses.length, "response", "responses")}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="rounded-md">
-                visibility {formatPercent(promptGroup.visibility)}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                citations {promptGroup.citations}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                avg rank{" "}
-                {promptGroup.averageRank === null
-                  ? "n/a"
-                  : `#${promptGroup.averageRank}`}
-              </Badge>
-              <Badge variant="secondary" className="rounded-md">
-                search triggered{" "}
-                {
-                  promptGroup.responses.filter(
-                    (response) => response.used_web_search
-                  ).length
-                }
-                /{promptGroup.responses.length}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            {promptGroup.models.map((model) => (
-              <span
-                key={model}
-                className="inline-flex items-center gap-2 rounded-md border border-border/80 px-2.5 py-1"
-              >
-                <ChatbotLogo
-                  chatbot={model}
-                  className="size-3.5 fill-current text-foreground"
-                />
-                <span>{model}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-4 pb-5">
-        {promptGroup.responses.map((response) => (
-          <Card
-            key={`${response.chatbot}-${response.prompt}`}
-            className="rounded-lg border-border/75 shadow-none"
-          >
-            <CardHeader className="gap-4 border-b border-border/70">
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-md bg-muted/70">
-                    <ChatbotLogo
-                      chatbot={response.chatbot}
-                      className="size-4 fill-current text-foreground"
-                    />
-                  </span>
-                  <div>
-                    <CardTitle className="text-lg">
-                      {response.model || response.chatbot}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      captured {formatDate(response.captured_at)}
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="rounded-md">
-                    visibility {response.cited ? "cited" : "mentioned only"}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    {response.citations_count}{" "}
-                    {pluralize(response.citations_count, "citation", "citations")}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    fan-out {response.fan_out_queries.length}
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-md">
-                    search {response.used_web_search ? "triggered" : "not triggered"}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-5">
-              {response.brands_mentioned.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">brands mentioned</p>
-                  <div className="flex flex-wrap gap-2">
-                    {response.brands_mentioned.map((brand) => (
-                      <Badge
-                        key={`${response.prompt}-${brand}`}
-                        variant="outline"
-                        className="rounded-md"
-                      >
-                        {brand}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">response</p>
-                <div className="rounded-lg bg-muted/40 p-4 text-sm leading-7 text-foreground">
-                  <p className="whitespace-pre-wrap">
-                    {response.answer_text_markdown || "No response body available."}
-                  </p>
-                </div>
-              </div>
-
-              {response.fan_out_queries.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">fan-out prompts</p>
-                  <div className="space-y-2">
-                    {(response.fan_out_details.length > 0
-                      ? response.fan_out_details
-                      : response.fan_out_queries.map((query) => ({
-                          query,
-                          brand_appeared_in_response: response.mentions > 0,
-                          brand_cited_in_response: response.cited,
-                          brand_found_in_search_results: false,
-                          matched_target_domains: [],
-                          search_results_count: 0,
-                          search_results: [],
-                        }))
-                    ).map((detail) => (
-                      <div
-                        key={`${response.prompt}-${detail.query}`}
-                        className="rounded-lg border border-border/75 bg-muted/25 p-3"
-                      >
-                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                          <p className="text-sm font-medium text-foreground">
-                            {detail.query}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary" className="rounded-md">
-                              response{" "}
-                              {detail.brand_appeared_in_response
-                                ? "mentions us"
-                                : "misses us"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              citation {detail.brand_cited_in_response ? "yes" : "no"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              serp{" "}
-                              {detail.brand_found_in_search_results
-                                ? "contains us"
-                                : "misses us"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-md">
-                              {detail.search_results_count} search results
-                            </Badge>
-                          </div>
-                        </div>
-                        {detail.search_results.length > 0 ? (
-                          <div className="mt-3 space-y-2">
-                            {detail.search_results.slice(0, 5).map((result) => (
-                              <a
-                                key={`${detail.query}-${result.url}`}
-                                href={result.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-xs transition-colors hover:bg-background"
-                              >
-                                <div className="min-w-0">
-                                  <p className="truncate font-medium text-foreground">
-                                    {result.title || result.url}
-                                  </p>
-                                  <p className="truncate text-muted-foreground">
-                                    {result.domain}
-                                  </p>
-                                </div>
-                                <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-                              </a>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {response.sources.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">sources</p>
-                  <div className="space-y-2">
-                    {response.sources.slice(0, 8).map((source) => (
-                      <a
-                        key={source.url}
-                        href={source.url || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3 text-sm transition-colors hover:bg-muted/40"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-foreground">
-                            {source.title || source.url}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {source.domain}
-                          </p>
-                        </div>
-                        <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ))}
-      </AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function FanOutSummaryPanel({ summary }: { summary: FanOutSummaryRecord }) {
-  return (
-    <div className="rounded-xl border border-border/80 bg-background p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{summary.query}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {summary.count} {pluralize(summary.count, "time", "times")} across{" "}
-            {summary.prompts.length} {pluralize(summary.prompts.length, "prompt", "prompts")}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="rounded-md">
-            appeared {summary.appeared_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            missed {summary.not_appeared_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            cited {summary.cited_in_responses}
-          </Badge>
-          <Badge variant="secondary" className="rounded-md">
-            serp hits {summary.found_in_search_results}
-          </Badge>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SourcePanel({ domainGroup }: { domainGroup: DomainGroup }) {
-  return (
-    <AccordionItem
-      value={domainGroup.domain}
-      className="overflow-hidden rounded-xl border border-border/80 bg-background px-5"
-    >
-      <AccordionTrigger className="py-5 hover:no-underline">
-        <div className="flex min-w-0 flex-1 items-start justify-between gap-6 text-left">
-          <div className="min-w-0">
-            <p className="truncate text-base font-medium text-foreground">
-              {domainGroup.domain}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {domainGroup.uniquePages} {pluralize(domainGroup.uniquePages, "page", "pages")} across{" "}
-              {domainGroup.responsesCount} {pluralize(domainGroup.responsesCount, "response", "responses")}
-            </p>
-          </div>
-          <div className="hidden shrink-0 gap-6 text-sm text-muted-foreground md:flex">
-            <span>{domainGroup.uniquePages} pages</span>
-            <span>{domainGroup.responsesCount} responses</span>
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pb-5">
-        <div className="space-y-3">
-          {domainGroup.pages.map((page) => (
+      {sources.length ? (
+        <div className="grid gap-2">
+          {sources.map((source, index) => (
             <a
-              key={page.url}
-              href={page.url}
+              key={`${source.url}-${index}`}
+              href={source.url || "#"}
               target="_blank"
               rel="noreferrer"
-              className="flex flex-col gap-3 rounded-lg border border-border/70 px-4 py-4 transition-colors hover:bg-muted/40 md:flex-row md:items-center md:justify-between"
+              className="flex items-start justify-between gap-4 rounded-lg border border-border/70 p-3 text-sm transition-colors hover:bg-muted/40"
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">
-                  {page.title || page.url}
-                </p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {page.url}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                <span>{page.responseCount} responses</span>
-                <ArrowUpRight className="size-4" />
-              </div>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">
+                  {source.title || source.url}
+                </span>
+                <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
+                  {source.domain}
+                  {source.position ? ` · position ${source.position}` : ""}
+                </span>
+              </span>
+              <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
             </a>
           ))}
         </div>
+      ) : (
+        <p className="rounded-lg border border-dashed bg-zinc-50 p-4 text-sm font-medium text-zinc-500">{empty}</p>
+      )}
+    </section>
+  )
+}
+
+function Evidence({ response }: { response: ResponseRecord }) {
+  const citationsAvailable = ["supported", "inferred"].includes(
+    response.evidenceStatus.actualCitations
+  )
+  const answerAvailable = ["supported", "inferred"].includes(
+    response.evidenceStatus.answer
+  )
+  const status =
+    !answerAvailable
+      ? "Answer unavailable"
+      : response.mentions > 0
+      ? response.cited
+        ? "Mentioned and cited"
+        : "Mentioned, not cited"
+      : "Brand absent"
+
+  return (
+    <AccordionItem value={`${response.chatbot}-${response.prompt}`} className="rounded-xl border px-5">
+      <AccordionTrigger className="gap-4 py-5 hover:no-underline">
+        <div className="min-w-0 flex-1 text-left">
+          <p className="text-sm font-medium">{response.prompt}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Badge variant={response.mentions > 0 ? "secondary" : "destructive"}>{status}</Badge>
+            <Badge variant="outline">
+              {citationsAvailable
+                ? `${response.actualCitations.length} actual citations`
+                : "Citation status unavailable"}
+            </Badge>
+            <Badge variant="outline">
+              {["supported", "inferred"].includes(response.evidenceStatus.maps)
+                ? `${response.mapResults.length} map results`
+                : "Map data unavailable"}
+            </Badge>
+          </div>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="space-y-7 pb-6">
+        <section>
+          <h4 className="mb-3 text-sm font-medium">Final answer</h4>
+          <div className="prose max-w-none rounded-xl border bg-zinc-50 p-5 text-sm leading-7">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{response.answerMarkdown}</ReactMarkdown>
+          </div>
+        </section>
+
+        <div className="grid gap-7 xl:grid-cols-2">
+          <SourceList
+            title="Actual cited pages"
+            sources={response.actualCitations}
+            empty={
+              citationsAvailable
+                ? "No pages were cited in this answer."
+                : "The provider did not supply reliable actual-citation status."
+            }
+          />
+          <SourceList
+            title="Uncited citation candidates"
+            sources={response.uncitedCitationCandidates}
+            empty={["supported", "inferred"].includes(response.evidenceStatus.citationCandidates) ? "No uncited citation candidates were captured." : "Citation candidate data was not provided."}
+          />
+          <SourceList
+            title="Captured search sources"
+            sources={response.searchSources}
+            empty={["supported", "inferred"].includes(response.evidenceStatus.searchSources) ? "No structured search sources were captured." : "Search source data was not provided."}
+          />
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Map placements</h4>
+              <Badge variant="secondary">{["supported", "inferred"].includes(response.evidenceStatus.maps) ? response.mapResults.length : "n/a"}</Badge>
+            </div>
+            <div className="space-y-2">
+              {response.mapResults.slice(0, 10).map((result) => (
+                <div key={`${result.name}-${result.position}`} className="rounded-lg border p-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-medium">#{result.position ?? "–"} {result.name}</span>
+                    <span className="text-xs font-medium text-zinc-500">
+                      {result.rating ?? "–"} ★ · {result.reviewCount ?? 0} reviews
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs font-medium text-zinc-500">{result.category}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        {response.fanOutQueries.length > 0 && <section>
+          <h4 className="mb-2 text-sm font-medium">Search queries generated by the assistant</h4>
+          <ul className="list-inside list-disc space-y-1 text-sm text-zinc-600">{response.fanOutQueries.map((query, index) => <li key={`${query}-${index}`}>{query}</li>)}</ul>
+        </section>}
+        {response.attachedLinks.length > 0 && <section>
+          <h4 className="mb-2 text-sm font-medium">Links attached to the answer</h4>
+          <ul className="space-y-1 text-sm">{response.attachedLinks.map((link, index) => <li key={`${link.url}-${index}`}><a href={link.url} target="_blank" rel="noreferrer" className="text-zinc-600 underline">{link.text || link.url}</a></li>)}</ul>
+        </section>}
       </AccordionContent>
     </AccordionItem>
+  )
+}
+
+function MentionTrend({ history }: { history: Array<{ run: AuditFileRecord; view: ReturnType<typeof buildAuditViewModel> }> }) {
+  const points = history.flatMap(({ run, view }, index) => {
+    const total = view.metrics.availability.answers
+    if (!total) return []
+    return [{
+      index,
+      date: formatDate(run.run_at),
+      mentions: view.metrics.mentioned,
+      total,
+      rate: view.metrics.mentioned / total,
+    }]
+  })
+  const left = 56
+  const right = 606
+  const top = 36
+  const bottom = 204
+  const coordinates = points.map((point, pointIndex) => ({
+    ...point,
+    x: points.length === 1 ? (left + right) / 2 : left + (pointIndex / (points.length - 1)) * (right - left),
+    y: bottom - point.rate * (bottom - top),
+  }))
+  const dateLabels = new Set([0, Math.floor((coordinates.length - 1) / 2), coordinates.length - 1])
+
+  return (
+    <Card className="h-full shadow-none">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-base">Mention rate by run</CardTitle>
+        <CardDescription>Share of answers with a brand mention. Hover a point for its count.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!coordinates.length ? <p className="py-16 text-center text-sm text-zinc-500">No runs have reliable answer evidence yet.</p> : <>
+          <svg viewBox="0 0 640 260" className="w-full" role="img" aria-label={`Brand mention rate across ${points.length} runs`}>
+            {[0, 0.5, 1].map((rate) => {
+              const y = bottom - rate * (bottom - top)
+              return <g key={rate}><line x1={left} y1={y} x2={right} y2={y} stroke="#e4e4e7" strokeDasharray={rate === 0 ? undefined : "4 5"} /><text x="4" y={y + 4} fill="#71717a" fontSize="12">{Math.round(rate * 100)}%</text></g>
+            })}
+            {coordinates.length > 1 && <polyline points={coordinates.map(({ x, y }) => `${x},${y}`).join(" ")} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
+            {coordinates.map((point, index) => <g key={`${point.date}-${index}`}>
+              <circle cx={point.x} cy={point.y} r="6" fill="#2563eb" stroke="white" strokeWidth="2"><title>{point.date}: {point.mentions}/{point.total} answers ({Math.round(point.rate * 100)}%)</title></circle>
+              {dateLabels.has(index) && <text x={point.x} y="235" fill="#71717a" fontSize="11" textAnchor="middle">{point.date}</text>}
+              {coordinates.length <= 5 && <text x={point.x} y={Math.max(top - 8, point.y - 12)} fill="#3f3f46" fontSize="11" fontWeight="600" textAnchor="middle">{point.mentions}/{point.total}</text>}
+            </g>)}
+          </svg>
+          {points.length === 1 && <p className="text-center text-xs text-zinc-500">One run so far. New audits will extend this trend.</p>}
+        </>}
+      </CardContent>
+    </Card>
+  )
+}
+
+const llmTab = (chatbot: string) => {
+  const value = chatbot.toLowerCase()
+  if (value === "gpt" || value.includes("chatgpt")) return "gpt"
+  if (value.includes("perplexity")) return "perplexity"
+  return value.replace(/[^a-z0-9-]+/g, "-")
+}
+
+const llmLabel = (key: string) => {
+  if (key === "gpt") return "GPT"
+  if (key === "perplexity") return "Perplexity"
+  return key.charAt(0).toUpperCase() + key.slice(1)
+}
+
+function PromptLlmTabs({ group }: { group: ReturnType<typeof buildAuditViewModel>["promptGroups"][number] }) {
+  const responsesByLlm = new Map<string, ResponseRecord[]>()
+  for (const response of group.responses) {
+    const key = llmTab(response.chatbot)
+    responsesByLlm.set(key, [...(responsesByLlm.get(key) ?? []), response])
+  }
+  const llms = ["gpt", "perplexity", ...[...responsesByLlm.keys()].filter((key) => key !== "gpt" && key !== "perplexity")]
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm font-medium text-zinc-700">{group.prompt}</p>
+      <Tabs key={group.prompt} defaultValue="gpt" className="space-y-4">
+        <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl border bg-white p-1">
+          {llms.map((llm) => <TabsTrigger key={llm} value={llm}>{llmLabel(llm)}</TabsTrigger>)}
+        </TabsList>
+        {llms.map((llm) => {
+          const responses = responsesByLlm.get(llm) ?? []
+          return <TabsContent key={llm} value={llm} className="space-y-6 rounded-xl border bg-white p-4 sm:p-6">
+            {responses.length ? responses.map((response, index) => <div key={`${response.chatbot}-${index}`} className="space-y-6">
+              {responses.length > 1 && <h4 className="font-medium">Response {index + 1}</h4>}
+              <section>
+                <h4 className="mb-2 text-sm font-semibold">Query</h4>
+                <p className="rounded-lg bg-zinc-50 p-3 text-sm leading-6">{response.prompt}</p>
+                <div className="mt-3">
+                  <p className="text-sm font-medium">Fan queries <span className="text-zinc-500">({["supported", "inferred"].includes(response.evidenceStatus.fanOutQueries) ? response.fanOutQueries.length : "n/a"})</span></p>
+                  {response.fanOutQueries.length ? <ul className="mt-2 list-inside list-disc space-y-1 text-sm leading-6 text-zinc-600">{response.fanOutQueries.map((query, queryIndex) => <li key={`${query}-${queryIndex}`}>{query}</li>)}</ul> : <p className="mt-1 text-sm text-zinc-500">{["supported", "inferred"].includes(response.evidenceStatus.fanOutQueries) ? "No fan queries were captured." : "Fan query data was not provided."}</p>}
+                </div>
+              </section>
+              <section>
+                <h4 className="mb-2 text-sm font-semibold">Citations</h4>
+                <SourceList title="Confirmed citations" sources={response.actualCitations} empty={["supported", "inferred"].includes(response.evidenceStatus.actualCitations) ? "No confirmed citation in this answer." : "Citation status was not provided reliably."} />
+                {response.citationCandidates.length > 0 && <details className="mt-3"><summary className="cursor-pointer text-sm font-medium">Citation candidates ({response.citationCandidates.length}, not all confirmed)</summary><div className="mt-3"><SourceList title="Candidates" sources={response.citationCandidates} empty="No citation candidates captured." /></div></details>}
+              </section>
+              <section>
+                <h4 className="mb-2 text-sm font-semibold">Generated answer</h4>
+                {response.answerMarkdown ? <div className="prose max-w-none rounded-xl border bg-zinc-50 p-5 text-sm leading-7"><ReactMarkdown remarkPlugins={[remarkGfm]}>{response.answerMarkdown}</ReactMarkdown></div> : <p className="text-sm text-zinc-500">The generated answer was not provided.</p>}
+              </section>
+            </div>) : <p className="py-8 text-center text-sm text-zinc-500">No {llmLabel(llm)} response was collected for this prompt in the selected run.</p>}
+          </TabsContent>
+        })}
+      </Tabs>
+    </div>
   )
 }
 
 export function AuditDashboard({ loaded }: { loaded: DashboardLoadResult }) {
-  const [sourceQuery, setSourceQuery] = useState("")
-  const deferredSourceQuery = useDeferredValue(sourceQuery)
-
+  const [selectedRun, setSelectedRun] = useState(loaded.ok ? loaded.runs.length - 1 : 0)
+  const [expandedPrompt, setExpandedPrompt] = useState<string | null>(null)
   if (!loaded.ok) {
     return (
-      <main className="min-h-svh bg-background px-6 py-12">
-        <div className="mx-auto max-w-3xl">
-          <Card className="border-border/80 shadow-none">
-            <CardHeader>
-              <CardTitle>Unable to load audit data</CardTitle>
-              <CardDescription>
-                The dashboard could not read the configured JSON files.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>{loaded.error}</p>
-              <p>
-                Check <code>AUDIT_DATA_PATH</code> and <code>TRACKED_PROMPTS_PATH</code>,
-                then restart the dev server.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="grid min-h-svh place-items-center bg-zinc-100 p-6">
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle>Unable to load audit data</CardTitle>
+            <CardDescription>{loaded.error}</CardDescription>
+          </CardHeader>
+        </Card>
       </main>
     )
   }
 
-  const { audit, trackedPrompts } = loaded
+  const { trackedPrompts, runs, analysis } = loaded
+  const audit = runs[selectedRun] ?? loaded.audit
   const view = buildAuditViewModel(audit, trackedPrompts)
-  const filteredDomainGroups = view.domainGroups.filter((domainGroup) => {
-    if (!deferredSourceQuery.trim()) {
-      return true
+  const history = runs.map((run) => ({ run, view: buildAuditViewModel(run, trackedPrompts) }))
+  const historicalPrompts = [...new Set(history.flatMap(({ view: item }) => item.promptGroups.map((group) => group.prompt)))]
+  const { metrics } = view
+  const totals = history.reduce((sum, { view: item }) => ({
+    responses: sum.responses + item.responses.length,
+    answers: sum.answers + item.metrics.availability.answers,
+    mentions: sum.mentions + item.metrics.mentioned,
+  }), { responses: 0, answers: 0, mentions: 0 })
+  const chatbotHistory = new Map<string, { responses: number; answers: number; mentions: number; citationEvidence: number; citations: number }>()
+  for (const { view: item } of history) {
+    for (const response of item.responses) {
+      const current = chatbotHistory.get(response.chatbot) ?? { responses: 0, answers: 0, mentions: 0, citationEvidence: 0, citations: 0 }
+      current.responses += 1
+      if (["supported", "inferred"].includes(response.evidenceStatus.answer)) {
+        current.answers += 1
+        if (response.mentions > 0) current.mentions += 1
+      }
+      if (["supported", "inferred"].includes(response.evidenceStatus.actualCitations)) {
+        current.citationEvidence += 1
+        if (response.cited) current.citations += 1
+      }
+      chatbotHistory.set(response.chatbot, current)
     }
-
-    const query = deferredSourceQuery.trim().toLowerCase()
-    return (
-      domainGroup.domain.toLowerCase().includes(query) ||
-      domainGroup.pages.some(
-        (page) =>
-          page.url.toLowerCase().includes(query) ||
-          page.title.toLowerCase().includes(query)
-      )
-    )
-  })
+  }
 
   return (
-    <main className="min-h-svh bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(244,244,245,0.65))]">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="rounded-2xl border border-border/80 bg-background/95 p-6 shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <p className="text-xs text-muted-foreground">geo audit dashboard</p>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                  {view.brandName}
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Static-first Next dashboard for GEO audits. Point
-                  the build at a run JSON, export, and you get a shareable HTML bundle.
-                </p>
-              </div>
+    <main className="min-h-svh bg-zinc-100">
+      <div className="mx-auto flex max-w-7xl flex-col gap-7 px-4 py-7 sm:px-6 lg:px-8">
+        <header className="overflow-hidden rounded-3xl border border-zinc-200 bg-white p-7 text-zinc-700 shadow-none sm:p-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-medium text-zinc-500">Geo visibility audit · {runs.length} {runs.length === 1 ? "run" : "runs"}</p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-700 sm:text-5xl">{view.brandName}</h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600">{analysis?.overview ?? "Explore the audit results and evidence below."}</p>
             </div>
-
-            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-              <div className="rounded-lg border border-border/70 px-4 py-3">
-                <p className="text-xs">generated</p>
-                <p className="mt-1 font-medium text-foreground">
-                  {formatDate(audit.run_at)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-border/70 px-4 py-3">
-                <p className="text-xs">site</p>
-                <a
-                  href={audit.check_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 flex items-center gap-2 font-medium text-foreground hover:text-muted-foreground"
-                >
-                  <span className="truncate">{audit.check_url}</span>
-                  <ExternalLink className="size-4 shrink-0" />
-                </a>
-              </div>
+            <div className="text-sm font-medium text-zinc-500">
+              <p>{formatDate(runs[0].run_at)} to {formatDate(runs[runs.length - 1].run_at)}</p>
+              <a className="mt-2 inline-flex items-center gap-2 font-semibold text-zinc-700" href={loaded.audit.check_url} target="_blank" rel="noreferrer">
+                {loaded.audit.target_domains?.[0] || loaded.audit.check_url}
+                <ArrowUpRight className="size-4" />
+              </a>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            title="Mention rate"
-            value={formatPercent(view.mentionRate)}
-            detail="Percentage of responses that mention the brand at least once."
-          />
-          <MetricCard
-            title="Citation rate"
-            value={formatPercent(view.citationRate)}
-            detail="Share of responses that directly cite one of the tracked domains."
-          />
-          <MetricCard
-            title="Average rank"
-            value={view.averageRank === null ? "n/a" : `#${view.averageRank}`}
-            detail="Average first citation rank when the brand appears in the source list."
-          />
-          <MetricCard
-            title="Sources"
-            value={`${view.totalSources}`}
-            detail="Unique links cited across all chatbot responses in this audit."
-          />
+        {analysis && <section>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Priority action plan</h2>
+            <p className="mt-1 text-sm text-zinc-500">One plan, reviewed across all runs through {formatDate(analysis.through_run_at)}.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {analysis.recommendations.map((item) => <Card key={item.title} className="shadow-none"><CardHeader>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">{item.priority}</Badge>
+                {item.diagnosis && <Badge variant="outline">{item.diagnosis.replace("_", " ")}</Badge>}
+                {item.source_action && <Badge variant="outline">{item.source_action}</Badge>}
+              </div>
+              <CardTitle className="text-base">{item.title}</CardTitle>
+              <CardDescription className="leading-6">{item.summary}</CardDescription>
+              <p className="pt-2 text-xs leading-5 text-zinc-500">Evidence: {item.evidence}</p>
+            </CardHeader></Card>)}
+          </div>
+        </section>}
+
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">Across all runs</h2>
+              <p className="mt-1 text-sm text-zinc-500">Measured history across the complete audit record.</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Metric label="Runs" value={`${runs.length}`} detail="Completed audits in this report." />
+              <Metric label="Prompts tracked" value={`${historicalPrompts.length}`} detail="Distinct prompt texts across all runs." />
+              <Metric label="Final answers" value={`${totals.answers}/${totals.responses}`} detail="Responses with answer evidence." />
+              <Metric label="Brand mentions" value={`${totals.mentions}/${totals.answers}`} detail="Answer appearances across all runs." />
+            </div>
+            <MentionTrend history={history} />
+          </div>
+          {analysis && <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"><h3 className="font-semibold">What changed</h3><ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-6 text-zinc-600">{analysis.findings.map((finding) => <li key={finding}>{finding}</li>)}</ul></div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"><h3 className="font-semibold">How to compare these runs</h3><p className="mt-3 text-sm leading-6 text-zinc-600">{analysis.comparison_note}</p></div>
+          </div>}
+          <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b text-zinc-500"><tr><th className="py-2 pr-4">Run</th><th className="py-2 pr-4">Chatbots</th><th className="py-2 pr-4">Prompts</th><th className="py-2 pr-4">Search</th><th className="py-2 pr-4">Retrieval</th><th className="py-2 pr-4">Maps</th><th className="py-2 pr-4">Mentions</th><th className="py-2 pr-4">Brand cited</th><th className="py-2">Collection</th></tr></thead>
+                <tbody>{history.map(({ run, view: item }, index) => <tr key={`${run.run_at}-${index}`} className="border-b last:border-0"><td className="py-3 pr-4">{formatDate(run.run_at)}</td><td className="py-3 pr-4">{[...new Set(item.responses.map((response) => response.chatbot))].join(", ")}</td><td className="py-3 pr-4">{item.metrics.promptCount}</td><td className="py-3 pr-4">{item.metrics.searched}/{item.metrics.availability.webSearch}</td><td className="py-3 pr-4">{item.metrics.retrieved}/{item.metrics.availability.searchSources}</td><td className="py-3 pr-4">{item.metrics.mapped}/{item.metrics.availability.maps}</td><td className="py-3 pr-4">{item.metrics.mentioned}/{item.metrics.availability.answers}</td><td className="py-3 pr-4">{item.metrics.cited}/{item.metrics.availability.actualCitations}</td><td className="py-3">{run.collection_diagnostics?.status ?? "Not reported"}</td></tr>)}</tbody>
+              </table>
+              <p className="mt-3 text-xs leading-5 text-zinc-500">Counts are response-level. Denominators include responses with available evidence.</p>
+              <div className="mt-5 border-t pt-4"><h3 className="font-medium">By chatbot, all runs combined</h3><div className="mt-3 overflow-x-auto"><table className="w-full min-w-[500px] text-left text-sm"><thead className="border-b text-zinc-500"><tr><th className="py-2">Chatbot</th><th className="py-2">Responses</th><th className="py-2">Mentions</th><th className="py-2">Brand cited</th></tr></thead><tbody>{[...chatbotHistory].map(([chatbot, row]) => <tr key={chatbot} className="border-b last:border-0"><td className="py-2">{chatbot}</td><td className="py-2">{row.responses}</td><td className="py-2">{row.mentions}/{row.answers}</td><td className="py-2">{row.citations}/{row.citationEvidence}</td></tr>)}</tbody></table></div></div>
+              {runs.length > 1 &&
+              <details className="mt-5 border-t pt-4">
+                <summary className="cursor-pointer font-medium">Prompt history</summary>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="border-b text-zinc-500"><tr><th className="min-w-80 py-2 pr-4">Prompt</th>{runs.map((run, index) => <th key={`${run.run_at}-${index}`} className="min-w-28 py-2 pr-4">{formatDate(run.run_at)}</th>)}</tr></thead>
+                    <tbody>{historicalPrompts.map((prompt) => <tr key={prompt} className="border-b last:border-0"><td className="py-3 pr-4">{prompt}</td>{history.map(({ run, view: item }, index) => {
+                      const group = item.promptGroups.find((candidate) => candidate.prompt === prompt)
+                      return <td key={`${run.run_at}-${index}`} className="py-3 pr-4 whitespace-nowrap">{group ? `Mention ${group.mentioned === null ? "?" : group.mentioned ? "yes" : "no"} · Cite ${group.cited === null ? "?" : group.cited ? "yes" : "no"}` : "Not tested"}</td>
+                    })}</tr>)}</tbody>
+                  </table>
+                </div>
+              </details>}
+          </div>
         </section>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full justify-start rounded-lg border border-border/70 bg-background p-1">
-            <TabsTrigger value="overview" className="rounded-md px-4">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="prompts" className="rounded-md px-4">
-              Prompts
-            </TabsTrigger>
-            <TabsTrigger value="sources" className="rounded-md px-4">
-              Sources
-            </TabsTrigger>
+        <section className="flex flex-wrap items-end justify-between gap-4 border-t border-zinc-300 pt-7">
+          <div><p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Run detail</p><h2 className="mt-1 text-xl font-semibold">Evidence for {formatDate(audit.run_at)}</h2><p className="mt-1 text-sm text-zinc-500">The sections below show one run at a time.</p></div>
+          <label className="text-sm font-medium">Choose a run <select className="ml-2 rounded-lg border border-zinc-300 bg-white px-3 py-2" value={selectedRun} onChange={(event) => setSelectedRun(Number(event.target.value))}>{runs.map((run, index) => <option key={`${run.run_at}-${index}`} value={index}>{formatDate(run.run_at)}</option>)}</select></label>
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-xl font-semibold">Opportunity funnel</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FunnelStep label="Web searched" count={metrics.searched} total={metrics.availability.webSearch} />
+            <FunnelStep label="Sources retrieved" count={metrics.retrieved} total={metrics.availability.searchSources} />
+            <FunnelStep label="Map set shown" count={metrics.mapped} total={metrics.availability.maps} />
+            <FunnelStep label="Brand mentioned" count={metrics.mentioned} total={metrics.availability.answers} />
+            <FunnelStep label="Brand cited" count={metrics.cited} total={metrics.availability.actualCitations} />
+          </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Actual citation appearances" value={metrics.availability.actualCitations > 0 ? `${metrics.actualCitationAppearances}` : "n/a"} detail={metrics.availability.actualCitations > 0 ? `${metrics.uniqueCitedPages} unique pages were truly cited.` : "Citation status was not provided reliably."} />
+          <Metric label="Citation candidates" value={metrics.availability.citationCandidates > 0 ? `${metrics.candidateAppearances}` : "n/a"} detail={metrics.availability.citationCandidates > 0 ? `${metrics.uniqueCandidatePages} unique pages were captured as candidates.` : "Citation candidates were not provided reliably."} />
+          <Metric label="Search-source records" value={metrics.availability.searchSources > 0 ? `${metrics.searchSourceAppearances}` : "n/a"} detail={metrics.availability.searchSources > 0 ? "Structured pages retrieved during web search." : "Structured search-source evidence was not provided."} />
+          <Metric label="Map placements" value={metrics.availability.maps > 0 ? `${metrics.mapPlacements}` : "n/a"} detail={metrics.availability.maps > 0 ? "Local listings captured across all prompts." : "Map evidence was not provided."} />
+        </section>
+
+        <Card className="border-border bg-card shadow-none">
+          <CardHeader>
+            <CardTitle>Prompt matrix</CardTitle>
+            <CardDescription>Click a prompt to inspect queries, citations, and the answer for each model.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-80">Prompt</TableHead>
+                  <TableHead>Search</TableHead>
+                  <TableHead>Fan queries</TableHead>
+                  <TableHead>Brand in search</TableHead>
+                  <TableHead>Brand in maps</TableHead>
+                  <TableHead>Mention</TableHead>
+                  <TableHead>Citation</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {view.promptGroups.map((group) => {
+                  const isExpanded = expandedPrompt === group.prompt
+                  return <Fragment key={group.prompt}>
+                    <TableRow aria-expanded={isExpanded}>
+                      <TableCell className="min-w-80 whitespace-normal font-medium leading-6"><button type="button" aria-expanded={isExpanded} onClick={() => setExpandedPrompt(isExpanded ? null : group.prompt)} className="flex w-full items-start justify-between gap-3 text-left focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"><span>{group.prompt}</span><ChevronDown className={`mt-1 size-4 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} /></button></TableCell>
+                      <TableCell><Signal value={group.searched} label={group.searched ? "Yes" : "No"} /></TableCell>
+                      <TableCell className="text-center font-semibold">{group.fanOutQueryCount ?? "n/a"}</TableCell>
+                      <TableCell><Signal value={group.foundInSearch} label={group.foundInSearch ? "Brand found" : "Brand absent"} /></TableCell>
+                      <TableCell><Signal value={group.foundInMaps} label={group.foundInMaps ? "Brand found" : "Brand absent"} /></TableCell>
+                      <TableCell><Signal value={group.mentioned} label={group.mentioned ? "Mentioned" : "Absent"} /></TableCell>
+                      <TableCell><Signal value={group.cited} label={group.cited ? "Cited" : "Not cited"} /></TableCell>
+                    </TableRow>
+                    {isExpanded && <TableRow><TableCell colSpan={7} className="whitespace-normal bg-zinc-50 p-5"><PromptLlmTabs group={group} /></TableCell></TableRow>}
+                  </Fragment>
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="competition" className="space-y-5">
+          <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl border bg-white p-1">
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="competition">Competitive landscape</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="local">Local visibility</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="citations">Actual citations</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="evidence">Evidence viewer</TabsTrigger>
+            <TabsTrigger className="data-[state=active]:bg-zinc-200 data-[state=active]:text-zinc-700" value="method">Methodology</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <CardTitle>Visibility over time</CardTitle>
-                  <CardDescription>
-                    Derived from the tracked prompts history JSON.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.visibilityTimeline.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Add entries to <code>tracked-prompts.json</code> to unlock
-                      timeline tracking.
-                    </p>
-                  ) : (
-                    view.visibilityTimeline.map((point) => (
-                      <MeterRow
-                        key={point.date}
-                        label={formatDate(point.date)}
-                        value={point.visibility}
-                        meta={`${point.promptCount} tracked prompts`}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <CardTitle>Competitor mentions</CardTitle>
-                  <CardDescription>
-                    Domains surfaced in the answers next to the brand.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.competitorMentions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No competitor domains were detected in the current sample.
-                    </p>
-                  ) : (
-                    sortByCountDesc(view.competitorMentions).map((item) => (
-                      <MeterRow
-                        key={item.label}
-                        label={item.label}
-                        value={item.share}
-                        meta={`${item.count} mentions`}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </section>
-
-            <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Bot className="size-4 text-muted-foreground" />
-                    <CardTitle>Chatbot coverage</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Performance split by AI product for the current audit run.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  {view.chatbotSummaries.map((chatbot) => (
-                    <ChatbotSummary
-                      key={chatbot.label}
-                      label={chatbot.label}
-                      visibility={chatbot.visibility}
-                      citationCount={chatbot.citationCount}
-                      averageRank={chatbot.averageRank}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/80 shadow-none">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Link2 className="size-4 text-muted-foreground" />
-                    <CardTitle>Top cited domains</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Most frequently cited sources grouped by domain.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {view.topDomains.slice(0, 6).map((domain) => (
-                    <MeterRow
-                      key={domain.label}
-                      label={domain.label}
-                      value={domain.share}
-                      meta={`${domain.count} cited pages`}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </section>
-
-            <Card className="border-border/80 shadow-none">
+          <TabsContent value="competition">
+            <Card className="shadow-none">
               <CardHeader>
-                <CardTitle>Manual recommendations</CardTitle>
-                <CardDescription>
-                  Edit <code>manual_recommendations</code> in the audit JSON after
-                  reviewing the results.
-                </CardDescription>
+                <CardTitle>Competitors by evidence channel</CardTitle>
+                <CardDescription>Answer recommendations, actual citations, captured candidates, search retrieval, and map results stay separate.</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {view.recommendations.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No manual recommendations yet.
-                  </p>
-                ) : (
-                  view.recommendations.map((recommendation) => (
-                    <div
-                      key={recommendation.title}
-                      className="rounded-xl border border-border/70 bg-muted/25 p-5"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-medium text-foreground">
-                          {recommendation.title}
-                        </h3>
-                        <Badge variant="secondary" className="rounded-md">
-                          {recommendation.priority}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                        {recommendation.summary}
-                      </p>
-                      <p className="mt-4 text-xs text-muted-foreground">
-                        {recommendation.owner}
-                      </p>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Entity</TableHead><TableHead>Prompt coverage</TableHead><TableHead>Channels</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {view.competitors.slice(0, 50).map((item) => (
+                      <TableRow key={item.domain || item.name}>
+                        <TableCell>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-xs font-medium text-zinc-500">{item.domain}</p>
+                        </TableCell>
+                        <TableCell>{item.promptCount}/{metrics.promptCount}</TableCell>
+                        <TableCell><div className="flex flex-wrap gap-1">{item.channels.map((channel) => <Badge key={channel} variant="outline">{channel.replaceAll("_", " ")}</Badge>)}</div></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="local">
+            <Card className="shadow-none">
+              <CardHeader>
+                <div className="flex items-center gap-2"><MapPin className="size-5" /><CardTitle>Local map landscape</CardTitle></div>
+                <CardDescription>Best position and prompt coverage across structured map results.</CardDescription>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Business</TableHead><TableHead>Best position</TableHead><TableHead>Coverage</TableHead><TableHead>Rating</TableHead><TableHead>Reviews</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {view.mapGroups.map((item) => (
+                      <TableRow key={item.domain || item.name}>
+                        <TableCell>
+                          {item.websiteUrl ? <a href={item.websiteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium hover:underline">{item.name}<ExternalLink className="size-3" /></a> : <span className="font-medium">{item.name}</span>}
+                          <p className="text-xs font-medium text-zinc-500">{item.category}</p>
+                        </TableCell>
+                        <TableCell>#{item.bestPosition ?? "–"}</TableCell>
+                        <TableCell>{item.promptCount}/{metrics.promptCount}</TableCell>
+                        <TableCell>{item.rating ?? "–"} ★</TableCell>
+                        <TableCell>{item.reviewCount ?? "–"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="citations">
+            <Card className="shadow-none">
+              <CardHeader><CardTitle>Domains actually cited</CardTitle><CardDescription>Only records explicitly marked cited by the provider are included.</CardDescription></CardHeader>
+              <CardContent className="space-y-4">
+                {view.citedDomains.map((group) => (
+                  <div key={group.domain} className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between gap-3"><h3 className="font-medium">{group.domain}</h3><Badge variant="secondary">{group.appearances} appearances</Badge></div>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {group.pages.map((page) => <a key={page.url} href={page.url} target="_blank" rel="noreferrer" className="truncate text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:underline">{page.title || page.url}</a>)}
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <CardTitle>fan-out query summary</CardTitle>
-                <CardDescription>
-                  Every search query the AI models made, grouped and counted
-                  with whether we appeared in the resulting response.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {view.fanOutSummary.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No search-engine fan-out queries were captured in this audit.
+          <TabsContent value="evidence">
+            <Accordion type="multiple" className="space-y-3">
+              {view.responses.map((response) => <Evidence key={`${response.chatbot}-${response.prompt}`} response={response} />)}
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="method">
+            <Card className="shadow-none">
+              <CardHeader><CardTitle>Methodology and collection status</CardTitle></CardHeader>
+              <CardContent className="grid gap-4 text-sm font-medium text-zinc-500 md:grid-cols-2">
+                <div className="rounded-xl border p-4"><p className="font-medium text-foreground">Contract</p><p className="mt-2">{audit.schema_version || "legacy"} · {audit.provider || "unknown provider"} · {audit.provider_method || "unknown method"}</p></div>
+                <div className="rounded-xl border p-4"><p className="font-medium text-foreground">Collection</p>{audit.snapshots.map((snapshot) => <p key={snapshot.chatbot} className="mt-2">{snapshot.chatbot}: {snapshot.status} ({snapshot.collection_method || "snapshot"})</p>)}</div>
+                <div className="rounded-xl border p-4 md:col-span-2"><div className="flex items-center gap-2 font-medium text-foreground"><Search className="size-4" />Signal definitions</div><p className="mt-2 leading-6"><strong>Web searched</strong> uses the provider’s canonical <code>web_search_triggered</code> signal. <strong>Actual citations</strong> include only citation records marked <code>cited: true</code>. Search sources, attached links, uncited candidates, and maps are reported separately.</p></div>
+                <div className="rounded-xl border p-4 md:col-span-2">
+                  <p className="font-medium text-foreground">Normalization diagnostics</p>
+                  <p className="mt-2 leading-6">
+                    Status: {view.diagnostics?.status || "not reported"} ·{" "}
+                    {view.diagnostics?.records_normalized ?? view.responses.length} normalized ·{" "}
+                    {view.diagnostics?.records_rejected ?? 0} rejected ·{" "}
+                    {view.diagnostics?.warning_count ?? 0} warnings.
                   </p>
-                ) : (
-                  view.fanOutSummary.map((summary) => (
-                    <FanOutSummaryPanel key={summary.query} summary={summary} />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="prompts" className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-3">
-              <MetricCard
-                title="Tracked prompts"
-                value={`${view.promptGroups.length}`}
-                detail="Unique prompts represented in the current audit run."
-              />
-              <MetricCard
-                title="Responses"
-                value={`${view.responses.length}`}
-                detail="Total chatbot responses included in the audit JSON."
-              />
-              <MetricCard
-                title="Tracked history"
-                value={`${trackedPrompts.tracked_prompts.length}`}
-                detail="Prompts listed in the separate over-time tracking JSON."
-              />
-            </section>
-
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <CardTitle>Prompt breakdown</CardTitle>
-                <CardDescription>
-                  Each prompt expands into the responses captured for every AI chatbot.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="multiple" className="space-y-4">
-                  {view.promptGroups.map((promptGroup) => (
-                    <PromptPanel
-                      key={promptGroup.prompt}
-                      promptGroup={promptGroup}
-                    />
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="sources" className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-3">
-              <MetricCard
-                title="Source domains"
-                value={`${view.domainGroups.length}`}
-                detail="Distinct domains used by the AI products in the current file."
-              />
-              <MetricCard
-                title="Unique pages"
-                value={`${view.totalSources}`}
-                detail="Unique cited URLs after deduplication across responses."
-              />
-              <MetricCard
-                title="Responses with sources"
-                value={`${view.responsesWithSources}`}
-                detail="Responses that cite at least one source."
-              />
-            </section>
-
-            <Card className="border-border/80 shadow-none">
-              <CardHeader>
-                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <CardTitle>Source inventory</CardTitle>
-                    <CardDescription>
-                      Grouped by domain, then expanded into the exact pages cited by the chatbots.
-                    </CardDescription>
-                  </div>
-                  <div className="w-full max-w-sm">
-                    <label className="relative block">
-                      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={sourceQuery}
-                        onChange={(event) => setSourceQuery(event.target.value)}
-                        placeholder="Search domains or URLs..."
-                        className="pl-10"
-                      />
-                    </label>
-                  </div>
+                  {view.diagnostics?.unknown_provider_fields?.length ? (
+                    <p className="mt-2 leading-6">
+                      Preserved unknown provider fields:{" "}
+                      {view.diagnostics.unknown_provider_fields.join(", ")}.
+                    </p>
+                  ) : null}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="multiple" className="space-y-4">
-                  {filteredDomainGroups.map((domainGroup) => (
-                    <SourcePanel
-                      key={domainGroup.domain}
-                      domainGroup={domainGroup}
-                    />
-                  ))}
-                </Accordion>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        <Separator />
-
-        <footer className="flex flex-col gap-3 pb-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Globe className="size-4" />
-            <span>
-              Generated by{" "}
-              <a
-                href="https://holly-and-stick.com"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-foreground hover:text-muted-foreground"
-              >
-                Holly&amp;Stick
-              </a>
-            </span>
-          </div>
-          <p>Audit JSON in, static export out.</p>
-        </footer>
+        <footer className="pb-4 text-center text-xs text-zinc-500"><a href="https://holly-and-stick.com" className="hover:underline">holly-and-stick.com</a></footer>
       </div>
     </main>
   )

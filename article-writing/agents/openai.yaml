@@ -1,0 +1,4 @@
+interface:
+  display_name: "Article Writing"
+  short_description: "Write research-led, brand-consistent articles"
+  default_prompt: "Use $article-writing to research and write an article for my target keyword."

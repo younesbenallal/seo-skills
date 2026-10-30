@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>Technical audit</title>
+		<style>
+			:root {
+				--ink: #0a0a0a;
+				--muted: #5b6070;
+				--faint: #8a8f9c;
+				--bg: #f6f7f9;
+				--panel: #ffffff;
+				--line: #e4e6eb;
+				--brand: #3012ca;
+				--brand-soft: #eeebfc;
+				--critical: #d92d4c;
+				--critical-soft: #fde8ec;
+				--high: #e8590c;
+				--high-soft: #fff0e6;
+				--medium: #b8860b;
+				--medium-soft: #fdf6dc;
+				--low: #5b6070;
+				--low-soft: #eef0f3;
+				--good: #0f9d6b;
+				--good-soft: #e3f6ee;
+				--radius: 14px;
+				--mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--ink);
+				font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			a {
+				color: var(--brand);
+				text-decoration: none;
+				word-break: break-all;
+			}
+			a:hover {
+				text-decoration: underline;
+			}
+			.wrap {
+				max-width: 1080px;
+				margin: 0 auto;
+				padding: 0 24px;
+			}
+			.kicker {
+				font: 600 12px/1 var(--mono);
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: var(--brand);
+			}
+			header.hero {
+				background: var(--ink);
+				color: #fff;
+				padding: 56px 0 44px;
+			}
+			header.hero .kicker {
+				color: #b9adff;
+			}
+			header.hero h1 {
+				font-size: clamp(30px, 5vw, 46px);
+				line-height: 1.1;
+				letter-spacing: -0.02em;
+				margin: 14px 0 10px;
+			}
+			header.hero .meta {
+				color: #b8bcc8;
+				font-size: 14px;
+			}
+			.verdict {
+				margin-top: 26px;
+				max-width: 760px;
+				font-size: 18px;
+				line-height: 1.55;
+				color: #eceef3;
+			}
+			nav.toc {
+				position: sticky;
+				top: 0;
+				z-index: 5;
+				background: rgba(246, 247, 249, 0.92);
+				backdrop-filter: blur(8px);
+				border-bottom: 1px solid var(--line);
+			}
+			nav.toc .wrap {
+				display: flex;
+				gap: 18px;
+				overflow-x: auto;
+				padding-top: 12px;
+				padding-bottom: 12px;
+				font-size: 13px;
+				white-space: nowrap;
+			}
+			nav.toc a {
+				color: var(--muted);
+			}
+			section {
+				padding: 40px 0 8px;
+			}
+			h2 {
+				font-size: 24px;
+				letter-spacing: -0.01em;
+				margin: 8px 0 18px;
+			}
+			.lead {
+				color: var(--muted);
+				margin: -8px 0 20px;
+				max-width: 760px;
+			}
+			.grid {
+				display: grid;
+				gap: 14px;
+			}
+			.grid.three {
+				grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			}
+			.grid.cards {
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			}
+			.card {
+				background: var(--panel);
+				border: 1px solid var(--line);
+				border-radius: var(--radius);
+				padding: 18px 20px;
+			}
+			.top-action {
+				position: relative;
+				padding-top: 46px;
+			}
+			.top-action .num {
+				position: absolute;
+				top: 16px;
+				left: 20px;
+				font: 700 13px/1 var(--mono);
+				color: var(--brand);
+			}
+			.top-action strong {
+				display: block;
+				font-size: 16px;
+				line-height: 1.4;
+			}
+			.top-action p {
+				margin: 8px 0 0;
+				color: var(--muted);
+				font-size: 14px;
+			}
+			.score .area {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				font-weight: 600;
+			}
+			.dot {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				flex: none;
+			}
+			.dot.good {
+				background: var(--good);
+			}
+			.dot.warn {
+				background: var(--medium);
+			}
+			.dot.bad {
+				background: var(--critical);
+			}
+			.dot.unknown {
+				background: var(--line);
+				border: 1px solid var(--faint);
+			}
+			.score p {
+				margin: 8px 0 0;
+				color: var(--muted);
+				font-size: 14px;
+			}
+			.score .state {
+				margin-left: auto;
+				font: 500 11px/1 var(--mono);
+				text-transform: uppercase;
+				color: var(--faint);
+			}
+			.funnel .row {
+				display: grid;
+				grid-template-columns: 220px 1fr 80px;
+				align-items: center;
+				gap: 14px;
+				margin: 10px 0;
+				font-size: 14px;
+			}
+			.funnel .bar {
+				height: 22px;
+				background: var(--brand-soft);
+				border-radius: 6px;
+				overflow: hidden;
+			}
+			.funnel .bar span {
+				display: block;
+				height: 100%;
+				background: var(--brand);
+				border-radius: 6px;
+			}
+			.funnel .value {
+				text-align: right;
+				font: 600 14px var(--mono);
+			}
+			.filters {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-bottom: 18px;
+			}
+			.chip {
+				border: 1px solid var(--line);
+				background: var(--panel);
+				color: var(--muted);
+				border-radius: 999px;
+				padding: 6px 12px;
+				font: 500 13px/1 inherit;
+				cursor: pointer;
+			}
+			.chip[aria-pressed="true"] {
+				background: var(--ink);
+				border-color: var(--ink);
+				color: #fff;
+			}
+			.group-title {
+				display: flex;
+				align-items: baseline;
+				gap: 10px;
+				margin: 26px 0 10px;
+				font-size: 15px;
+			}
+			.group-title small {
+				color: var(--faint);
+				font-weight: 400;
+			}
+			details.finding {
+				background: var(--panel);
+				border: 1px solid var(--line);
+				border-left: 4px solid var(--low);
+				border-radius: 10px;
+				margin-bottom: 10px;
+			}
+			details.finding.critical {
+				border-left-color: var(--critical);
+			}
+			details.finding.high {
+				border-left-color: var(--high);
+			}
+			details.finding.medium {
+				border-left-color: var(--medium);
+			}
+			details.finding summary {
+				list-style: none;
+				cursor: pointer;
+				padding: 14px 18px;
+				display: grid;
+				grid-template-columns: 1fr auto;
+				gap: 6px 16px;
+				align-items: center;
+			}
+			details.finding summary::-webkit-details-marker {
+				display: none;
+			}
+			.f-title {
+				font-weight: 600;
+				font-size: 15.5px;
+			}
+			.f-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 6px;
+				grid-column: 1;
+			}
+			.f-side {
+				grid-row: 1 / span 2;
+				grid-column: 2;
+				text-align: right;
+				font: 500 12px/1.5 var(--mono);
+				color: var(--faint);
+			}
+			.tag {
+				font: 600 11px/1 var(--mono);
+				padding: 4px 7px;
+				border-radius: 5px;
+				background: var(--low-soft);
+				color: var(--low);
+				text-transform: uppercase;
+				letter-spacing: 0.03em;
+			}
+			.tag.critical {
+				background: var(--critical-soft);
+				color: var(--critical);
+			}
+			.tag.high {
+				background: var(--high-soft);
+				color: var(--high);
+			}
+			.tag.medium {
+				background: var(--medium-soft);
+				color: var(--medium);
+			}
+			.tag.channel {
+				background: var(--brand-soft);
+				color: var(--brand);
+			}
+			.tag.quick {
+				background: var(--good-soft);
+				color: var(--good);
+			}
+			.f-body {
+				padding: 2px 18px 18px;
+				border-top: 1px solid var(--line);
+			}
+			.f-body dl {
+				display: grid;
+				grid-template-columns: 150px 1fr;
+				gap: 10px 18px;
+				margin: 16px 0 0;
+			}
+			.f-body dt {
+				font: 600 12px/1.6 var(--mono);
+				text-transform: uppercase;
+				color: var(--faint);
+			}
+			.f-body dd {
+				margin: 0;
+				white-space: pre-line;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 13.5px;
+				background: var(--panel);
+			}
+			.table-wrap {
+				border: 1px solid var(--line);
+				border-radius: 10px;
+				overflow: auto;
+			}
+			th,
+			td {
+				text-align: left;
+				padding: 9px 12px;
+				border-bottom: 1px solid var(--line);
+				vertical-align: top;
+			}
+			th {
+				font: 600 11.5px/1.4 var(--mono);
+				text-transform: uppercase;
+				color: var(--faint);
+				background: #fafbfc;
+				position: sticky;
+				top: 0;
+			}
+			tr:last-child td {
+				border-bottom: 0;
+			}
+			td.num {
+				font-family: var(--mono);
+				text-align: right;
+				white-space: nowrap;
+			}
+			.pill {
+				display: inline-block;
+				font: 600 11px/1 var(--mono);
+				padding: 4px 7px;
+				border-radius: 5px;
+				text-transform: uppercase;
+			}
+			.pill.ok {
+				background: var(--good-soft);
+				color: var(--good);
+			}
+			.pill.ko {
+				background: var(--critical-soft);
+				color: var(--critical);
+			}
+			.pill.warn {
+				background: var(--medium-soft);
+				color: var(--medium);
+			}
+			.pill.na {
+				background: var(--low-soft);
+				color: var(--low);
+			}
+			.urls {
+				margin-top: 6px;
+			}
+			.more {
+				color: var(--faint);
+				font-size: 13px;
+				margin-top: 6px;
+			}
+			ul.plain {
+				margin: 0;
+				padding-left: 18px;
+			}
+			ul.plain li {
+				margin: 6px 0;
+			}
+			footer {
+				margin-top: 56px;
+				padding: 28px 0 48px;
+				border-top: 1px solid var(--line);
+				color: var(--faint);
+				font-size: 13px;
+			}
+			footer .wrap {
+				display: flex;
+				justify-content: space-between;
+				gap: 16px;
+				flex-wrap: wrap;
+			}
+			.hidden {
+				display: none !important;
+			}
+			@media (max-width: 720px) {
+				.funnel .row {
+					grid-template-columns: 1fr 70px;
+				}
+				.funnel .bar {
+					grid-column: 1 / span 2;
+					grid-row: 2;
+				}
+				.f-body dl {
+					grid-template-columns: 1fr;
+				}
+				details.finding summary {
+					grid-template-columns: 1fr;
+				}
+				.f-side {
+					grid-row: auto;
+					grid-column: 1;
+					text-align: left;
+				}
+			}
+			@media print {
+				nav.toc,
+				.filters {
+					display: none;
+				}
+				body {
+					background: #fff;
+				}
+				details.finding {
+					break-inside: avoid;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<header class="hero">
+			<div class="wrap">
+				<div class="kicker" id="kicker"></div>
+				<h1 id="site"></h1>
+				<div class="meta" id="meta"></div>
+				<p class="verdict" id="verdict"></p>
+			</div>
+		</header>
+		<nav class="toc"><div class="wrap" id="toc"></div></nav>
+		<main class="wrap" id="main"></main>
+		<footer>
+			<div class="wrap">
+				<span id="footer-left"></span>
+				<a href="https://holly-and-stick.com">holly-and-stick.com</a>
+			</div>
+		</footer>
+
+		<script id="audit-data" type="application/json">/*__AUDIT_DATA__*/</script>
+		<script>
+			const data = JSON.parse(document.getElementById("audit-data").textContent);
+			const fr = (data.language || "en").toLowerCase().startsWith("fr");
+			const T = fr
+				? {
+						kicker: "Audit technique · SEO · GEO · CRO",
+						top: "Si vous ne faites que 3 choses",
+						scorecard: "État des lieux",
+						funnel: "Du sitemap au top 3",
+						plan: "Plan d'action",
+						planLead: "Classé par impact sur le trafic, la visibilité dans les IA et les conversions. Cliquez sur un point pour voir les preuves et la correction.",
+						all: "Tout",
+						quick: "Quick wins",
+						critical: "Critique",
+						high: "Élevé",
+						medium: "Moyen",
+						low: "Faible",
+						evidence: "Constat",
+						why: "Pourquoi c'est important",
+						fix: "Correction",
+						owner: "Qui",
+						source: "Source",
+						urls: "URLs concernées",
+						more: (n) => `+ ${n} autres`,
+						affected: (n) => `${n} URL${n > 1 ? "s" : ""}`,
+						effort: { S: "< 1 h", M: "½ à 2 jours", L: "projet" },
+						ai: "Accès des robots IA",
+						aiLead: "Bloquer l'entraînement est un choix. Bloquer la recherche IA ou les requêtes des utilisateurs retire le site des réponses.",
+						index: "Présence dans les moteurs",
+						keywords: "Une page, un mot-clé",
+						keywordsLead: "Chaque page stratégique doit cibler une requête claire, visible dans le title et le H1.",
+						cannibal: "Cannibalisation",
+						links: "Maillage interne : liens à ajouter",
+						speed: "Vitesse (données terrain)",
+						schema: "Données structurées suggérées",
+						noise: "Ce qu'on a volontairement ignoré",
+						limits: "Limites de l'audit",
+						next: "Prochaines étapes",
+						status: { good: "OK", warn: "À surveiller", bad: "Problème", unknown: "Non vérifié" },
+					}
+				: {
+						kicker: "Technical audit · SEO · GEO · CRO",
+						top: "If you only do 3 things",
+						scorecard: "Where things stand",
+						funnel: "From sitemap to top 3",
+						plan: "Action plan",
+						planLead: "Ranked by impact on traffic, AI visibility and conversions. Open an item to see the evidence and the fix.",
+						all: "All",
+						quick: "Quick wins",
+						critical: "Critical",
+						high: "High",
+						medium: "Medium",
+						low: "Low",
+						evidence: "What we saw",
+						why: "Why it matters",
+						fix: "Fix",
+						owner: "Owner",
+						source: "Source",
+						urls: "Affected URLs",
+						more: (n) => `+ ${n} more`,
+						affected: (n) => `${n} URL${n > 1 ? "s" : ""}`,
+						effort: { S: "< 1 h", M: "½–2 days", L: "project" },
+						ai: "AI crawler access",
+						aiLead: "Blocking training is a choice. Blocking AI search or user-triggered fetchers removes the site from AI answers.",
+						index: "Search engine presence",
+						keywords: "One page, one keyword",
+						keywordsLead: "Every strategic page should target one clear query, visible in its title and H1.",
+						cannibal: "Cannibalization",
+						links: "Internal links to add",
+						speed: "Speed (field data)",
+						schema: "Suggested structured data",
+						noise: "What we deliberately ignored",
+						limits: "Audit limits",
+						next: "Next steps",
+						status: { good: "OK", warn: "Watch", bad: "Problem", unknown: "Not checked" },
+					};
+			const IMPACTS = ["critical", "high", "medium", "low"];
+			const esc = (v) =>
+				String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+			const link = (u) => (u && /^https?:\/\//.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/, ""))}</a>` : esc(u));
+			const main = document.getElementById("main");
+			const toc = [];
+			const section = (id, title, html, lead) => {
+				if (!html) return;
+				toc.push([id, title]);
+				main.insertAdjacentHTML("beforeend", `<section id="${id}"><h2>${esc(title)}</h2>${lead ? `<p class="lead">${esc(lead)}</p>` : ""}${html}</section>`);
+			};
+			const table = (headers, rows) =>
+				rows?.length
+					? `<div class="table-wrap"><table><thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows
+							.map((r) => `<tr>${r.map((c) => (typeof c === "object" && c?.html ? `<td class="${c.cls || ""}">${c.html}</td>` : `<td>${esc(c)}</td>`)).join("")}</tr>`)
+							.join("")}</tbody></table></div>`
+					: "";
+			const VALUE_LABELS = fr
+				? {
+						allowed: "autorisé",
+						blocked: "bloqué",
+						ok: "ok",
+						refused: "refusé",
+						inconclusive: "incertain",
+						untested: "non testé",
+						"n/a": "n/a",
+						indexed: "indexé",
+						partial: "partiel",
+						absent: "absent",
+						unknown: "inconnu",
+						aligned: "aligné",
+						weak: "faible",
+						mismatch: "décalé",
+						"no-target": "sans cible",
+						FAST: "bon",
+						GOOD: "bon",
+						AVERAGE: "moyen",
+						NEEDS_IMPROVEMENT: "moyen",
+						SLOW: "lent",
+						POOR: "lent",
+					}
+				: { FAST: "good", GOOD: "good", AVERAGE: "average", NEEDS_IMPROVEMENT: "average", SLOW: "poor", POOR: "poor", "no-target": "no target", untested: "not tested" };
+			const pill = (value, cls) => ({ html: `<span class="pill ${cls}">${esc(VALUE_LABELS[value] ?? value)}</span>` });
+
+			// Hero
+			document.title = `${data.site} · ${T.kicker}`;
+			document.documentElement.lang = fr ? "fr" : "en";
+			document.getElementById("kicker").textContent = T.kicker;
+			document.getElementById("site").textContent = data.client ? `${data.client} · ${data.site}` : data.site;
+			document.getElementById("meta").textContent = [data.date, data.scope].filter(Boolean).join(" · ");
+			document.getElementById("verdict").textContent = data.verdict || "";
+			document.getElementById("footer-left").textContent = [data.auditor || "Holly&Stick", data.date].filter(Boolean).join(" · ");
+
+			// Top 3
+			section(
+				"top",
+				T.top,
+				data.top_actions?.length
+					? `<div class="grid three">${data.top_actions
+							.slice(0, 3)
+							.map((a, i) => {
+								const item = typeof a === "string" ? { title: a } : a;
+								return `<div class="card top-action"><span class="num">0${i + 1}</span><strong>${esc(item.title)}</strong>${item.why ? `<p>${esc(item.why)}</p>` : ""}</div>`;
+							})
+							.join("")}</div>`
+					: "",
+			);
+
+			// Scorecard
+			section(
+				"scorecard",
+				T.scorecard,
+				data.scorecard?.length
+					? `<div class="grid cards">${data.scorecard
+							.map((s) => `<div class="card score"><div class="area"><span class="dot ${esc(s.status)}"></span>${esc(s.area)}<span class="state">${esc(T.status[s.status] || s.status)}</span></div><p>${esc(s.note)}</p></div>`)
+							.join("")}</div>`
+					: "",
+			);
+
+			// Funnel
+			if (data.funnel?.length) {
+				const max = Math.max(...data.funnel.map((f) => f.value || 0)) || 1;
+				section(
+					"funnel",
+					T.funnel,
+					`<div class="card funnel">${data.funnel
+						.map((f) => `<div class="row"><span>${esc(f.label)}</span><div class="bar"><span style="width:${Math.max(1.5, (100 * (f.value || 0)) / max)}%"></span></div><span class="value">${esc((f.value ?? "–").toLocaleString())}</span></div>`)
+						.join("")}${data.funnel_note ? `<p class="more">${esc(data.funnel_note)}</p>` : ""}</div>`,
+				);
+			}
+
+			// Findings
+			const findings = [...(data.findings || [])].sort(
+				(a, b) => IMPACTS.indexOf(a.impact) - IMPACTS.indexOf(b.impact) || "SML".indexOf(a.effort || "M") - "SML".indexOf(b.effort || "M"),
+			);
+			const isQuick = (f) => ["critical", "high"].includes(f.impact) && f.effort === "S";
+			const channels = [...new Set(findings.flatMap((f) => f.channels || []))];
+			const findingHtml = (f) => {
+				const urls = f.urls || [];
+				const shown = urls.slice(0, 15);
+				const count = f.affected_count ?? urls.length;
+				const urlTable = shown.length
+					? `<div class="urls">${table(
+							["URL", ""],
+							shown.map((u) => (typeof u === "string" ? [{ html: link(u) }, ""] : [{ html: link(u.url) }, u.note || ""])),
+						)}${count > shown.length ? `<div class="more">${T.more(count - shown.length)}</div>` : ""}</div>`
+					: "";
+				return `<details class="finding ${esc(f.impact)}" data-impact="${esc(f.impact)}" data-channels="${esc((f.channels || []).join(" "))}" data-quick="${isQuick(f)}">
+					<summary>
+						<span class="f-title">${esc(f.title)}</span>
+						<span class="f-tags"><span class="tag ${esc(f.impact)}">${esc(T[f.impact] || f.impact)}</span>${(f.channels || []).map((c) => `<span class="tag channel">${esc(c)}</span>`).join("")}${isQuick(f) ? `<span class="tag quick">${esc(T.quick)}</span>` : ""}${f.area ? `<span class="tag">${esc(f.area)}</span>` : ""}</span>
+						<span class="f-side">${f.effort ? esc(T.effort[f.effort] || f.effort) : ""}${count ? `<br>${T.affected(count)}` : ""}</span>
+					</summary>
+					<div class="f-body"><dl>
+						${f.evidence ? `<dt>${T.evidence}</dt><dd>${esc(f.evidence)}</dd>` : ""}
+						${f.why ? `<dt>${T.why}</dt><dd>${esc(f.why)}</dd>` : ""}
+						${f.fix ? `<dt>${T.fix}</dt><dd>${esc(f.fix)}</dd>` : ""}
+						${f.owner ? `<dt>${T.owner}</dt><dd>${esc(f.owner)}</dd>` : ""}
+						${urlTable ? `<dt>${T.urls}</dt><dd>${urlTable}</dd>` : ""}
+						${f.source ? `<dt>${T.source}</dt><dd>${esc(f.source)}</dd>` : ""}
+					</dl></div>
+				</details>`;
+			};
+			if (findings.length) {
+				const chips = [`<button class="chip" data-filter="all" aria-pressed="true">${T.all} (${findings.length})</button>`]
+					.concat(
+						findings.some(isQuick) ? [`<button class="chip" data-filter="quick" aria-pressed="false">${T.quick} (${findings.filter(isQuick).length})</button>`] : [],
+						channels.map((c) => `<button class="chip" data-filter="ch:${esc(c)}" aria-pressed="false">${esc(c)} (${findings.filter((f) => (f.channels || []).includes(c)).length})</button>`),
+					)
+					.join("");
+				const groups = IMPACTS.map((impact) => {
+					const items = findings.filter((f) => f.impact === impact);
+					return items.length
+						? `<div class="group" data-group="${impact}"><div class="group-title"><span class="tag ${impact}">${T[impact]}</span><small>${items.length}</small></div>${items.map(findingHtml).join("")}</div>`
+						: "";
+				}).join("");
+				section("plan", T.plan, `<div class="filters">${chips}</div>${groups}`, T.planLead);
+				document.querySelectorAll(".chip").forEach((chip) =>
+					chip.addEventListener("click", () => {
+						document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+						const filter = chip.dataset.filter;
+						document.querySelectorAll("details.finding").forEach((el) => {
+							const show =
+								filter === "all" || (filter === "quick" && el.dataset.quick === "true") || (filter.startsWith("ch:") && el.dataset.channels.split(" ").includes(filter.slice(3)));
+							el.classList.toggle("hidden", !show);
+						});
+						document.querySelectorAll(".group").forEach((g) => g.classList.toggle("hidden", !g.querySelector("details.finding:not(.hidden)")));
+					}),
+				);
+			}
+
+			// AI crawlers
+			const purposeLabel = fr
+				? { search: "Moteur de recherche", ai_search: "Recherche IA", ai_user: "Requête utilisateur", training: "Entraînement" }
+				: { search: "Search engine", ai_search: "AI search", ai_user: "User-triggered", training: "Training" };
+			const access = (v) => pill(v || "n/a", { allowed: "ok", ok: "ok", blocked: "ko", refused: "ko", inconclusive: "warn" }[v] || "na");
+			section(
+				"ai",
+				T.ai,
+				table(
+					["Agent", fr ? "Usage" : "Purpose", "robots.txt", "CDN / WAF", fr ? "Note" : "Note"],
+					(data.ai_bots || []).map((b) => [{ html: `<strong>${esc(b.token)}</strong><br><small>${esc(b.owner || "")}</small>` }, purposeLabel[b.purpose] || b.purpose, access(b.robots), access(b.cdn), b.note || ""]),
+				),
+				T.aiLead,
+			);
+
+			// Index presence
+			// `expected` marks the desired state, e.g. a staging host that should be absent.
+			const presence = (v, expected) => pill(v, expected ? (v === expected ? "ok" : "ko") : { indexed: "ok", partial: "warn", absent: "ko" }[v] || "na");
+			section("index", T.index, table([fr ? "Moteur" : "Engine", fr ? "Statut" : "Status", fr ? "Constat" : "Evidence"], (data.index_presence || []).map((e) => [e.engine, presence(e.status, e.expected), e.evidence || ""])));
+
+			// Keyword targeting
+			const kwStatus = (v) => pill(v, { aligned: "ok", weak: "warn", mismatch: "ko", "no-target": "ko" }[v] || "na");
+			section(
+				"keywords",
+				T.keywords,
+				table(
+					["Page", fr ? "Title actuel" : "Current title", fr ? "Mot-clé cible" : "Target keyword", fr ? "1re requête GSC" : "Top GSC query", fr ? "Statut" : "Status", fr ? "Title suggéré" : "Suggested title"],
+					(data.keyword_map || []).map((k) => [{ html: link(k.url) }, k.title || "", k.target_keyword || "–", k.top_query || "–", kwStatus(k.status), k.suggested_title || ""]),
+				),
+				T.keywordsLead,
+			);
+
+			// Cannibalization
+			section(
+				"cannibal",
+				T.cannibal,
+				table(
+					[fr ? "Requête" : "Query", "Pages", fr ? "Recommandation" : "Recommendation"],
+					(data.cannibalization || []).map((c) => [
+						c.query,
+						{ html: (c.pages || []).map((p) => `${link(p.url)} <small>${[p.clicks != null ? `${p.clicks} clics` : "", p.impressions != null ? `${p.impressions} impr.` : "", p.position != null ? `pos. ${p.position}` : ""].filter(Boolean).join(" · ")}</small>`).join("<br>") },
+						c.recommendation || "",
+					]),
+				),
+			);
+
+			// Internal links
+			section(
+				"links",
+				T.links,
+				table(
+					["Source", fr ? "Ancre" : "Anchor", fr ? "Cible" : "Target", fr ? "Pourquoi" : "Why"],
+					(data.internal_links || []).map((l) => [{ html: link(l.source) }, l.anchor || "", { html: link(l.target) }, l.why || ""]),
+				),
+				data.internal_links_note,
+			);
+
+			// Speed
+			const cwv = (v) => pill(String(v || "n/a").toUpperCase(), { FAST: "ok", GOOD: "ok", AVERAGE: "warn", NEEDS_IMPROVEMENT: "warn", SLOW: "ko", POOR: "ko" }[String(v).toUpperCase()] || "na");
+			section(
+				"speed",
+				T.speed,
+				table(
+					["Page", "LCP", "INP", "CLS", fr ? "Score labo" : "Lab score"],
+					(data.speed || []).map((s) => [{ html: link(s.url) }, { html: `${esc(s.lcp ?? "–")} ${s.lcp_category ? cwv(s.lcp_category).html : ""}` }, { html: `${esc(s.inp ?? "–")} ${s.inp_category ? cwv(s.inp_category).html : ""}` }, { html: `${esc(s.cls ?? "–")} ${s.cls_category ? cwv(s.cls_category).html : ""}` }, { html: esc(s.lab_score ?? "–"), cls: "num" }]),
+				),
+				data.speed_note,
+			);
+
+			// Schema suggestions
+			section("schema", T.schema, table(["Template", fr ? "Présent" : "Present", fr ? "À ajouter" : "Add", fr ? "Pourquoi" : "Why"], (data.schema_suggestions || []).map((s) => [s.template, s.present || "–", s.add, s.why || ""])));
+
+			// Next steps, noise, limits
+			const list = (items) => (items?.length ? `<div class="card"><ul class="plain">${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>` : "");
+			section(
+				"next",
+				T.next,
+				data.next_steps?.length ? `<div class="grid three">${data.next_steps.map((s) => `<div class="card"><div class="kicker">${esc(s.when)}</div><ul class="plain">${(s.items || []).map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}</div>` : "",
+			);
+			section("noise", T.noise, list(data.ignored));
+			section("limits", T.limits, list(data.limits));
+
+			document.getElementById("toc").innerHTML = toc.map(([id, title]) => `<a href="#${id}">${esc(title)}</a>`).join("");
+		</script>
+	</body>
+</html>

@@ -1,18 +1,17 @@
 ---
 name: competitor-intelligence
-description: Identify, analyze, compare, and monitor SEO competitors using Google SERPs, XML sitemaps, URL patterns, and optional Ahrefs, Semrush, DataForSEO, or similar data. Use when the user asks for competitor discovery, competitor analysis, competitor monitoring, sitemap analysis, content strategy reverse-engineering, SEO competitive intelligence, backlink or keyword comparisons, content gaps, commercial keyword gaps, or a deep-dive comparison between a site and one or more competitors.
+description: Analyze SEO competitors and turn SERP, sitemap, and optional provider evidence into strategy. Use when the user wants competitor discovery, a competitor profile, a site comparison, content or keyword gaps, or monitoring over time.
 ---
 
 # Competitor intelligence
 
-Map what competitors publish, infer the strategy behind it, and turn the evidence into prioritized opportunities. Distinguish direct business competitors from audience competitors that rank for the same topics without selling the same product.
+Map what competitors publish, infer the strategy behind it, and turn the evidence into prioritized opportunities. Distinguish direct business competitors from SEO competitors that rank for the same queries without needing to sell the same product.
 
 ## Start from available context
 
-1. Check for `.agents/seo-context.md`, product documentation, and prior competitor files.
-2. Reuse known site, market, seed topics, competitors, and tool access.
-3. Inspect available tools before asking the user what they have.
-4. If invoked without a concrete request, explain in two sentences that this skill can discover competitors, analyze sitemap/content patterns, compare SEO datasets, and monitor changes. Then ask for:
+Run the shared preflight in [`../docs/credentials-and-tooling.md`](../docs/credentials-and-tooling.md) before substantive work. Read `.seo-context.md`, product documentation, and prior competitor files when present; reuse known site, market, seed topics, competitors, and tool access. Ask only for task-specific gaps.
+
+If invoked without a concrete request, explain in two sentences that this skill can discover competitors, analyze sitemap/content patterns, compare SEO datasets, and monitor changes. Then ask for:
    - the user's domain or product;
    - known competitor domains, if any;
    - target country and language;
@@ -24,12 +23,12 @@ Do not require the user's site when they only want a competitor profiled.
 
 - Auth mode: `none` for sitemap analysis; `mcp` or `manual-file` for SERP and SEO-provider data
 - Requires: competitor domain or sitemap for profiling
-- Optional: SERP API MCP for discovery; Ahrefs, Semrush, DataForSEO, or equivalent MCP/export for deeper analysis
+- Optional: structured SERP data from DataForSEO, Serper.dev, SerpApi, Bright Data, or an equivalent API/MCP; Ahrefs, Semrush, or equivalent MCP/export for deeper analysis
 - Fallback: user-provided domains, sitemap files, and CSV/JSON exports
 
-Follow `docs/credentials-and-tooling.md`. Never ask the user to paste credentials. Detect callable tools first. Do not block basic sitemap work because premium data is unavailable.
+Do not block basic sitemap work because premium data is unavailable.
 
-For live Google competitor discovery, require a configured SERP data tool. Do not scrape Google result pages through browser automation. If no SERP tool exists, continue with known/user-provided domains or ask for a SERP export.
+For live Google competitor discovery, use a structured SERP data source when available. If none exists, inspect the results with an available browser tool for smaller runs. If no live search path exists, continue with known/user-provided domains or ask for a SERP export.
 
 ## Choose the workflow
 
@@ -39,22 +38,22 @@ For live Google competitor discovery, require a configured SERP data tool. Do no
 - **Deep SEO comparison:** add provider keyword, page, traffic, and backlink data.
 - **Monitor competitors:** save dated inventories/provider exports and compare snapshots.
 
-Read [references/analysis-playbook.md](references/analysis-playbook.md) before competitor discovery, multi-site comparison, premium-provider analysis, or monitoring. For a basic one-domain sitemap profile, read only the sitemap-analysis section.
+Read [references/analysis-playbook.md](references/analysis-playbook.md) before competitor discovery, multi-site comparison, premium-provider analysis, or monitoring. It is the single source of truth for query design, evidence handling, scoring, monitoring, and report quality. For a basic one-domain sitemap profile, read only the sitemap-analysis section.
 
 ## Discover competitors
 
-1. Build a small query set across:
+1. Start with 2 to 5 of the most relevant non-branded keywords from `.seo-context.md`, especially money-page targets and important query themes. If the context has no suitable seed set, ask the user to choose a couple. For a full competitor study, expand the set across:
    - product/category and high-intent use cases;
    - alternatives, comparisons, pricing, templates, and jobs-to-be-done;
    - educational topics central to the buyer.
-2. Fetch localized top results for each query with the SERP tool.
-3. Exclude marketplaces, social networks, generic publishers, and aggregators only when they are irrelevant to the requested analysis.
-4. Count domain recurrence by query cluster, not only across the full set.
-5. Classify each candidate:
+2. Fetch the localized top 10 organic results for each keyword with the SERP tool.
+3. Exclude the user's own domain. Keep marketplaces, social networks, generic publishers, aggregators, and other non-business sites when they recur, because they can still be SEO competitors.
+4. Normalize domains and count recurrence across the full seed set. Use query-cluster recurrence as an additional view for larger studies. The domains that appear most often are the first SEO-competitor candidates.
+5. Check the candidate's site only when business or audience context helps interpret the result. Classify each candidate separately:
    - **Direct:** sells a substantially similar product or service to a similar buyer.
-   - **Audience:** repeatedly reaches the same audience/topics but has a different offer or business model.
-   - **SERP incumbent:** ranks often but is neither a meaningful business nor audience competitor.
-6. Report the evidence: representative queries, recurrence, positioning, and why the classification fits.
+   - **SEO/audience:** repeatedly reaches the same audience or topics with a different offer or business model.
+   - **SEO incumbent:** ranks often but is neither a meaningful direct nor audience competitor.
+6. Report the evidence: keyword set, locale, date, recurrence, representative URLs, and any business-context check. Keep SERP recurrence as the primary SEO-competitor signal.
 
 Treat SERP overlap as discovery evidence, not proof that two businesses compete.
 
@@ -80,11 +79,9 @@ Infer strategy mainly from paths and slugs. Use `lastmod` as supporting evidence
 
 ## Analyze and report
 
-Separate every conclusion into:
+Apply the report quality checks in [references/analysis-playbook.md](references/analysis-playbook.md) for collection metadata, evidence traceability, confidence, and limitations. The analysis below defines the competitor-specific content; the playbook remains the single source for cross-report quality rules.
 
-- **Observed:** URL, slug, sitemap count, date, SERP result, provider metric, or page content.
-- **Inferred:** likely keyword, intent, audience, funnel role, template, content cadence, or strategic priority.
-- **Confidence:** high, medium, or low, with the reason.
+Use the playbook's observed-versus-inferred distinction and attach confidence to strategic claims.
 
 Cover:
 

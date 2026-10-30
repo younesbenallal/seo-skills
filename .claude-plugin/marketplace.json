@@ -1,0 +1,27 @@
+{
+  "name": "seo-skills",
+  "description": "Reusable SEO skills for Claude Code and other AI coding agents.",
+  "owner": {
+    "name": "Younes Benallal"
+  },
+  "plugins": [
+    {
+      "name": "seo-skills",
+      "source": ".",
+      "description": "Reusable SEO workflows for Claude Code, including content research, technical audits, SERP analysis, Google Search Console, internal linking, competitor research, and GEO reporting.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Younes Benallal"
+      },
+      "category": "productivity",
+      "tags": [
+        "seo",
+        "content-marketing",
+        "technical-seo",
+        "serp",
+        "google-search-console",
+        "geo-seo"
+      ]
+    }
+  ]
+}

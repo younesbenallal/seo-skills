@@ -13,7 +13,7 @@ Use the relevant section for the current task. Keep raw datasets outside the con
 
 ## Competitor discovery
 
-Build 10–30 queries when the user has not supplied a set. Cover several clusters so one head term does not distort the map:
+For a lightweight SEO-competitor discovery pass, start with 2 to 5 of the most relevant non-branded keywords from the SEO context, especially money-page targets. If the user wants a broader competitor study or has not supplied a useful seed set, build 10 to 30 queries across several clusters so one head term does not distort the map:
 
 | Query family | Examples | What it reveals |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ Use one locale and device consistently. Record:
 - branded versus non-branded;
 - direct, audience, incumbent, or unknown classification.
 
-Rank recurrence within each family. A domain appearing across category and commercial queries is stronger evidence of direct competition than a domain appearing only for broad educational queries.
+For the lightweight pass, rank domains by total top-10 appearances across the full seed set. A domain that appears most often is the first SEO-competitor candidate. For a broader study, also rank recurrence within each query family. A domain appearing across category and commercial queries is stronger evidence of direct competition than a domain appearing only for broad educational queries.
 
 Verify the offer and audience on the candidate's homepage or product pages before labeling it direct. Preserve `unknown` when evidence is thin.
 
@@ -208,7 +208,7 @@ Separate first observation from confirmed pattern. One snapshot is a baseline; t
 Before delivery:
 
 - state collection date, locale, tools, scope, and failures;
-- separate direct from audience competitors;
+- separate direct competitors from SEO competitors, and label audience or incumbent cases within the SEO group;
 - keep facts separate from inference;
 - attach confidence to strategic claims;
 - avoid raw URL or keyword dumps;
