@@ -58,8 +58,6 @@ CHATGPT_OUTPUT_FIELDS = [
     "index",
     "answer_text_markdown",
     "web_search_triggered",
-    "additional_prompt",
-    "additional_answer_text",
     "map",
     "search_sources",
     "prompt_sent_at",
@@ -92,6 +90,15 @@ KNOWN_PROVIDER_FIELDS = set(
     + PERPLEXITY_OUTPUT_FIELDS
     + GEMINI_OUTPUT_FIELDS
     + ["answer_text", "source_html", "response_raw", "answer_html", "web_search", "model", "recommendations"]
+    # ChatGPT follow-up prompt fields: not requested because the collector never sends a follow-up prompt.
+    + [
+        "additional_prompt",
+        "additional_answer_text",
+        "additional_answer_text_markdown",
+        "citations_additional_prompt",
+        "shopping_additional_prompt",
+        "questionnaire",
+    ]
 )
 
 

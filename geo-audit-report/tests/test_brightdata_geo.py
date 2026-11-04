@@ -89,7 +89,18 @@ class BrightDataNormalizationTests(unittest.TestCase):
         self.assertEqual(result.sources, result.actual_citations)
 
     def test_retired_chatgpt_fields_are_not_requested(self):
-        for field in ["search_sources_more", "model", "web_search_query", "recommendations"]:
+        for field in [
+            "search_sources_more",
+            "model",
+            "web_search_query",
+            "recommendations",
+            "additional_prompt",
+            "additional_answer_text",
+            "additional_answer_text_markdown",
+            "citations_additional_prompt",
+            "shopping_additional_prompt",
+            "questionnaire",
+        ]:
             self.assertNotIn(field, collector.CHATGPT_OUTPUT_FIELDS)
         for field in ["citations", "search_sources", "web_search_triggered"]:
             self.assertIn(field, collector.CHATGPT_OUTPUT_FIELDS)

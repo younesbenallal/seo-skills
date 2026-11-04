@@ -27,10 +27,18 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts workspace-create "Client" --
 Create the client's workspace only when none matches its name or domain, and confirm the name with the user first. These commands call Fanout Fox's own store module from an extension page, so no UI is needed. Then collect into the dated run folder:
 
 ```bash
-bun geo-audit-report/scripts/chatgpt-browser/run.ts prompts.txt <out-dir>/YYYY-MM-DD --workspace "Client" --concurrency 4
+bun geo-audit-report/scripts/chatgpt-browser/run.ts prompts.txt <out-dir>/YYYY-MM-DD --workspace "Client"
 ```
 
 `--workspace` is required. The collector activates that workspace before sending anything, stops if it does not exist, and after the run moves back any of the run's captures that were filed elsewhere (for example after a switch in the UI). The active workspace is global to the profile: tell the user not to run their own ChatGPT prompts in that profile during a collection, or their captures will land in the client's workspace.
+
+Fanout Fox misses most conversations run in background tabs (1 capture out of 5 on 2026-10-25, sequential or parallel). The collector therefore also saves ChatGPT's own conversation JSON as `raw/conversations/<id>.json` for every answer, from the same page load it already uses for citations. When a capture is missing or incomplete, the normalizer reads the fan-out queries (`search_model_queries`, or the model's search call), retrieved results (`search_result_groups`), model and entity-card brands from that file; a capture always wins where it has the data. Both the current flat `messages` format and the older `mapping` tree are read; an unreadable file is ignored and the channel stays missing. For a run collected before this change, or after a failed save:
+
+```bash
+bun geo-audit-report/scripts/chatgpt-browser/run.ts conversations <run-dir>    # re-saves raw/conversations/<id>.json
+```
+
+Logged-out conversations (`/uc/` URLs) cannot be reopened, so they have no conversation file.
 
 To fix misfiled captures:
 
@@ -41,7 +49,7 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts move "Client" --match "promp
 
 Moving a capture never deletes it. Report what moved, and ask before moving captures the current run did not create.
 
-Each prompt opens a new chat in its own tab. Four tabs run about 17 prompts in two minutes; lower `--concurrency` if ChatGPT starts rate-limiting. The collector writes `raw/answers.json` (prompt, conversation URL, rendered text, rendered links, timestamp, or an `error`) and `raw/fanoutfox.json` (the matching Fanout Fox captures read from the extension storage). A failed prompt gets `raw/error-N.png`. The collector refuses to send a prompt when the composer holds other text, because ChatGPT restores unsent drafts across tabs, and it checks the sent message against the prompt. To re-read captures for an existing run, use `bun geo-audit-report/scripts/chatgpt-browser/run.ts fanoutfox <run-dir>`.
+Each prompt opens a new chat in its own tab, two tabs at a time by default (`--concurrency`); lower it to 1 if ChatGPT starts rate-limiting. Only one collection runs at a time: a second one waits for the first to finish (it prints who holds `~/.chatgpt-runner-profile.lock`), because parallel runs share the same Chrome, ChatGPT account and active Fanout Fox workspace. Run clients one after the other instead of starting collections from several sessions. The collector writes `raw/answers.json` (prompt, conversation URL, rendered text, rendered links, timestamp, or an `error`) and `raw/fanoutfox.json` (the matching Fanout Fox captures read from the extension storage). A failed prompt gets `raw/error-N.png`. The collector refuses to send a prompt when the composer holds other text, because ChatGPT restores unsent drafts across tabs, and it checks the sent message against the prompt. To re-read captures for an existing run, use `bun geo-audit-report/scripts/chatgpt-browser/run.ts fanoutfox <run-dir>`.
 
 Then build the v3 file:
 
@@ -69,7 +77,7 @@ Fanout Fox marks a source as cited only through the conversation's `content_refe
 
 Until Fanout Fox handles this format, the collector resolves the markers itself: after each answer it reloads the conversation, reads the `/backend-api/conversations/<id>` response the page loads, and maps each marker to the search result with the same `ref_id` (`turn_index`, `ref_type`, `ref_index`). The result is stored per answer as `citations: [{code, url, title}]`, where an unresolved marker keeps `url: null`. `bun geo-audit-report/scripts/chatgpt-browser/run.ts citations <run-dir>` does the same for an existing run whose conversations are still in the account. Logged-out conversations (`/uc/` URLs) cannot be reopened.
 
-This is our own reading of ChatGPT's internal format, kept deliberately small. It is meant to be removed once Fanout Fox flags cited sources again: check a recent capture for `cited: true` sources, then delete `resolveCitations` and the `citations` command in `run.ts`, and `citation_records` in the normalizer. Do not extend this parser; prefer Fanout Fox for any other interpretation of ChatGPT.
+This is our own reading of ChatGPT's internal format, kept deliberately small. It is meant to be removed once Fanout Fox flags cited sources again: check a recent capture for `cited: true` sources, then delete `citationsIn` and the `citations` command in `run.ts`, and `citation_records` in the normalizer. Do not extend this parser; prefer Fanout Fox for any other interpretation of ChatGPT.
 
 Fanout Fox's own dashboard and Monday brief aggregate the whole workspace, including test prompts, so use the exported captures rather than the brief's counts as audit evidence.
 
@@ -88,6 +96,8 @@ Use synchronous `/datasets/v3/scrape` for 1–20 prompts. Use asynchronous `/dat
 Keep `custom_output_fields` aligned with each dataset's current output schema. The Gemini dataset rejected `sources` in September 2026; the collector requests only its supported core fields and reports unavailable search traces as missing.
 
 Bright Data's ChatGPT schema notice received on 2026-10-06 removes `search_sources_more` and its nested fields, `model`, and `web_search_query`; these now return `null`. The collector excludes them from ChatGPT output requests. `search_sources_more` was never consumed. Report the model and fan-out queries as unavailable when missing, while continuing to use `web_search_triggered`, `search_sources`, and actual citations. Preserve model/query evidence in older exports and other providers. The legacy `recommendations` field, rejected by this dataset on 2026-09-30, is also excluded from requests.
+
+Bright Data's ChatGPT schema notice received on 2026-10-16 adds follow-up prompt fields (`additional_answer_text_markdown`, `citations_additional_prompt`, `shopping_additional_prompt`) and `questionnaire`. The collector always sends an empty `additional_prompt`, so it requests none of them and no longer requests `additional_prompt` or `additional_answer_text`. A test run on 2026-10-16 returned page chrome in `additional_answer_text_markdown` with no follow-up prompt and no `questionnaire` key. If an older or manual export contains these fields, they are recognized but never read: follow-up citations do not count toward the tracked prompt.
 
 ```bash
 python3 geo-audit-report/scripts/brightdata-geo.py \
