@@ -12,6 +12,7 @@
 //   bun run.ts workspace-create <name> [--domains a.com,b]   # creates a workspace (and makes it active)
 //   bun run.ts move <workspace> <run-dir>                    # moves a run's captures to a workspace
 //   bun run.ts move <workspace> --match "<prompt text>"      # moves captures whose prompt contains the text
+//   bun run.ts backfill <workspace> <run-dir>                # adds missed captures from raw/conversations
 import { chromium, type Page } from "playwright-core"
 import { spawn } from "node:child_process"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
@@ -218,6 +219,37 @@ if (command === "workspaces") {
     ? `(c.capture?.query || "").toLowerCase().includes(${JSON.stringify(values.match.toLowerCase())})`
     : `${JSON.stringify(convKeys(runUrls(rest[1] ?? "")))}.includes(c.convKey)`
   console.log(`Moved ${await moveCaptures(target.id, filter)} captures to ${target.name}`)
+} else if (command === "backfill") {
+  // Fanout Fox skips most background tabs. Its own ChatGPT parser reads the same conversation JSON
+  // we save, so feeding it raw/conversations/<id>.json files the capture it would have made
+  // (without the stream-only intent and moderation counts). Existing captures are left alone.
+  const target = await activateWorkspace(rest[0] ?? "")
+  const dir = rest[1] ?? ""
+  const conversations = runUrls(dir).flatMap((url) => {
+    const id = url.split("/").pop()!
+    try {
+      return [{ convKey: `chatgpt:${id}`, stored: JSON.parse(readFileSync(join(dir, "raw", "conversations", `${id}.json`), "utf8")) }]
+    } catch {
+      console.error(`${url} → no saved conversation, skipped`)
+      return []
+    }
+  })
+  const report = await fanoutFox<string[]>(`
+    const { chatgpt } = await import(chrome.runtime.getURL("src/engines/chatgpt.js"))
+    const existing = (await s.listCaptures()).filter((c) => s.inWorkspace(c, ${JSON.stringify(target.id)}))
+    const lines = []
+    for (const { convKey, stored } of ${JSON.stringify(conversations)}) {
+      const capture = chatgpt.normalise({ stored, stream: null })
+      const summary = (c) => \`\${c.fanout?.length ?? 0} fan-out, \${c.sources?.length ?? 0} sources, model \${c.model?.resolved ?? "?"}\`
+      const found = existing.find((c) => c.convKey === convKey)
+      if (found) { lines.push(\`\${convKey} kept (capture: \${summary(found.capture)} / parsed: \${summary(capture)})\`); continue }
+      if (!capture.foundAnything) { lines.push(\`\${convKey} nothing parsed, skipped\`); continue }
+      await s.upsertCapture({ convKey, engine: chatgpt.label, title: s.captureTitle(capture), capture })
+      lines.push(\`\${convKey} added (\${summary(capture)})\`)
+    }
+    return lines
+  `)
+  for (const line of report) console.log(line)
 } else if (command === "fanoutfox") {
   await exportFanoutFox(rest[0] ?? "", runUrls(rest[0] ?? ""))
 } else if (command === "citations" || command === "conversations") {
@@ -239,7 +271,7 @@ if (command === "workspaces") {
   await page.close()
   if (command === "citations") writeFileSync(file, JSON.stringify(previous, null, 2))
 }
-if (["workspaces", "workspace", "workspace-create", "move", "fanoutfox", "citations", "conversations"].includes(command)) {
+if (["workspaces", "workspace", "workspace-create", "move", "backfill", "fanoutfox", "citations", "conversations"].includes(command)) {
   await browser.close()
   process.exit(0)
 }

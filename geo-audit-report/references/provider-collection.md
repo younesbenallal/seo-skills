@@ -40,6 +40,14 @@ bun geo-audit-report/scripts/chatgpt-browser/run.ts conversations <run-dir>    #
 
 Logged-out conversations (`/uc/` URLs) cannot be reopened, so they have no conversation file.
 
+To fill the Fanout Fox library with the conversations it missed, feed those files to its own ChatGPT parser:
+
+```bash
+bun geo-audit-report/scripts/chatgpt-browser/run.ts backfill "Client" <run-dir>
+```
+
+It activates the workspace, adds a capture for each conversation that has none there, and leaves existing captures alone (it prints both counts for them as a check). Backfilled captures lack the stream-only intent and moderation counts, and list every source the reloaded conversation holds, often more than a live capture. Tested 2026-10-27 on Quanteec: 7 captures added, fan-out and model identical on the one live capture.
+
 To fix misfiled captures:
 
 ```bash
