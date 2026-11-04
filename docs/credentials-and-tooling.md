@@ -289,6 +289,7 @@ export LINKAVISTA_API_KEY="your-secret-here"
 export COLLABORATOR_API_KEY="your-secret-here"
 export SERPZILLA_LOGIN="your-login"
 export SERPZILLA_API_TOKEN="your-secret-here"
+export LINKUMA_API_KEY="your-secret-here"
 ```
 
 `backlink-buying/references/platforms.md` lists the marketplaces with an API and which ones are documented in the skill.

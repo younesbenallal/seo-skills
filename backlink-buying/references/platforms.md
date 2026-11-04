@@ -11,6 +11,7 @@ This skill works with marketplaces through their REST API, with a key in a local
 | Linkavista | `LINKAVISTA_API_KEY` | yes | yes | [linkavista.md](linkavista.md), tested with live orders |
 | Collaborator.pro | `COLLABORATOR_API_KEY` | yes, once support enables it | no: the user orders in the web app, the API tracks the deal | [collaborator.md](collaborator.md), from the OpenAPI schema |
 | Serpzilla | `SERPZILLA_LOGIN`, `SERPZILLA_API_TOKEN` | yes | yes: guest posts and link insertions, with content approval | [serpzilla.md](serpzilla.md), from the OpenAPI schema and guides |
+| Linkuma | `LINKUMA_API_KEY` | no: a network, you pick a type and a thematic, not a site | yes: articles, citations, and relinking packs on published Linkuma posts | [linkuma.md](linkuma.md), from the API docs and public read calls |
 
 ### API available, not documented yet
 

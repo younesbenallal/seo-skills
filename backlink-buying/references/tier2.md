@@ -20,4 +20,8 @@ Check first that the user's target page receives the value: if the Tier 1 links 
 - When a Tier 1 article allows more than one link, its extra links can point at existing Tier 1 sources: it is a free Tier 2.
 - Linking Tier 2 articles to each other, or to parasite pages, is possible when the user asks for it.
 
+## Relinking with Linkuma
+
+Linkuma sells relinking packs: 3, 5, or 10 Tier 2 articles on a post it already published, written and published by Linkuma one per day. It is the shortest path for Tier 1 links bought on Linkuma: list the published posts from the project, apply the checks above, then buy a pack per post. For a Tier 1 source bought elsewhere, order a Linkuma `basic` or `standard` article with that source as the target URL. See [linkuma.md](linkuma.md).
+
 Present and approve the basket like any other (SKILL.md, step 6). Record each Tier 2 order in the purchase log with the Tier 1 source as its target and tier `2`.
